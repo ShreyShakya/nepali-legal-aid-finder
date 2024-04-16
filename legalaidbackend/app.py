@@ -1146,15 +1146,47 @@ def update_appointment_status(appointment_id):
         conn = pymysql.connect(**db_config)
         try:
             with conn.cursor() as cursor:
-                sql = "SELECT lawyer_id FROM appointments WHERE id = %s"
-                cursor.execute(sql, (appointment_id,))
+                # Fetch appointment details and client email
+                sql = """
+                    SELECT a.id, a.appointment_date, c.email, c.name
+                    FROM appointments a
+                    JOIN clients c ON a.client_id = c.id
+                    WHERE a.id = %s AND a.lawyer_id = %s
+                """
+                cursor.execute(sql, (appointment_id, lawyer_id))
                 appointment = cursor.fetchone()
-                if not appointment or appointment['lawyer_id'] != lawyer_id:
+                if not appointment:
                     return jsonify({'error': 'Appointment not found or unauthorized'}), 403
 
+                # Update appointment status
                 sql = "UPDATE appointments SET status = %s WHERE id = %s"
                 cursor.execute(sql, (new_status, appointment_id))
                 conn.commit()
+
+                # Send email if status is 'confirmed'
+                if new_status == 'confirmed':
+                    appointment_date = appointment['appointment_date']
+                    client_email = appointment['email']
+                    client_name = appointment['name']
+                    
+                    # Format the appointment date
+                    if isinstance(appointment_date, datetime):
+                        appointment_date = pytz.UTC.localize(appointment_date) if appointment_date.tzinfo is None else appointment_date
+                        formatted_date = appointment_date.astimezone(pytz.timezone('Asia/Kathmandu')).strftime('%B %d, %Y at %I:%M %p %Z')
+                    else:
+                        formatted_date = appointment_date
+
+                    email_body = (
+                        f"Dear {client_name},\n\n"
+                        f"Your appointment has been confirmed.\n"
+                        f"Details:\n"
+                        f"Date and Time: {formatted_date}\n\n"
+                        f"Thank you for choosing LegalAid.\n"
+                        f"Best regards,\nLegalAid Team"
+                    )
+                    if not send_email(client_email, 'LegalAid Appointment Confirmation', email_body):
+                        print(f"Failed to send confirmation email to {client_email}")
+
         finally:
             conn.close()
         return jsonify({'message': f'Appointment {new_status} successfully'}), 200
@@ -2155,6 +2187,21 @@ def verify_otp():
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500   
+    
+def send_email(email, subject, body):
+    try:
+        msg = MIMEText(body)
+        msg['Subject'] = subject
+        msg['From'] = EMAIL_ADDRESS
+        msg['To'] = email
+
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+            server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            server.sendmail(EMAIL_ADDRESS, email, msg.as_string())
+        return True
+    except Exception as e:
+        print(f"Error sending email: {str(e)}")
+        return False
 
 # WebSocket handlers for real-time case messaging
 @socketio.on('join_case')
