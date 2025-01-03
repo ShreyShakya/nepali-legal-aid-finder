@@ -1,7 +1,12 @@
-import React from 'react';
-import './LandingPage.css'; // Ensure CSS is still imported correctly
+import React, { useState } from 'react';
+import './LandingPage.css'; 
+import Login from '../components/Auth/Login';
+import SignUp from '../components/Auth/SignUp';
 
 function LandingPage() {
+    const [showLogin, setShowLogin] = useState(false);
+    const [showSignUp, setShowSignUp] = useState(false);
+
     return (
         <div className="landing-page">
             {/* Navigation Bar */}
@@ -12,9 +17,8 @@ function LandingPage() {
                     </a>
                 </div>
                 <nav className="nav-links">
-                    <a href="/">Home</a>
-                    <a href="/login">Login</a>
-                    <a href="/signup">Sign Up</a>
+                    <a href="#" onClick={() => setShowLogin(true)}>Login</a>
+                    <a href="#" onClick={() => setShowSignUp(true)}>Sign Up</a>
                 </nav>
             </header>
 
@@ -64,6 +68,44 @@ function LandingPage() {
                     </div>
                 </div>
             </section>
+
+            {/* How It Works Section */}
+            <section className="how-it-works">
+                <h2>How It Works</h2>
+                <p>Let us guide you through the process of finding the right legal assistance.</p>
+                <div className="how-it-works-cards">
+                    <div className="how-card">
+                        <h3>Describe Your Issue</h3>
+                        <p>Help us understand your needs. Provide details about your legal concerns, and we’ll match you with the right assistance.</p>
+                    </div>
+                    <div className="how-card">
+                        <h3>Explore Your Options</h3>
+                        <p>Discover lawyers, or pro bono support. Compare the profiles and services of relevant legal aid providers.</p>
+                    </div>
+                    <div className="how-card">
+                        <h3>Connect and Solve</h3>
+                        <p>Collaborate with your chosen professional. Track your case and communicate directly for effective resolution.</p>
+                    </div>
+                </div>
+            </section>
+
+            {/* Login Modal */}
+            {showLogin && (
+                <div className="modal-overlay" onClick={() => setShowLogin(false)}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()}>
+                        <Login />
+                    </div>
+                </div>
+            )}
+
+            {/* Sign-Up Modal */}
+            {showSignUp && (
+                <div className="modal-overlay" onClick={() => setShowSignUp(false)}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()}>
+                        <SignUp />
+                    </div>
+                </div>
+            )}
 
             {/* Footer */}
             <footer className="footer">
