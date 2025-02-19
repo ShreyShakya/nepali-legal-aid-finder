@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import './Auth.css';
 
 function Login() {
@@ -6,6 +7,7 @@ function Login() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const navigate = useNavigate(); // Initialize the navigate function
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -26,6 +28,8 @@ function Login() {
             const data = await response.json();
             if (response.ok) {
                 setSuccess(data.message || 'Login successful!');
+                // Redirect to another page
+                navigate('/dashboard'); // Redirect to a different route (e.g., /dashboard)
             } else {
                 setError(data.error || 'Login failed.');
             }
