@@ -7,7 +7,7 @@ const teamMembers = [
     name: "Shrey Shakya",
     role: "Founder & CEO",
     bio: "Leading the vision to make legal services accessible to all Nepali citizens.",
-    image: "/placeholder.svg?height=300&width=300",
+    image: "/images/ngo.jpg",
     social: {
       linkedin: "#",
       email: "shrey@example.com",
@@ -18,7 +18,7 @@ const teamMembers = [
     name: "Jane Smith",
     role: "Legal Advisor",
     bio: "Expert in constitutional law with over 15 years of experience in legal consultation.",
-    image: "/placeholder.svg?height=300&width=300",
+    image: "/images/ngo.jpg",
     social: {
       linkedin: "#",
       email: "jane@example.com",
@@ -29,7 +29,7 @@ const teamMembers = [
     name: "John Doe",
     role: "Community Outreach",
     bio: "Dedicated to building strong relationships between legal professionals and communities.",
-    image: "/placeholder.svg?height=300&width=300",
+    image: "/images/ngo.jpg",
     social: {
       linkedin: "#",
       email: "john@example.com",

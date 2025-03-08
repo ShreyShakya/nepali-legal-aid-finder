@@ -1,6 +1,5 @@
-"use client";
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import {
   Search,
   Scale,
@@ -15,8 +14,31 @@ import {
 } from "lucide-react";
 import "./LandingPage.css";
 
+const fadeIn = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1 }
+};
+
+const slideUp = {
+  hidden: { y: 50, opacity: 0 },
+  visible: { y: 0, opacity: 1 }
+};
+
+const staggerChildren = {
+  visible: {
+    transition: {
+      staggerChildren: 0.2
+    }
+  }
+};
+
 export default function LandingPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -60,32 +82,42 @@ export default function LandingPage() {
     {
       icon: <FileText className="step-icon" />,
       title: "Describe Your Issue",
-      description:
-        "Help us understand your needs. Provide details about your legal concerns, and we'll match you with the right assistance.",
+      description: "Help us understand your needs. Provide details about your legal concerns, and we'll match you with the right assistance.",
     },
     {
       icon: <SearchIcon className="step-icon" />,
       title: "Explore Your Options",
-      description:
-        "Discover lawyers, or pro bono support. Compare the profiles and services of relevant legal aid providers.",
+      description: "Discover lawyers, or pro bono support. Compare the profiles and services of relevant legal aid providers.",
     },
     {
       icon: <UserCheck className="step-icon" />,
       title: "Connect and Solve",
-      description:
-        "Collaborate with your chosen professional. Track your case and communicate directly for effective resolution.",
+      description: "Collaborate with your chosen professional. Track your case and communicate directly for effective resolution.",
     },
   ];
 
   return (
     <div className="landing-page">
-      {/* Hero Section */}
-      <section className="hero">
-        <div className="hero-content">
+      <motion.section 
+        className="hero"
+        initial="hidden"
+        animate="visible"
+        variants={fadeIn}
+      >
+        <motion.div 
+          className="hero-content"
+          variants={slideUp}
+          transition={{ duration: 0.6 }}
+        >
           <h1>Legal Support at Your Fingertips</h1>
           <p>Find trusted legal aid in Nepal for all your needs.</p>
 
-          <form onSubmit={handleSearch} className="search-form">
+          <motion.form 
+            onSubmit={handleSearch} 
+            className="search-form"
+            variants={slideUp}
+            transition={{ delay: 0.2 }}
+          >
             <div className="search-input">
               <Search className="search-icon" />
               <input
@@ -95,68 +127,131 @@ export default function LandingPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <button type="submit">Search</button>
-          </form>
+            <button type="submit" className="search-button">
+              Search
+            </button>
+          </motion.form>
 
-          <div className="hero-stats">
-            <div className="stat">
-              <span className="stat-number">500+</span>
-              <span className="stat-label">Legal Professionals</span>
-            </div>
-            <div className="stat">
-              <span className="stat-number">1000+</span>
-              <span className="stat-label">Cases Resolved</span>
-            </div>
-            <div className="stat">
-              <span className="stat-number">50+</span>
-              <span className="stat-label">Districts Covered</span>
-            </div>
-          </div>
-        </div>
-      </section>
+          <motion.div 
+            className="hero-stats"
+            variants={staggerChildren}
+            initial="hidden"
+            animate="visible"
+          >
+            {[
+              { number: "500+", label: "Legal Professionals" },
+              { number: "1000+", label: "Cases Resolved" },
+              { number: "50+", label: "Districts Covered" },
+            ].map((stat, index) => (
+              <motion.div
+                key={index}
+                className="stat"
+                variants={fadeIn}
+                transition={{ delay: index * 0.2 }}
+              >
+                <span className="stat-number">{stat.number}</span>
+                <span className="stat-label">{stat.label}</span>
+              </motion.div>
+            ))}
+          </motion.div>
+        </motion.div>
+      </motion.section>
 
-      {/* Features Section */}
-      <section className="features">
-        <h2>Why Choose Us?</h2>
-        <div className="features-grid">
+      <motion.section 
+        className="features"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        variants={fadeIn}
+      >
+        <motion.h2 variants={slideUp}>Why Choose Us?</motion.h2>
+        <motion.div 
+          className="features-grid"
+          variants={staggerChildren}
+        >
           {features.map((feature, index) => (
-            <div key={index} className="feature-card">
+            <motion.div
+              key={index}
+              className="feature-card"
+              variants={fadeIn}
+              whileHover={{ y: -5, transition: { duration: 0.2 } }}
+            >
               {feature.icon}
               <h3>{feature.title}</h3>
               <p>{feature.description}</p>
-            </div>
+            </motion.div>
           ))}
-        </div>
-      </section>
+        </motion.div>
+      </motion.section>
 
-      {/* How It Works Section */}
-      <section className="how-it-works">
-        <h2>How It Works</h2>
-        <p className="section-subtitle">Let us guide you through the process of finding the right legal assistance.</p>
+      <motion.section 
+        className="how-it-works"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        variants={fadeIn}
+      >
+        <motion.h2 variants={slideUp}>How It Works</motion.h2>
+        <motion.p 
+          className="section-subtitle"
+          variants={slideUp}
+        >
+          Let us guide you through the process of finding the right legal assistance.
+        </motion.p>
 
-        <div className="steps">
+        <motion.div 
+          className="steps"
+          variants={staggerChildren}
+        >
           {steps.map((step, index) => (
-            <div key={index} className="step-card">
+            <motion.div
+              key={index}
+              className="step-card"
+              variants={fadeIn}
+              whileHover={{ scale: 1.02 }}
+            >
               <div className="step-number">{index + 1}</div>
               <div className="step-content">
                 {step.icon}
                 <h3>{step.title}</h3>
                 <p>{step.description}</p>
               </div>
-              {index < steps.length - 1 && <ArrowRight className="step-arrow" />}
-            </div>
+              {index < steps.length - 1 && (
+                <motion.div 
+                  className="step-arrow"
+                  animate={{ x: [0, 10, 0] }}
+                  transition={{ repeat: Infinity, duration: 2 }}
+                >
+                  <ArrowRight />
+                </motion.div>
+              )}
+            </motion.div>
           ))}
-        </div>
-      </section>
+        </motion.div>
+      </motion.section>
 
-      {/* CTA Section */}
-      <section className="cta">
-        <div className="cta-content">
+      <motion.section 
+        className="cta"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        variants={fadeIn}
+      >
+        <motion.div 
+          className="cta-content"
+          variants={slideUp}
+        >
           <h2>Ready to Get Started?</h2>
           <p>Take the first step towards resolving your legal matters.</p>
-          <button className="cta-button">Find Legal Help Now</button>
-        </div>
-      </section>
+          <motion.button 
+            className="cta-button"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            Find Legal Help Now
+          </motion.button>
+        </motion.div>
+      </motion.section>
     </div>
   );
 }

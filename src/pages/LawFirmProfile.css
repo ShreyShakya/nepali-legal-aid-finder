@@ -1,0 +1,539 @@
+/* Keeping all existing CSS and updating the hero section */
+.profile-page {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  
+  /* Hero Section */
+  .profile-hero {
+    background: linear-gradient(to right, #f8fafc, #f1f5f9);
+    padding: 3rem 2rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  .hero-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+  
+  .firm-identity {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    align-items: flex-start;
+  }
+  
+  .firm-logo {
+    border-radius: 12px;
+    object-fit: cover;
+    width: 120px;
+    height: 120px;
+    flex-shrink: 0;
+  }
+  
+  .firm-info {
+    flex: 1;
+  }
+  
+  .firm-info h1 {
+    font-size: 2.5rem;
+    color: #1a202c;
+    margin-bottom: 1rem;
+  }
+  
+  .firm-meta {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+  
+  .rating-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .stars {
+    display: flex;
+    gap: 0.25rem;
+  }
+  
+  .star-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #e2e8f0;
+  }
+  
+  .star-icon.filled {
+    color: #f6ad55;
+    fill: #f6ad55;
+  }
+  
+  .rating-text {
+    color: #4a5568;
+    font-size: 0.875rem;
+  }
+  
+  .verification-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #48bb78;
+    font-size: 0.875rem;
+  }
+  
+  .verify-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+  
+  .hero-stats {
+    display: flex;
+    gap: 3rem;
+    padding-left: calc(120px + 2rem); /* Logo width + gap */
+  }
+  
+  .stat-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .stat-icon {
+    width: 2rem;
+    height: 2rem;
+    color: #4299e1;
+  }
+  
+  .stat-text {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .stat-value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2d3748;
+  }
+  
+  .stat-label {
+    font-size: 0.875rem;
+    color: #718096;
+  }
+  
+  /* Main Content */
+  .profile-content {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 2rem;
+  }
+  
+  .content-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+  }
+  
+  /* Tabs */
+  .profile-tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  .tab-button {
+    padding: 1rem 1.5rem;
+    border: none;
+    background: none;
+    color: #718096;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+  }
+  
+  .tab-button:hover {
+    color: #4299e1;
+    background: none;
+  }
+  
+  .tab-button.active {
+    color: #4299e1;
+    border-bottom-color: #4299e1;
+    border-radius: 0;
+  }
+  
+  /* Tab Content */
+  .tab-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .tab-content h2 {
+    font-size: 1.5rem;
+    color: #2d3748;
+    margin-bottom: 1.5rem;
+  }
+  
+  /* About Section */
+  .about-section p {
+    color: #4a5568;
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+  }
+  
+  .key-features {
+    margin-top: 2rem;
+  }
+  
+  .key-features h3 {
+    font-size: 1.25rem;
+    color: #2d3748;
+    margin-bottom: 1rem;
+  }
+  
+  .key-features ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .key-features li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    color: #4a5568;
+    margin-bottom: 0.75rem;
+    line-height: 1.5;
+  }
+  
+  .feature-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #48bb78;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+  }
+  
+  /* Practice Areas */
+  .practice-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+  }
+  
+  .practice-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    transition: all 0.2s;
+  }
+  
+  .practice-card:hover {
+    background: #f1f5f9;
+    transform: translateY(-2px);
+  }
+  
+  .practice-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    color: #4299e1;
+  }
+  
+  .practice-card h3 {
+    flex: 1;
+    font-size: 1rem;
+    color: #2d3748;
+  }
+  
+  .arrow-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #a0aec0;
+  }
+  
+  /* Team Section */
+  .team-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 2rem;
+  }
+  
+  .team-card {
+    text-align: center;
+  }
+  
+  .member-image {
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    object-fit: cover;
+    aspect-ratio: 1;
+  }
+  
+  .member-info h3 {
+    font-size: 1.125rem;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+  }
+  
+  .member-role {
+    color: #4299e1;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .member-experience {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: #718096;
+    font-size: 0.875rem;
+  }
+  
+  .experience-icon {
+    width: 1rem;
+    height: 1rem;
+  }
+  
+  /* Reviews Section */
+  .reviews-grid {
+    display: grid;
+    gap: 1.5rem;
+  }
+  
+  .review-card {
+    padding: 1.5rem;
+    background: #f8fafc;
+    border-radius: 8px;
+  }
+  
+  .review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  
+  .reviewer-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .reviewer-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    color: #718096;
+  }
+  
+  .reviewer-name {
+    font-weight: 500;
+    color: #2d3748;
+  }
+  
+  .review-comment {
+    color: #4a5568;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+  }
+  
+  .review-date {
+    color: #a0aec0;
+    font-size: 0.875rem;
+  }
+  
+  /* Sidebar */
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .contact-card,
+  .languages-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .contact-card h3,
+  .languages-card h3 {
+    font-size: 1.25rem;
+    color: #2d3748;
+    margin-bottom: 1.5rem;
+  }
+  
+  .consultation-info {
+    margin-bottom: 1.5rem;
+  }
+  
+  .info-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .info-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #4299e1;
+  }
+  
+  .info-text {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .info-label {
+    font-size: 0.875rem;
+    color: #718096;
+  }
+  
+  .info-value {
+    font-weight: 500;
+    color: #2d3748;
+  }
+  
+  .book-button {
+    width: 100%;
+    padding: 0.875rem;
+    background: #4299e1;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-bottom: 1.5rem;
+  }
+  
+  .book-button:hover {
+    background: #3182ce;
+  }
+  
+  .contact-details {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .contact-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #4a5568;
+    font-size: 0.875rem;
+  }
+  
+  .contact-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #4299e1;
+  }
+  
+  .contact-item a {
+    color: inherit;
+    text-decoration: none;
+  }
+  
+  .contact-item a:hover {
+    color: #4299e1;
+  }
+  
+  .languages-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .language-tag {
+    padding: 0.25rem 0.75rem;
+    background: #f1f5f9;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    color: #4a5568;
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 1024px) {
+    .content-grid {
+      grid-template-columns: 1fr;
+    }
+  
+    .sidebar {
+      order: -1;
+    }
+  
+    .hero-stats {
+      padding-left: 0;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .profile-hero {
+      padding: 2rem 1rem;
+    }
+  
+    .firm-identity {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 1rem;
+    }
+  
+    .hero-stats {
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+      padding-left: 0;
+    }
+  
+    .profile-tabs {
+      overflow-x: auto;
+      white-space: nowrap;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 1px;
+    }
+  
+    .tab-button {
+      padding: 0.75rem 1rem;
+    }
+  
+    .practice-grid {
+      grid-template-columns: 1fr;
+    }
+  
+    .team-grid {
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .firm-info h1 {
+      font-size: 2rem;
+    }
+  
+    .firm-meta {
+      flex-direction: column;
+      gap: 1rem;
+    }
+  
+    .profile-content {
+      padding: 0 1rem;
+    }
+  
+    .tab-content {
+      padding: 1.5rem;
+    }
+  }

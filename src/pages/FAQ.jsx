@@ -73,11 +73,6 @@ export default function FAQ() {
           </div>
         ))}
       </div>
-
-      <div className="faq-footer">
-        <p>Still have questions?</p>
-        <button className="contact-btn">Contact Us</button>
-      </div>
     </div>
   )
 }

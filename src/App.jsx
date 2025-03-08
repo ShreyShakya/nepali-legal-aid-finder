@@ -11,6 +11,7 @@ import FAQ from './pages/FAQ';
 import AboutUs from './pages/AboutUs';
 import Header from './components/Header';
 import Footer from './components/Footer'
+import LawFirmProfile from './pages/LawFirmProfile';
 
 function App() {
     return (
@@ -37,6 +38,8 @@ function App() {
                 <Route path="/faq" element={<FAQ />} /> 
 
                 <Route path="/about" element={<AboutUs />} />
+
+                <Route path="/lawfirmprofile" element={<LawFirmProfile />} />
 
             </Routes>
             <Footer />
