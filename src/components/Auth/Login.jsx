@@ -77,6 +77,7 @@ export default function Login() {
         if (formData.email === "demo@example.com" && formData.password === "password123") {
           setIsSubmitted(true)
           setLoginError("")
+          setTimeout(() => navigate("/dashboard"), 1000)
         } else {
           // Simulate login failure
           setLoginError("Invalid email or password. Please try again.")

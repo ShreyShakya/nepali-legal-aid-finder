@@ -18,7 +18,7 @@ import {
   Star,
   Calendar,
 } from "lucide-react"
-import "./LandingPage.css"
+import styles from "./LandingPage.module.css"
 
 const fadeIn = {
   hidden: { opacity: 0 },
@@ -60,25 +60,25 @@ export default function LandingPage() {
 
   const services = [
     {
-      icon: <Briefcase className="service-icon" />,
+      icon: <Briefcase className={styles.serviceIcon} />,
       title: "Corporate Law",
       description: "Expert guidance on business formation, contracts, and compliance matters.",
       link: "#corporate-law",
     },
     {
-      icon: <Users className="service-icon" />,
+      icon: <Users className={styles.serviceIcon} />,
       title: "Family Law",
       description: "Compassionate support for divorce, custody, and other family legal matters.",
       link: "#family-law",
     },
     {
-      icon: <Shield className="service-icon" />,
+      icon: <Shield className={styles.serviceIcon} />,
       title: "Criminal Defense",
       description: "Strong representation for those facing criminal charges or investigations.",
       link: "#criminal-defense",
     },
     {
-      icon: <Award className="service-icon" />,
+      icon: <Award className={styles.serviceIcon} />,
       title: "Intellectual Property",
       description: "Protection for your creative works, inventions, and business identity.",
       link: "#intellectual-property",
@@ -132,22 +132,22 @@ export default function LandingPage() {
 
   const steps = [
     {
-      icon: <Calendar className="step-icon" />,
+      icon: <Calendar className={styles.stepIcon} />,
       title: "Schedule a Consultation",
       description: "Book a free initial consultation with one of our expert attorneys to discuss your legal needs.",
     },
     {
-      icon: <MessageSquare className="step-icon" />,
+      icon: <MessageSquare className={styles.stepIcon} />,
       title: "Discuss Your Case",
       description: "Meet with your attorney to review your situation in detail and explore potential legal strategies.",
     },
     {
-      icon: <FileText className="step-icon" />,
+      icon: <FileText className={styles.stepIcon} />,
       title: "Receive Custom Solution",
       description: "Get a tailored legal plan designed specifically for your unique situation and objectives.",
     },
     {
-      icon: <Shield className="step-icon" />,
+      icon: <Shield className={styles.stepIcon} />,
       title: "Ongoing Support",
       description: "Benefit from continuous legal guidance and representation throughout your case.",
     },
@@ -177,16 +177,16 @@ export default function LandingPage() {
   ]
 
   return (
-    <div className="landing-page">
-      <header className="header">
-        <div className="header-container">
-          <div className="logo">
-            <Scale className="logo-icon" />
+    <div className={styles.landingPage}>
+      <header className={styles.header}>
+        <div className={styles.headerContainer}>
+          <div className={styles.logo}>
+            <Scale className={styles.logoIcon} />
             <span>NepaliLegalAidFinder</span>
           </div>
 
           <div
-            className={`mobile-menu-button ${mobileMenuOpen ? "active" : ""}`}
+            className={`${styles.mobileMenuButton} ${mobileMenuOpen ? styles.active : ""}`}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             <span></span>
@@ -194,7 +194,7 @@ export default function LandingPage() {
             <span></span>
           </div>
 
-          <nav className={`main-nav ${mobileMenuOpen ? "open" : ""}`}>
+          <nav className={`${styles.mainNav} ${mobileMenuOpen ? styles.open : ""}`}>
             <ul>
               <li>
                 <a href="#services">Services</a>
@@ -211,33 +211,33 @@ export default function LandingPage() {
             </ul>
           </nav>
 
-          <div className="header-cta">
-            <a href="/register" className="contact-button">
+          <div className={styles.headerCta}>
+            <a href="/register" className={styles.contactButton}>
               Get Started
             </a>
           </div>
         </div>
       </header>
 
-      <motion.section className="hero" initial="hidden" animate={isVisible ? "visible" : "hidden"} variants={fadeIn}>
-        <div className="hero-background"></div>
-        <div className="hero-container">
-          <motion.div className="hero-content" variants={slideUp} transition={{ duration: 0.6 }}>
+      <motion.section className={styles.hero} initial="hidden" animate={isVisible ? "visible" : "hidden"} variants={fadeIn}>
+        <div className={styles.heroBackground}></div>
+        <div className={styles.heroContainer}>
+          <motion.div className={styles.heroContent} variants={slideUp} transition={{ duration: 0.6 }}>
             <h1>Welcome to Your Trusted Legal Partner</h1>
             <p>Expert legal solutions tailored to your unique needs. Navigate complex legal matters with confidence.</p>
 
-            <div className="client-tabs">
-              <button className={activeTab === "individual" ? "active" : ""} onClick={() => setActiveTab("individual")}>
+            <div className={styles.clientTabs}>
+              <button className={activeTab === "individual" ? styles.active : ""} onClick={() => setActiveTab("individual")}>
                 For Individuals
               </button>
-              <button className={activeTab === "business" ? "active" : ""} onClick={() => setActiveTab("business")}>
+              <button className={activeTab === "business" ? styles.active : ""} onClick={() => setActiveTab("business")}>
                 For Businesses
               </button>
             </div>
 
-            <motion.form onSubmit={handleSearch} className="search-form" variants={slideUp} transition={{ delay: 0.2 }}>
-              <div className="search-input">
-                <Search className="search-icon" />
+            <motion.form onSubmit={handleSearch} className={styles.searchForm} variants={slideUp} transition={{ delay: 0.2 }}>
+              <div className={styles.searchInput}>
+                <Search className={styles.searchIcon} />
                 <input
                   type="text"
                   placeholder={
@@ -249,7 +249,7 @@ export default function LandingPage() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <button type="submit" className="search-button">
+              <button type="submit" className={styles.searchButton}>
                 Find Solutions
               </button>
             </motion.form>
@@ -259,15 +259,15 @@ export default function LandingPage() {
 
       <motion.section
         id="services"
-        className="services"
+        className={styles.services}
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true }}
         variants={fadeIn}
       >
-        <div className="section-container">
-          <div className="section-header">
-            <motion.span className="section-subtitle" variants={slideUp}>
+        <div className={styles.sectionContainer}>
+          <div className={styles.sectionHeader}>
+            <motion.span className={styles.sectionSubtitle} variants={slideUp}>
               Our Expertise
             </motion.span>
             <motion.h2 variants={slideUp}>Comprehensive Legal Services</motion.h2>
@@ -277,27 +277,27 @@ export default function LandingPage() {
             </motion.p>
           </div>
 
-          <motion.div className="services-grid" variants={staggerChildren}>
+          <motion.div className={styles.servicesGrid} variants={staggerChildren}>
             {services.map((service, index) => (
               <motion.div
                 key={index}
-                className="service-card"
+                className={styles.serviceCard}
                 variants={fadeIn}
                 whileHover={{ y: -10, transition: { duration: 0.2 } }}
               >
-                <div className="service-icon-wrapper">{service.icon}</div>
+                <div className={styles.serviceIconWrapper}>{service.icon}</div>
                 <h3>{service.title}</h3>
                 <p>{service.description}</p>
-                <a href={service.link} className="service-link">
-                  Learn More <ChevronRight className="link-icon" />
+                <a href={service.link} className={styles.serviceLink}>
+                  Learn More <ChevronRight className={styles.linkIcon} />
                 </a>
               </motion.div>
             ))}
           </motion.div>
 
-          <div className="services-cta">
+          <div className={styles.servicesCta}>
             <p>Looking for a different legal service?</p>
-            <a href="#contact" className="secondary-button">
+            <a href="#contact" className={styles.secondaryButton}>
               View All Services
             </a>
           </div>
@@ -306,15 +306,15 @@ export default function LandingPage() {
 
       <motion.section
         id="process"
-        className="process"
+        className={styles.process}
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true }}
         variants={fadeIn}
       >
-        <div className="section-container">
-          <div className="section-header">
-            <motion.span className="section-subtitle" variants={slideUp}>
+        <div className={styles.sectionContainer}>
+          <div className={styles.sectionHeader}>
+            <motion.span className={styles.sectionSubtitle} variants={slideUp}>
               Simple Process
             </motion.span>
             <motion.h2 variants={slideUp}>How We Work With You</motion.h2>
@@ -323,18 +323,18 @@ export default function LandingPage() {
             </motion.p>
           </div>
 
-          <motion.div className="process-steps" variants={staggerChildren}>
+          <motion.div className={styles.processSteps} variants={staggerChildren}>
             {steps.map((step, index) => (
-              <motion.div key={index} className="process-step" variants={fadeIn}>
-                <div className="step-number">{index + 1}</div>
-                <div className="step-content">
-                  <div className="step-icon-wrapper">{step.icon}</div>
+              <motion.div key={index} className={styles.processStep} variants={fadeIn}>
+                <div className={styles.stepNumber}>{index + 1}</div>
+                <div className={styles.stepContent}>
+                  <div className={styles.stepIconWrapper}>{step.icon}</div>
                   <h3>{step.title}</h3>
                   <p>{step.description}</p>
                 </div>
                 {index < steps.length - 1 && (
                   <motion.div
-                    className="step-connector"
+                    className={styles.stepConnector}
                     animate={{ opacity: [0.4, 1, 0.4] }}
                     transition={{ repeat: Number.POSITIVE_INFINITY, duration: 2 }}
                   />
@@ -343,8 +343,8 @@ export default function LandingPage() {
             ))}
           </motion.div>
 
-          <motion.div className="process-cta" variants={slideUp}>
-            <a href="#contact" className="primary-button">
+          <motion.div className={styles.processCta} variants={slideUp}>
+            <a href="#contact" className={styles.primaryButton}>
               Schedule Your Consultation
             </a>
           </motion.div>
@@ -353,15 +353,15 @@ export default function LandingPage() {
 
       <motion.section
         id="attorneys"
-        className="attorneys"
+        className={styles.attorneys}
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true }}
         variants={fadeIn}
       >
-        <div className="section-container">
-          <div className="section-header">
-            <motion.span className="section-subtitle" variants={slideUp}>
+        <div className={styles.sectionContainer}>
+          <div className={styles.sectionHeader}>
+            <motion.span className={styles.sectionSubtitle} variants={slideUp}>
               Expert Team
             </motion.span>
             <motion.h2 variants={slideUp}>Meet Our Attorneys</motion.h2>
@@ -370,22 +370,22 @@ export default function LandingPage() {
             </motion.p>
           </div>
 
-          <motion.div className="attorneys-grid" variants={staggerChildren}>
+          <motion.div className={styles.attorneysGrid} variants={staggerChildren}>
             {attorneys.map((attorney, index) => (
               <motion.div
                 key={index}
-                className="attorney-card"
+                className={styles.attorneyCard}
                 variants={fadeIn}
                 whileHover={{ y: -5, transition: { duration: 0.2 } }}
               >
-                <div className="attorney-image">
+                <div className={styles.attorneyImage}>
                   <img src={attorney.image || "/placeholder.svg"} alt={attorney.name} />
                 </div>
-                <div className="attorney-info">
+                <div className={styles.attorneyInfo}>
                   <h3>{attorney.name}</h3>
-                  <p className="attorney-specialty">{attorney.specialty}</p>
-                  <p className="attorney-experience">{attorney.experience}</p>
-                  <a href="#" className="attorney-link">
+                  <p className={styles.attorneySpecialty}>{attorney.specialty}</p>
+                  <p className={styles.attorneyExperience}>{attorney.experience}</p>
+                  <a href="#" className={styles.attorneyLink}>
                     View Profile
                   </a>
                 </div>
@@ -393,8 +393,8 @@ export default function LandingPage() {
             ))}
           </motion.div>
 
-          <div className="attorneys-cta">
-            <a href="#" className="secondary-button">
+          <div className={styles.attorneysCta}>
+            <a href="#" className={styles.secondaryButton}>
               View All Attorneys
             </a>
           </div>
@@ -403,15 +403,15 @@ export default function LandingPage() {
 
       <motion.section
         id="testimonials"
-        className="testimonials"
+        className={styles.testimonials}
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true }}
         variants={fadeIn}
       >
-        <div className="section-container">
-          <div className="section-header">
-            <motion.span className="section-subtitle" variants={slideUp}>
+        <div className={styles.sectionContainer}>
+          <div className={styles.sectionHeader}>
+            <motion.span className={styles.sectionSubtitle} variants={slideUp}>
               Client Success
             </motion.span>
             <motion.h2 variants={slideUp}>What Our Clients Say</motion.h2>
@@ -420,21 +420,21 @@ export default function LandingPage() {
             </motion.p>
           </div>
 
-          <motion.div className="testimonials-grid" variants={staggerChildren}>
+          <motion.div className={styles.testimonialsGrid} variants={staggerChildren}>
             {testimonials.map((testimonial, index) => (
               <motion.div
                 key={index}
-                className="testimonial-card"
+                className={styles.testimonialCard}
                 variants={fadeIn}
                 whileHover={{ y: -5, transition: { duration: 0.2 } }}
               >
-                <div className="testimonial-rating">
+                <div className={styles.testimonialRating}>
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className={`star-icon ${i < testimonial.rating ? "filled" : ""}`} size={16} />
+                    <Star key={i} className={`${styles.starIcon} ${i < testimonial.rating ? styles.filled : ""}`} size={16} />
                   ))}
                 </div>
-                <p className="testimonial-text">"{testimonial.text}"</p>
-                <div className="testimonial-author">
+                <p className={styles.testimonialText}>"{testimonial.text}"</p>
+                <div className={styles.testimonialAuthor}>
                   <img src={testimonial.image || "/placeholder.svg"} alt={testimonial.name} />
                   <div>
                     <h4>{testimonial.name}</h4>
@@ -449,41 +449,41 @@ export default function LandingPage() {
 
       <motion.section
         id="contact"
-        className="contact"
+        className={styles.contact}
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true }}
         variants={fadeIn}
       >
-        <div className="section-container">
-          <div className="contact-grid">
-            <motion.div className="contact-info" variants={slideRight} style={{ width: "100%" }}>
-              <span className="section-subtitle">Get In Touch</span>
+        <div className={styles.sectionContainer}>
+          <div className={styles.contactGrid}>
+            <motion.div className={styles.contactInfo} variants={slideRight} style={{ width: "100%" }}>
+              <span className={styles.sectionSubtitle}>Get In Touch</span>
               <h2>Contact Us Today</h2>
               <p>
                 Ready to discuss your legal needs? Our team is here to help. Schedule a consultation or reach out with
                 any questions.
               </p>
 
-              <div className="contact-methods">
-                <div className="contact-method">
-                  <Phone className="contact-icon" />
+              <div className={styles.contactMethods}>
+                <div className={styles.contactMethod}>
+                  <Phone className={styles.contactIcon} />
                   <div>
                     <h4>Call Us</h4>
                     <p>(555) 123-4567</p>
                   </div>
                 </div>
 
-                <div className="contact-method">
-                  <Mail className="contact-icon" />
+                <div className={styles.contactMethod}>
+                  <Mail className={styles.contactIcon} />
                   <div>
                     <h4>Email Us</h4>
                     <p>info@legaledge.com</p>
                   </div>
                 </div>
 
-                <div className="contact-method">
-                  <MapPin className="contact-icon" />
+                <div className={styles.contactMethod}>
+                  <MapPin className={styles.contactIcon} />
                   <div>
                     <h4>Visit Us</h4>
                     <p>
@@ -495,7 +495,7 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              <div className="office-hours">
+              <div className={styles.officeHours}>
                 <h4>Office Hours</h4>
                 <p>
                   Monday - Friday: 9:00 AM - 6:00 PM
@@ -509,32 +509,32 @@ export default function LandingPage() {
       </motion.section>
 
       <motion.section
-        className="cta-section"
+        className={styles.ctaSection}
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true }}
         variants={fadeIn}
       >
-        <motion.div className="cta-content" variants={slideUp}>
+        <motion.div className={styles.ctaContent} variants={slideUp}>
           <h2>Ready to Resolve Your Legal Matters?</h2>
           <p>Take the first step towards expert legal representation and peace of mind.</p>
-          <motion.div className="cta-buttons" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <a href="#contact" className="cta-button primary">
+          <motion.div className={styles.ctaButtons} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <a href="#contact" className={`${styles.ctaButton} ${styles.primary}`}>
               Schedule a Consultation
             </a>
-            <a href="#services" className="cta-button secondary">
+            <a href="#services" className={`${styles.ctaButton} ${styles.secondary}`}>
               Explore Our Services
             </a>
           </motion.div>
         </motion.div>
       </motion.section>
 
-      <footer className="footer">
-        <div className="footer-container">
-          <div className="footer-top">
-            <div className="footer-about">
-              <div className="footer-logo">
-                <Scale className="logo-icon" />
+      <footer className={styles.footer}>
+        <div className={styles.footerContainer}>
+          <div className={styles.footerTop}>
+            <div className={styles.footerAbout}>
+              <div className={styles.footerLogo}>
+                <Scale className={styles.logoIcon} />
                 <span>LegalEdge</span>
               </div>
               <p>
@@ -543,8 +543,8 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="footer-links">
-              <div className="footer-links-column">
+            <div className={styles.footerLinks}>
+              <div className={styles.footerLinksColumn}>
                 <h4>Services</h4>
                 <ul>
                   <li>
@@ -562,7 +562,7 @@ export default function LandingPage() {
                 </ul>
               </div>
 
-              <div className="footer-links-column">
+              <div className={styles.footerLinksColumn}>
                 <h4>Company</h4>
                 <ul>
                   <li>
@@ -580,7 +580,7 @@ export default function LandingPage() {
                 </ul>
               </div>
 
-              <div className="footer-links-column">
+              <div className={styles.footerLinksColumn}>
                 <h4>Resources</h4>
                 <ul>
                   <li>
@@ -597,20 +597,20 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="footer-bottom">
+          <div className={styles.footerBottom}>
             <p>&copy; {new Date().getFullYear()} LegalEdge. All rights reserved.</p>
-            <div className="footer-social">
+            <div className={styles.footerSocial}>
               <a href="#" aria-label="Facebook">
-                <div className="social-icon facebook"></div>
+                <div className={`${styles.socialIcon} ${styles.facebook}`}></div>
               </a>
               <a href="#" aria-label="Twitter">
-                <div className="social-icon twitter"></div>
+                <div className={`${styles.socialIcon} ${styles.twitter}`}></div>
               </a>
               <a href="#" aria-label="LinkedIn">
-                <div className="social-icon linkedin"></div>
+                <div className={`${styles.socialIcon} ${styles.linkedin}`}></div>
               </a>
               <a href="#" aria-label="Instagram">
-                <div className="social-icon instagram"></div>
+                <div className={`${styles.socialIcon} ${styles.instagram}`}></div>
               </a>
             </div>
           </div>
@@ -619,4 +619,3 @@ export default function LandingPage() {
     </div>
   )
 }
-
