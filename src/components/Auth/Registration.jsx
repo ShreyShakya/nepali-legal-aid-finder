@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { Scale, User, Phone, Mail, MapPin, ArrowRight, CheckCircle, Lock } from "lucide-react"
+import { User, Phone, Mail, MapPin, ArrowRight, CheckCircle, Lock } from "lucide-react"
 import "./Registration.css"
 
 const fadeIn = {
@@ -87,19 +87,34 @@ export default function Registration() {
     if (validateForm()) {
       setIsSubmitting(true)
 
-      // Simulate API call
       try {
-        await new Promise((resolve) => setTimeout(resolve, 1500))
-        setIsSubmitted(true)
-        // Reset form after successful submission
-        setFormData({
-          firstName: "",
-          lastName: "",
-          phoneNumber: "",
-          email: "",
-          password: "",
-          city: "",
+        // Send a POST request to the backend register endpoint
+        const response = await fetch('http://localhost:5000/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData),
         })
+
+        const data = await response.json()
+
+        if (response.ok) {
+          // Registration successful
+          setIsSubmitted(true)
+          // Reset form after successful submission
+          setFormData({
+            firstName: "",
+            lastName: "",
+            phoneNumber: "",
+            email: "",
+            password: "",
+            city: "",
+          })
+        } else {
+          // Registration failed
+          console.error("Registration failed:", data.error)
+        }
       } catch (error) {
         console.error("Error submitting form:", error)
       } finally {
@@ -110,34 +125,6 @@ export default function Registration() {
 
   return (
     <div className="registration-page">
-      <header className="header">
-        <div className="header-container">
-          <div className="logo">
-            <Scale className="logo-icon" />
-            <span>LegalEdge</span>
-          </div>
-          <nav className="main-nav">
-            <ul>
-              <li>
-                <a href="/">Home</a>
-              </li>
-              <li>
-                <a href="#services">Services</a>
-              </li>
-              <li>
-                <a href="#attorneys">Attorneys</a>
-              </li>
-              <li>
-                <a href="#testimonials">Testimonials</a>
-              </li>
-              <li>
-                <a href="#contact">Contact</a>
-              </li>
-            </ul>
-          </nav>
-        </div>
-      </header>
-
       <motion.section className="registration-section" initial="hidden" animate="visible" variants={fadeIn}>
         <div className="registration-container">
           <motion.div className="registration-content" variants={slideUp} transition={{ duration: 0.6 }}>
@@ -282,15 +269,6 @@ export default function Registration() {
           </motion.div>
         </div>
       </motion.section>
-
-      <footer className="footer">
-        <div className="footer-container">
-          <div className="footer-bottom">
-            <p>&copy; {new Date().getFullYear()} LegalEdge. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
     </div>
   )
 }
-

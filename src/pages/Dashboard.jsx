@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+"use client"
+
+import { useState } from "react"
 import {
   Scale,
   User,
@@ -6,7 +8,6 @@ import {
   LogOut,
   Bell,
   FileText,
-  Users,
   Calendar,
   AlertCircle,
   Eye,
@@ -18,284 +19,398 @@ import {
   Briefcase,
   Clock,
   CheckCircle,
-  Image,
   File,
-} from 'lucide-react';
-import './Dashboard.css';
+  Menu,
+  X,
+} from "lucide-react"
+import styles from "./Dashboard.module.css"
 
 function Dashboard() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState('overview');
+  const [activeTab, setActiveTab] = useState("overview")
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  const cases = {
-    active: 2,
-    pending: 1,
-    closed: 3,
-    recent: [
-      {
-        id: 1,
-        title: 'Property Dispute Resolution',
-        status: 'Active',
-        lastUpdate: '2024-03-15',
-        description: 'Updated evidence submitted for review',
-      },
-      {
-        id: 2,
-        title: 'Family Law Consultation',
-        status: 'Pending',
-        lastUpdate: '2024-03-14',
-        description: 'Awaiting lawyer assignment',
-      },
-    ],
-  };
+  const userData = {
+    name: "Jason Moralles",
+    email: "jasonmoralles@mail.com",
+    avatar: "https://randomuser.me/api/portraits/men/1.jpg",
+    role: "Client",
+    phone: "904-302-4131",
+    address: "750 third street, Neptune beach, FL 32266",
+    dob: "1985/01/07",
+  }
 
-  const assignedLawyer = {
-    name: 'Adv. Rajesh Sharma',
-    specialty: 'Property Law',
-    image: 'https://randomuser.me/api/portraits/men/32.jpg',
-    nextAppointment: '2024-03-20 14:00',
-  };
+  const caseStats = {
+    active: 3,
+    pending: 2,
+    completed: 5,
+  }
 
-  const notifications = [
+  const recentActivity = [
     {
       id: 1,
-      type: 'case',
-      message: 'New document uploaded to your case #123',
-      time: '2 hours ago',
+      type: "case_update",
+      title: "Property Dispute Case #2024-01",
+      status: "active",
+      date: "2024-03-12",
+      description: "New evidence documents uploaded",
     },
     {
       id: 2,
-      type: 'appointment',
-      message: 'Upcoming consultation tomorrow at 2 PM',
-      time: '5 hours ago',
+      type: "appointment",
+      title: "Consultation Meeting",
+      status: "pending",
+      date: "2024-03-15",
+      description: "Scheduled with Adv. Sarah Wilson",
     },
-  ];
+  ]
 
   const documents = [
     {
       id: 1,
-      title: 'Property Deed',
-      type: 'image',
-      format: 'JPG',
-      uploadDate: '2024-03-15',
-      caseId: 'CASE123',
+      name: "Property Deed.pdf",
+      type: "pdf",
+      size: "2.4 MB",
+      date: "2024-03-10",
     },
     {
       id: 2,
-      title: 'Witness Statement',
-      type: 'document',
-      format: 'PDF',
-      uploadDate: '2024-03-14',
-      caseId: 'CASE123',
+      name: "Evidence Photos.zip",
+      type: "zip",
+      size: "15.7 MB",
+      date: "2024-03-11",
     },
-  ];
+  ]
 
-  const sidebarItems = [
-    { icon: <Briefcase />, label: 'Overview', id: 'overview' },
-    { icon: <FileText />, label: 'My Cases', id: 'cases' },
-    { icon: <Users />, label: 'My Lawyer', id: 'lawyer' },
-    { icon: <File />, label: 'Documents', id: 'documents' },
-    { icon: <Bell />, label: 'Notifications', id: 'notifications' },
-  ];
+  const notifications = [
+    {
+      id: 1,
+      message: "Your next appointment is tomorrow at 2:00 PM",
+      type: "reminder",
+      time: "1 hour ago",
+    },
+    {
+      id: 2,
+      message: "New document shared in Case #2024-01",
+      type: "update",
+      time: "3 hours ago",
+    },
+  ]
 
-  const quickActions = [
-    { icon: <Eye />, label: 'View Evidence' },
-    { icon: <MessageSquare />, label: 'Contact Lawyer' },
-    { icon: <PlusCircle />, label: 'New Case' },
-  ];
+  const navigationItems = [
+    { id: "overview", icon: <Briefcase size={18} />, label: "Overview" },
+    { id: "cases", icon: <FileText size={18} />, label: "My Cases" },
+    { id: "documents", icon: <File size={18} />, label: "Documents" },
+    { id: "calendar", icon: <Calendar size={18} />, label: "Calendar" },
+    { id: "messages", icon: <MessageSquare size={18} />, label: "Messages" },
+  ]
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen)
+  }
 
   return (
-    <div className="dashboard-layout">
-      <div className="dashboard-container">
-        {/* Sidebar */}
-        <aside className="sidebar">
-          <div className="sidebar-header">
-            <div className="logo">
-              <Scale className="logo-icon" />
-              <span>NepaliLegalAidFinder</span>
-            </div>
-            <div className="header-actions">
-              <div className="notifications-dropdown">
-                <Bell className="icon" />
-                <span className="notification-badge">2</span>
-              </div>
-              <div className="profile-dropdown" onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}>
-                <img src="https://randomuser.me/api/portraits/men/1.jpg" alt="Profile" className="profile-image" />
-                {profileDropdownOpen && (
-                  <div className="dropdown-menu">
-                    <a href="#profile"><User /> Profile</a>
-                    <a href="#settings"><Settings /> Settings</a>
-                    <a href="#logout"><LogOut /> Logout</a>
-                  </div>
-                )}
-              </div>
+    <div className={styles.dashboardContainer}>
+      {/* Mobile Menu Toggle */}
+      <button className={styles.menuToggle} onClick={toggleSidebar}>
+        {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+      </button>
+
+      {/* Sidebar */}
+      <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ""}`}>
+        <div className={styles.sidebarHeader}>
+          <div className={styles.logo}>
+            <Scale className={styles.logoIcon} size={20} />
+            <span>Legal Portal</span>
+          </div>
+        </div>
+
+        <nav className={styles.sidebarNav}>
+          {navigationItems.map((item) => (
+            <button
+              key={item.id}
+              className={`${styles.navItem} ${activeTab === item.id ? styles.active : ""}`}
+              onClick={() => {
+                setActiveTab(item.id)
+                if (window.innerWidth < 768) {
+                  setSidebarOpen(false)
+                }
+              }}
+            >
+              {item.icon}
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </nav>
+
+        <div className={styles.userProfile}>
+          <div className={styles.profileSection} onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}>
+            <img src={userData.avatar || "/placeholder.svg"} alt={userData.name} className={styles.avatar} />
+            <div className={styles.userInfo}>
+              <h4>{userData.name}</h4>
+              <span>{userData.role}</span>
             </div>
           </div>
 
-          <nav className="sidebar-nav">
-            {sidebarItems.map((item) => (
-              <button
-                key={item.id}
-                className={`sidebar-item ${activeSection === item.id ? 'active' : ''}`}
-                onClick={() => setActiveSection(item.id)}
-              >
-                {item.icon}
-                <span>{item.label}</span>
+          {profileDropdownOpen && (
+            <div className={styles.profileDropdown}>
+              <button className={styles.dropdownItem}>
+                <User size={14} />
+                Profile
               </button>
-            ))}
-          </nav>
+              <button className={styles.dropdownItem}>
+                <Settings size={14} />
+                Settings
+              </button>
+              <button className={styles.dropdownItem}>
+                <LogOut size={14} />
+                Sign Out
+              </button>
+            </div>
+          )}
+        </div>
+      </aside>
 
-          <div className="quick-actions">
-            <h3>Quick Actions</h3>
-            {quickActions.map((action, index) => (
-              <button key={index} className="quick-action-button">
-                {action.icon}
-                <span>{action.label}</span>
-              </button>
-            ))}
+      {/* Main Content */}
+      <main className={styles.mainContent}>
+        {/* Header */}
+        <header className={styles.header}>
+          <div className={styles.searchBar}>
+            <Search className={styles.searchIcon} size={16} />
+            <input type="text" placeholder="Search cases, documents..." />
           </div>
-        </aside>
 
-        {/* Main Content */}
-        <main className="dashboard-main">
-          {/* Case Status Summary */}
-          <section className="case-summary">
-            <div className="status-cards">
-              <div className="status-card active">
-                <Briefcase className="status-icon" />
-                <div className="status-info">
-                  <h3>Active Cases</h3>
-                  <p className="status-number">{cases.active}</p>
-                </div>
-              </div>
-              <div className="status-card pending">
-                <Clock className="status-icon" />
-                <div className="status-info">
-                  <h3>Pending Cases</h3>
-                  <p className="status-number">{cases.pending}</p>
-                </div>
-              </div>
-              <div className="status-card closed">
-                <CheckCircle className="status-icon" />
-                <div className="status-info">
-                  <h3>Closed Cases</h3>
-                  <p className="status-number">{cases.closed}</p>
-                </div>
-              </div>
-            </div>
-          </section>
+          <div className={styles.headerActions}>
+            <button className={styles.notificationButton} onClick={() => setNotificationsOpen(!notificationsOpen)}>
+              <Bell size={18} />
+              {notifications.length > 0 && <span className={styles.notificationBadge}>{notifications.length}</span>}
+            </button>
 
-          {/* Recent Cases */}
-          <section className="recent-cases">
-            <div className="section-header">
-              <h2>Recent Cases</h2>
-              <button className="view-all-button">View All Cases</button>
-            </div>
-            <div className="cases-list">
-              {cases.recent.map((case_) => (
-                <div key={case_.id} className="case-card">
-                  <div className="case-header">
-                    <h3>{case_.title}</h3>
-                    <span className={`status-badge ${case_.status.toLowerCase()}`}>
-                      {case_.status}
-                    </span>
+            {notificationsOpen && (
+              <div className={styles.notificationsDropdown}>
+                <div className={styles.notificationsHeader}>
+                  <h3>Notifications</h3>
+                  <button className={styles.markAllRead}>Mark all as read</button>
+                </div>
+                <div className={styles.notificationsList}>
+                  {notifications.map((notification) => (
+                    <div key={notification.id} className={styles.notificationItem}>
+                      <AlertCircle className={styles.notificationIcon} size={16} />
+                      <div className={styles.notificationContent}>
+                        <p>{notification.message}</p>
+                        <span>{notification.time}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </header>
+
+        {/* Dashboard Content */}
+        <div className={styles.dashboardContent}>
+          {activeTab === "overview" && (
+            <>
+              <div className={styles.overviewGrid}>
+                <section className={styles.profileCard}>
+                  <div className={styles.profileHeader}>
+                    <img
+                      src={userData.avatar || "/placeholder.svg"}
+                      alt={userData.name}
+                      className={styles.profileAvatar}
+                    />
+                    <div>
+                      <h2 className={styles.profileName}>{userData.name}</h2>
+                      <p className={styles.profileEmail}>{userData.email}</p>
+                    </div>
+                    <button className={styles.editButton}>Edit</button>
                   </div>
-                  <p className="case-update">{case_.description}</p>
-                  <div className="case-footer">
-                    <span className="update-date">{case_.lastUpdate}</span>
-                    <button className="details-button">
-                      View Details <ChevronRight size={16} />
-                    </button>
+                  <div className={styles.profileInfo}>
+                    <div className={styles.infoGroup}>
+                      <h4>DOB</h4>
+                      <p>{userData.dob}</p>
+                    </div>
+                    <div className={styles.infoGroup}>
+                      <h4>Phone</h4>
+                      <p>{userData.phone}</p>
+                    </div>
+                    <div className={styles.infoGroup}>
+                      <h4>Address</h4>
+                      <p>{userData.address}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </section>
+                </section>
 
-          {/* My Lawyer Section */}
-          <section className="my-lawyer">
-            <div className="section-header">
-              <h2>My Lawyer</h2>
-            </div>
-            <div className="lawyer-card">
-              <img src={assignedLawyer.image} alt={assignedLawyer.name} className="lawyer-image" />
-              <div className="lawyer-info">
-                <h3>{assignedLawyer.name}</h3>
-                <p className="specialty">{assignedLawyer.specialty}</p>
-                <div className="next-appointment">
-                  <Calendar size={16} />
-                  <span>Next Appointment: {assignedLawyer.nextAppointment}</span>
-                </div>
-                <button className="contact-button">
-                  <MessageSquare size={16} />
-                  Request Consultation
-                </button>
-              </div>
-            </div>
-          </section>
-
-          {/* Documents/Evidence Section */}
-          <section className="documents">
-            <div className="section-header">
-              <h2>Case Documents & Evidence</h2>
-              <div className="document-search">
-                <div className="search-input">
-                  <Search size={16} />
-                  <input type="text" placeholder="Search documents..." />
-                </div>
-                <button className="filter-button">
-                  <Filter size={16} />
-                  Filter
-                </button>
-              </div>
-            </div>
-            <div className="documents-grid">
-              {documents.map((document) => (
-                <div key={document.id} className="document-card">
-                  {document.type === 'image' ? (
-                    <Image className="document-icon" />
-                  ) : (
-                    <File className="document-icon" />
-                  )}
-                  <div className="document-info">
-                    <h3>{document.title}</h3>
-                    <p>Case ID: {document.caseId}</p>
-                    <p className="document-meta">
-                      {document.format} • Uploaded on {document.uploadDate}
-                    </p>
+                <section className={styles.statsSection}>
+                  <div className={styles.statCard}>
+                    <div className={`${styles.statIcon} ${styles.activeIcon}`}>
+                      <Briefcase size={16} />
+                    </div>
+                    <div className={styles.statInfo}>
+                      <h3>Active Cases</h3>
+                      <p>{caseStats.active}</p>
+                    </div>
                   </div>
-                  <button className="view-button">
-                    <Eye size={16} />
-                    View
+
+                  <div className={styles.statCard}>
+                    <div className={`${styles.statIcon} ${styles.pendingIcon}`}>
+                      <Clock size={16} />
+                    </div>
+                    <div className={styles.statInfo}>
+                      <h3>Pending</h3>
+                      <p>{caseStats.pending}</p>
+                    </div>
+                  </div>
+
+                  <div className={styles.statCard}>
+                    <div className={`${styles.statIcon} ${styles.completedIcon}`}>
+                      <CheckCircle size={16} />
+                    </div>
+                    <div className={styles.statInfo}>
+                      <h3>Completed</h3>
+                      <p>{caseStats.completed}</p>
+                    </div>
+                  </div>
+                </section>
+              </div>
+
+              {/* Recent Activity */}
+              <section className={styles.activitySection}>
+                <div className={styles.sectionHeader}>
+                  <h2>Recent Activity</h2>
+                  <button className={styles.viewAllButton}>
+                    View All <ChevronRight size={14} />
                   </button>
                 </div>
-              ))}
-            </div>
-          </section>
 
-          {/* Notifications */}
-          <section className="notifications">
-            <div className="section-header">
-              <h2>Notifications</h2>
-              <button className="mark-all-read">Mark all as read</button>
-            </div>
-            <div className="notifications-list">
-              {notifications.map((notification) => (
-                <div key={notification.id} className="notification-item">
-                  <AlertCircle className="notification-icon" />
-                  <div className="notification-content">
-                    <p>{notification.message}</p>
-                    <span className="notification-time">{notification.time}</span>
-                  </div>
+                <div className={styles.activityList}>
+                  {recentActivity.map((activity) => (
+                    <div key={activity.id} className={styles.activityCard}>
+                      <div className={styles.activityHeader}>
+                        <h3>{activity.title}</h3>
+                        <span className={`${styles.status} ${styles[activity.status]}`}>{activity.status}</span>
+                      </div>
+                      <p>{activity.description}</p>
+                      <div className={styles.activityFooter}>
+                        <span>{activity.date}</span>
+                        <button className={styles.detailsButton}>
+                          Details <ChevronRight size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </section>
-        </main>
-      </div>
+              </section>
+            </>
+          )}
+
+          {activeTab === "cases" && (
+            <section className={styles.casesSection}>
+              <div className={styles.sectionHeader}>
+                <h2>My Cases</h2>
+                <button className={styles.uploadButton}>
+                  <PlusCircle size={14} />
+                  New Case
+                </button>
+              </div>
+              <div className={styles.activityList}>
+                {recentActivity.map((activity) => (
+                  <div key={activity.id} className={styles.activityCard}>
+                    <div className={styles.activityHeader}>
+                      <h3>{activity.title}</h3>
+                      <span className={`${styles.status} ${styles[activity.status]}`}>{activity.status}</span>
+                    </div>
+                    <p>{activity.description}</p>
+                    <div className={styles.activityFooter}>
+                      <span>{activity.date}</span>
+                      <button className={styles.detailsButton}>
+                        Details <ChevronRight size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {activeTab === "documents" && (
+            <section className={styles.documentsSection}>
+              <div className={styles.sectionHeader}>
+                <h2>Documents & Evidence</h2>
+                <div className={styles.documentActions}>
+                  <button className={styles.uploadButton}>
+                    <PlusCircle size={14} />
+                    Upload
+                  </button>
+                  <button className={styles.filterButton}>
+                    <Filter size={14} />
+                    Filter
+                  </button>
+                </div>
+              </div>
+
+              <div className={styles.documentsList}>
+                {documents.map((doc) => (
+                  <div key={doc.id} className={styles.documentCard}>
+                    <div className={styles.documentIcon}>
+                      <File size={16} />
+                    </div>
+                    <div className={styles.documentInfo}>
+                      <h4>{doc.name}</h4>
+                      <span>
+                        {doc.size} • {doc.date}
+                      </span>
+                    </div>
+                    <button className={styles.viewButton}>
+                      <Eye size={14} />
+                      View
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {activeTab === "calendar" && (
+            <section className={styles.calendarSection}>
+              <div className={styles.sectionHeader}>
+                <h2>Upcoming Appointments</h2>
+                <button className={styles.uploadButton}>
+                  <PlusCircle size={14} />
+                  Schedule
+                </button>
+              </div>
+              <div className={styles.emptyState}>
+                <Calendar size={36} />
+                <h3>No upcoming appointments</h3>
+                <p>Schedule a consultation with your lawyer</p>
+              </div>
+            </section>
+          )}
+
+          {activeTab === "messages" && (
+            <section className={styles.messagesSection}>
+              <div className={styles.sectionHeader}>
+                <h2>Messages</h2>
+              </div>
+              <div className={styles.emptyState}>
+                <MessageSquare size={36} />
+                <h3>No messages yet</h3>
+                <p>Start a conversation with your legal team</p>
+                <button>
+                  <MessageSquare size={14} />
+                  New Message
+                </button>
+              </div>
+            </section>
+          )}
+        </div>
+      </main>
     </div>
-  );
+  )
 }
 
-export default Dashboard;
+export default Dashboard
+

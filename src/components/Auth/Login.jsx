@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { Scale, Mail, Lock, ArrowRight, CheckCircle } from "lucide-react"
+import { Mail, Lock, ArrowRight, CheckCircle } from "lucide-react"
 import "./Login.css"
 
 const fadeIn = {
@@ -68,19 +68,32 @@ export default function Login() {
     if (validateForm()) {
       setIsSubmitting(true)
 
-      // Simulate API call
       try {
-        await new Promise((resolve) => setTimeout(resolve, 1500))
+        // Send a POST request to the backend login endpoint
+        const response = await fetch('http://localhost:5000/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password,
+          }),
+        })
 
-        // For demo purposes, let's simulate a successful login
-        // In a real app, you would verify credentials with your backend
-        if (formData.email === "demo@example.com" && formData.password === "password123") {
+        const data = await response.json()
+
+        if (response.ok) {
+          // Login successful
           setIsSubmitted(true)
           setLoginError("")
-          setTimeout(() => navigate("/dashboard"), 1000)
+          setTimeout(() => {
+            // Redirect to the dashboard or another page
+            window.location.href = "/dashboard"
+          }, 1000)
         } else {
-          // Simulate login failure
-          setLoginError("Invalid email or password. Please try again.")
+          // Login failed
+          setLoginError(data.error || "Invalid email or password. Please try again.")
         }
       } catch (error) {
         console.error("Error submitting form:", error)
@@ -93,34 +106,6 @@ export default function Login() {
 
   return (
     <div className="login-page">
-      <header className="header">
-        <div className="header-container">
-          <div className="logo">
-            <Scale className="logo-icon" />
-            <span>LegalEdge</span>
-          </div>
-          <nav className="main-nav">
-            <ul>
-              <li>
-                <a href="/">Home</a>
-              </li>
-              <li>
-                <a href="#services">Services</a>
-              </li>
-              <li>
-                <a href="#attorneys">Attorneys</a>
-              </li>
-              <li>
-                <a href="#testimonials">Testimonials</a>
-              </li>
-              <li>
-                <a href="#contact">Contact</a>
-              </li>
-            </ul>
-          </nav>
-        </div>
-      </header>
-
       <motion.section className="login-section" initial="hidden" animate="visible" variants={fadeIn}>
         <div className="login-container">
           <motion.div className="login-content" variants={slideUp} transition={{ duration: 0.6 }}>
@@ -206,15 +191,6 @@ export default function Login() {
           </motion.div>
         </div>
       </motion.section>
-
-      <footer className="footer">
-        <div className="footer-container">
-          <div className="footer-bottom">
-            <p>&copy; {new Date().getFullYear()} LegalEdge. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
     </div>
   )
 }
-

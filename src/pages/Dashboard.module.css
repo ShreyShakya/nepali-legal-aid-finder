@@ -1,0 +1,797 @@
+/* Add these CSS variables at the top to match the landing page theme */
+:root {
+  --primary-color: #2c5282;
+  --primary-light: #3182ce;
+  --primary-dark: #1a365d;
+  --secondary-color: #e2e8f0;
+  --accent-color: #ed8936;
+  --text-dark: #2d3748;
+  --text-medium: #4a5568;
+  --text-light: #a0aec0;
+  --background-light: #f7fafc;
+  --background-white: #ffffff;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.05);
+  --border-radius-sm: 4px;
+  --border-radius-md: 6px;
+  --border-radius-lg: 8px;
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.2s ease;
+}
+
+.dashboardContainer {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--background-light);
+  position: relative;
+}
+
+/* Sidebar Styles */
+.sidebar {
+  width: 220px;
+  background-color: white;
+  border-right: 1px solid var(--secondary-color);
+  padding: 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  height: 100vh;
+  z-index: 100;
+  transition: transform var(--transition-normal);
+}
+
+.sidebarHeader {
+  margin-bottom: 1.5rem;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--primary-dark);
+}
+
+.logoIcon {
+  color: var(--primary-color);
+}
+
+.sidebarNav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: auto;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--border-radius-md);
+  color: var(--text-medium);
+  transition: var(--transition-fast);
+  border: none;
+  background: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.navItem:hover {
+  background-color: rgba(49, 130, 206, 0.08);
+  color: var(--primary-color);
+}
+
+.navItem.active {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.userProfile {
+  margin-top: auto;
+  position: relative;
+}
+
+.profileSection {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.profileSection:hover {
+  background-color: var(--background-light);
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.userInfo {
+  flex: 1;
+}
+
+.userInfo h4 {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin: 0;
+}
+
+.userInfo span {
+  font-size: 0.75rem;
+  color: var(--text-medium);
+}
+
+.profileDropdown {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-lg);
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+  border: 1px solid var(--secondary-color);
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  background: none;
+  color: var(--text-dark);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  font-size: 0.8125rem;
+}
+
+.dropdownItem:hover {
+  background-color: var(--background-light);
+  color: var(--primary-color);
+}
+
+/* Main Content Styles */
+.mainContent {
+  flex: 1;
+  margin-left: 220px;
+  padding: 1.5rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.searchBar {
+  position: relative;
+  width: 300px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-medium);
+}
+
+.searchBar input {
+  width: 100%;
+  padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+  border: 1px solid var(--secondary-color);
+  border-radius: var(--border-radius-md);
+  font-size: 0.8125rem;
+  background-color: var(--background-white);
+}
+
+.searchBar input:focus {
+  outline: none;
+  border-color: var(--primary-light);
+  box-shadow: 0 0 0 1px var(--primary-light);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  position: relative;
+}
+
+.notificationButton {
+  position: relative;
+  padding: 0.375rem;
+  border: none;
+  background: none;
+  color: var(--text-medium);
+  cursor: pointer;
+}
+
+.notificationBadge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: var(--primary-color);
+  color: white;
+  font-size: 0.625rem;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.notificationsDropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 300px;
+  background: white;
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-lg);
+  margin-top: 0.5rem;
+  z-index: 1000;
+  border: 1px solid var(--secondary-color);
+}
+
+.notificationsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--secondary-color);
+}
+
+.notificationsHeader h3 {
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.markAllRead {
+  color: var(--primary-color);
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.notificationsList {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.notificationItem {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--secondary-color);
+}
+
+.notificationIcon {
+  color: var(--primary-color);
+  flex-shrink: 0;
+}
+
+.notificationContent p {
+  margin: 0 0 0.25rem;
+  font-size: 0.8125rem;
+  color: var(--text-dark);
+}
+
+.notificationContent span {
+  font-size: 0.75rem;
+  color: var(--text-medium);
+}
+
+/* Dashboard Content Styles */
+.dashboardContent {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.overviewGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+.statsSection {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin: 0;
+}
+
+.statCard {
+  background: white;
+  border-radius: var(--border-radius-md);
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--secondary-color);
+}
+
+.statIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--border-radius-sm);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.activeIcon {
+  background: var(--primary-color);
+}
+
+.pendingIcon {
+  background: var(--accent-color);
+}
+
+.completedIcon {
+  background: var(--primary-light);
+}
+
+.statInfo h3 {
+  font-size: 0.75rem;
+  color: var(--text-medium);
+  margin: 0 0 0.25rem;
+  font-weight: 500;
+}
+
+.statInfo p {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin: 0;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.sectionHeader h2 {
+  font-size: 1rem;
+  color: var(--text-dark);
+  margin: 0;
+  font-weight: 600;
+}
+
+.viewAllButton {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--primary-color);
+  background: none;
+  border: none;
+  font-weight: 500;
+  cursor: pointer;
+  font-size: 0.8125rem;
+}
+
+.activityList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.activityCard {
+  background: white;
+  border-radius: var(--border-radius-md);
+  padding: 1rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--secondary-color);
+}
+
+.activityHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.activityHeader h3 {
+  font-size: 0.875rem;
+  color: var(--text-dark);
+  margin: 0;
+  font-weight: 600;
+}
+
+.status {
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.6875rem;
+  font-weight: 500;
+}
+
+.status.active {
+  background: rgba(72, 187, 120, 0.1);
+  color: #48bb78;
+}
+
+.status.pending {
+  background: rgba(237, 137, 54, 0.1);
+  color: var(--accent-color);
+}
+
+.activityCard p {
+  font-size: 0.8125rem;
+  color: var(--text-medium);
+  margin: 0 0 0.75rem;
+}
+
+.activityFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.activityFooter span {
+  font-size: 0.75rem;
+  color: var(--text-medium);
+}
+
+.detailsButton {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--primary-color);
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.documentActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.uploadButton,
+.filterButton,
+.newCaseButton,
+.scheduleButton {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: var(--border-radius-md);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition-normal);
+}
+
+.uploadButton,
+.newCaseButton,
+.scheduleButton {
+  background: var(--primary-dark);
+  color: white;
+  border: none;
+}
+
+.uploadButton:hover,
+.newCaseButton:hover,
+.scheduleButton:hover {
+  background: var(--primary-color);
+}
+
+.filterButton {
+  background: white;
+  color: var(--text-dark);
+  border: 1px solid var(--secondary-color);
+}
+
+.filterButton:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.documentsList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.documentCard {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: white;
+  border-radius: var(--border-radius-md);
+  padding: 0.75rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--secondary-color);
+}
+
+.documentIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--border-radius-sm);
+  background: var(--background-light);
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.documentInfo {
+  flex: 1;
+}
+
+.documentInfo h4 {
+  font-size: 0.8125rem;
+  color: var(--text-dark);
+  margin: 0 0 0.125rem;
+  font-weight: 500;
+}
+
+.documentInfo span {
+  font-size: 0.75rem;
+  color: var(--text-medium);
+}
+
+.viewButton {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.625rem;
+  border-radius: var(--border-radius-sm);
+  background: var(--primary-dark);
+  color: white;
+  border: none;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition-normal);
+}
+
+.viewButton:hover {
+  background: var(--primary-color);
+}
+
+/* Profile card styles */
+.profileCard {
+  background: white;
+  border-radius: var(--border-radius-md);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--secondary-color);
+}
+
+.profileHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.profileAvatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.profileName {
+  font-size: 1rem;
+  color: var(--text-dark);
+  margin: 0 0 0.125rem;
+  font-weight: 600;
+  text-align: left !important;
+}
+
+.profileEmail {
+  color: var(--text-medium);
+  margin: 0;
+  font-size: 0.8125rem;
+}
+
+.profileInfo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.infoGroup h4 {
+  font-size: 0.75rem;
+  color: var(--text-medium);
+  margin: 0 0 0.25rem;
+  font-weight: 500;
+}
+
+.infoGroup p {
+  color: var(--text-dark);
+  margin: 0;
+  font-size: 0.8125rem;
+}
+
+.editButton {
+  color: var(--primary-color);
+  background: transparent;
+  border: 1px solid var(--primary-color);
+  padding: 0.375rem 0.75rem;
+  border-radius: var(--border-radius-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition-normal);
+  font-size: 0.75rem;
+  margin-left: auto;
+}
+
+.editButton:hover {
+  color: white;
+  background: var(--primary-color);
+}
+
+/* Add styles for empty states */
+.emptyState {
+  background: white;
+  border-radius: var(--border-radius-md);
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.75rem;
+  border: 1px solid var(--secondary-color);
+}
+
+.emptyState svg {
+  color: var(--text-light);
+}
+
+.emptyState h3 {
+  font-size: 1rem;
+  color: var(--text-dark);
+  margin: 0;
+  font-weight: 500;
+}
+
+.emptyState p {
+  color: var(--text-medium);
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+}
+
+.emptyState button {
+  background: var(--primary-dark);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius-md);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.emptyState button:hover {
+  background: var(--primary-color);
+}
+
+/* Mobile menu toggle */
+.menuToggle {
+  display: none;
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 200;
+  background: white;
+  border: 1px solid var(--secondary-color);
+  border-radius: var(--border-radius-md);
+  padding: 0.5rem;
+  box-shadow: var(--shadow-md);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .statsSection {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .sidebar {
+    width: 200px;
+  }
+
+  .mainContent {
+    margin-left: 200px;
+  }
+}
+
+@media (max-width: 768px) {
+  .menuToggle {
+    display: flex;
+  }
+
+  .sidebar {
+    transform: translateX(-100%);
+    width: 240px;
+  }
+
+  .sidebarOpen {
+    transform: translateX(0);
+  }
+
+  .mainContent {
+    margin-left: 0;
+    padding: 1rem;
+  }
+
+  .statsSection {
+    grid-template-columns: 1fr;
+  }
+
+  .header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .searchBar {
+    width: 100%;
+  }
+
+  .headerActions {
+    justify-content: flex-end;
+  }
+
+  .profileHeader {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .editButton {
+    margin: 0.5rem auto 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .sectionHeader {
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+
+  .documentActions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .notificationsDropdown {
+    width: calc(100vw - 2rem);
+    right: -1rem;
+  }
+
+  .activityList {
+    grid-template-columns: 1fr;
+  }
+}
+

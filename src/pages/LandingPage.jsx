@@ -83,6 +83,18 @@ export default function LandingPage() {
       description: "Protection for your creative works, inventions, and business identity.",
       link: "#intellectual-property",
     },
+    {
+      icon: <Scale className={styles.serviceIcon} />,
+      title: "Real Estate Law",
+      description: "Comprehensive legal services for property transactions, disputes, and development projects.",
+      link: "#real-estate-law",
+    },
+    {
+      icon: <FileText className={styles.serviceIcon} />,
+      title: "Estate Planning",
+      description: "Secure your legacy with wills, trusts, and comprehensive estate planning solutions.",
+      link: "#estate-planning",
+    },
   ]
 
   const testimonials = [
@@ -111,19 +123,19 @@ export default function LandingPage() {
 
   const attorneys = [
     {
-      name: "David Wilson",
+      name: "Sabin Shrestha",
       specialty: "Corporate Law",
       image: "https://randomuser.me/api/portraits/men/32.jpg",
       experience: "15+ years experience",
     },
     {
-      name: "Jennifer Lopez",
+      name: "Sujal Prajapati",
       specialty: "Family Law",
       image: "https://randomuser.me/api/portraits/women/28.jpg",
       experience: "12+ years experience",
     },
     {
-      name: "Robert Chen",
+      name: "Ratish Bajracharya",
       specialty: "Criminal Defense",
       image: "https://randomuser.me/api/portraits/men/64.jpg",
       experience: "20+ years experience",
@@ -219,7 +231,12 @@ export default function LandingPage() {
         </div>
       </header>
 
-      <motion.section className={styles.hero} initial="hidden" animate={isVisible ? "visible" : "hidden"} variants={fadeIn}>
+      <motion.section
+        className={styles.hero}
+        initial="hidden"
+        animate={isVisible ? "visible" : "hidden"}
+        variants={fadeIn}
+      >
         <div className={styles.heroBackground}></div>
         <div className={styles.heroContainer}>
           <motion.div className={styles.heroContent} variants={slideUp} transition={{ duration: 0.6 }}>
@@ -227,15 +244,26 @@ export default function LandingPage() {
             <p>Expert legal solutions tailored to your unique needs. Navigate complex legal matters with confidence.</p>
 
             <div className={styles.clientTabs}>
-              <button className={activeTab === "individual" ? styles.active : ""} onClick={() => setActiveTab("individual")}>
+              <button
+                className={activeTab === "individual" ? styles.active : ""}
+                onClick={() => setActiveTab("individual")}
+              >
                 For Individuals
               </button>
-              <button className={activeTab === "business" ? styles.active : ""} onClick={() => setActiveTab("business")}>
+              <button
+                className={activeTab === "business" ? styles.active : ""}
+                onClick={() => setActiveTab("business")}
+              >
                 For Businesses
               </button>
             </div>
 
-            <motion.form onSubmit={handleSearch} className={styles.searchForm} variants={slideUp} transition={{ delay: 0.2 }}>
+            <motion.form
+              onSubmit={handleSearch}
+              className={styles.searchForm}
+              variants={slideUp}
+              transition={{ delay: 0.2 }}
+            >
               <div className={styles.searchInput}>
                 <Search className={styles.searchIcon} />
                 <input
@@ -250,7 +278,7 @@ export default function LandingPage() {
                 />
               </div>
               <button type="submit" className={styles.searchButton}>
-                Find Solutions
+                Search
               </button>
             </motion.form>
           </motion.div>
@@ -332,13 +360,7 @@ export default function LandingPage() {
                   <h3>{step.title}</h3>
                   <p>{step.description}</p>
                 </div>
-                {index < steps.length - 1 && (
-                  <motion.div
-                    className={styles.stepConnector}
-                    animate={{ opacity: [0.4, 1, 0.4] }}
-                    transition={{ repeat: Number.POSITIVE_INFINITY, duration: 2 }}
-                  />
-                )}
+                {/* No connector between steps */}
               </motion.div>
             ))}
           </motion.div>
@@ -430,7 +452,11 @@ export default function LandingPage() {
               >
                 <div className={styles.testimonialRating}>
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className={`${styles.starIcon} ${i < testimonial.rating ? styles.filled : ""}`} size={16} />
+                    <Star
+                      key={i}
+                      className={`${styles.starIcon} ${i < testimonial.rating ? styles.filled : ""}`}
+                      size={16}
+                    />
                   ))}
                 </div>
                 <p className={styles.testimonialText}>"{testimonial.text}"</p>
@@ -478,7 +504,7 @@ export default function LandingPage() {
                   <Mail className={styles.contactIcon} />
                   <div>
                     <h4>Email Us</h4>
-                    <p>info@legaledge.com</p>
+                    <p>info@nlaf.com</p>
                   </div>
                 </div>
 
@@ -535,7 +561,7 @@ export default function LandingPage() {
             <div className={styles.footerAbout}>
               <div className={styles.footerLogo}>
                 <Scale className={styles.logoIcon} />
-                <span>LegalEdge</span>
+                <span>Nepali Legal Aid Finder</span>
               </div>
               <p>
                 Providing exceptional legal services with integrity and dedication. Your trusted partner for all legal
@@ -619,3 +645,4 @@ export default function LandingPage() {
     </div>
   )
 }
+
