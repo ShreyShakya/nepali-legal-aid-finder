@@ -1,5 +1,4 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { UserProvider } from './context/UserContext'; // Import UserProvider
 import LandingPage from './pages/LandingPage'; // Updated path for LandingPage
 import CaseTrackingPage from './pages/CaseTrackingPage';
 import LawyersPage from './pages/LawyersPage';
@@ -11,10 +10,10 @@ import LawFirmProfile from './pages/LawFirmProfile';
 import Registration from './components/Auth/Registration';
 import Login from './components/Auth/Login';
 import LawyerDashboard from './pages/LawyerDashboard';
+import LawFirmRegistration from './components/Auth/LawFirmRegistration';
 
 function App() {
     return (
-        <UserProvider>
             <Router>
                 <Routes>
                     {/* Landing Page */}
@@ -41,17 +40,19 @@ function App() {
                     {/* Law Firm Profile */}
                     <Route path="/lawfirmprofile" element={<LawFirmProfile />} />
 
+                    {/* Law Firm Registration */}
+                    <Route path="/lawfirmregistration" element={<LawFirmRegistration />} />
+
                     {/* Registration */}
                     <Route path="/register" element={<Registration />} />
 
                     {/* Login */}
                     <Route path="/login" element={<Login />} />
 
-                    {/* Lawyer Dashboard (Protected Route) */}
+                    {/* Lawyer Dashboard */}
                     <Route path="/lawyerdashboard" element={<LawyerDashboard />} />
                 </Routes>
             </Router>
-        </UserProvider>
     );
 }
 

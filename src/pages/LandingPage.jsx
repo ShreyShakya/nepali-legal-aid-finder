@@ -8,8 +8,6 @@ import {
   Users,
   Shield,
   FileText,
-  Briefcase,
-  Award,
   MessageSquare,
   Phone,
   Mail,
@@ -48,6 +46,7 @@ export default function LandingPage() {
   const [isVisible, setIsVisible] = useState(false)
   const [activeTab, setActiveTab] = useState("individual")
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [lawyerDropdownOpen, setLawyerDropdownOpen] = useState(false)
 
   useEffect(() => {
     setIsVisible(true)
@@ -58,42 +57,34 @@ export default function LandingPage() {
     console.log("Searching for:", searchQuery)
   }
 
-  const services = [
+  const features = [
     {
-      icon: <Briefcase className={styles.serviceIcon} />,
-      title: "Corporate Law",
-      description: "Expert guidance on business formation, contracts, and compliance matters.",
-      link: "#corporate-law",
+      icon: <FileText className={styles.serviceIcon} />,
+      title: "Case Tracking",
+      description:
+        "Real-time updates and comprehensive tracking for all your legal cases. Monitor progress, deadlines, and important documents in one place.",
+      link: "#case-tracking",
     },
     {
       icon: <Users className={styles.serviceIcon} />,
-      title: "Family Law",
-      description: "Compassionate support for divorce, custody, and other family legal matters.",
-      link: "#family-law",
-    },
-    {
-      icon: <Shield className={styles.serviceIcon} />,
-      title: "Criminal Defense",
-      description: "Strong representation for those facing criminal charges or investigations.",
-      link: "#criminal-defense",
-    },
-    {
-      icon: <Award className={styles.serviceIcon} />,
-      title: "Intellectual Property",
-      description: "Protection for your creative works, inventions, and business identity.",
-      link: "#intellectual-property",
-    },
-    {
-      icon: <Scale className={styles.serviceIcon} />,
-      title: "Real Estate Law",
-      description: "Comprehensive legal services for property transactions, disputes, and development projects.",
-      link: "#real-estate-law",
+      title: "Pro Bono & NGO Support",
+      description:
+        "Dedicated resources and specialized assistance for non-profits and those seeking pro bono legal representation.",
+      link: "#pro-bono",
     },
     {
       icon: <FileText className={styles.serviceIcon} />,
-      title: "Estate Planning",
-      description: "Secure your legacy with wills, trusts, and comprehensive estate planning solutions.",
-      link: "#estate-planning",
+      title: "Legal Document Templates",
+      description:
+        "Access a vast library of customizable legal templates for contracts, agreements, and other essential documents.",
+      link: "#document-templates",
+    },
+    {
+      icon: <Phone className={styles.serviceIcon} />,
+      title: "Voice & Video Consultation",
+      description:
+        "Connect with legal experts remotely through secure voice and video calls for convenient legal advice from anywhere.",
+      link: "#consultation",
     },
   ]
 
@@ -224,6 +215,24 @@ export default function LandingPage() {
           </nav>
 
           <div className={styles.headerCta}>
+            <div className={styles.dropdownContainer}>
+              <button
+                className={styles.dropdownButton}
+                onClick={() => setLawyerDropdownOpen(!lawyerDropdownOpen)}
+                onBlur={() => setTimeout(() => setLawyerDropdownOpen(false), 100)}
+              >
+                For Lawyers
+                <ChevronRight
+                  className={`${styles.dropdownIcon} ${lawyerDropdownOpen ? styles.dropdownIconOpen : ""}`}
+                />
+              </button>
+              {lawyerDropdownOpen && (
+                <div className={styles.dropdownMenu}>
+                  <a href="/register-lawyer">Register Lawyer</a>
+                  <a href="/lawfirmregistration">Register Law Firm</a>
+                </div>
+              )}
+            </div>
             <a href="/register" className={styles.contactButton}>
               Get Started
             </a>
@@ -296,37 +305,35 @@ export default function LandingPage() {
         <div className={styles.sectionContainer}>
           <div className={styles.sectionHeader}>
             <motion.span className={styles.sectionSubtitle} variants={slideUp}>
-              Our Expertise
+              Platform Features
             </motion.span>
-            <motion.h2 variants={slideUp}>Comprehensive Legal Services</motion.h2>
+            <motion.h2 variants={slideUp}>Powerful Legal Technology</motion.h2>
             <motion.p variants={slideUp}>
-              We offer a wide range of legal services to meet your personal and business needs. Our experienced
-              attorneys are dedicated to providing exceptional representation.
+              Our platform offers innovative tools and features designed to streamline your legal experience. From case
+              management to remote consultations, we provide everything you need for effective legal support.
             </motion.p>
           </div>
 
           <motion.div className={styles.servicesGrid} variants={staggerChildren}>
-            {services.map((service, index) => (
+            {features.map((feature, index) => (
               <motion.div
                 key={index}
                 className={styles.serviceCard}
                 variants={fadeIn}
                 whileHover={{ y: -10, transition: { duration: 0.2 } }}
               >
-                <div className={styles.serviceIconWrapper}>{service.icon}</div>
-                <h3>{service.title}</h3>
-                <p>{service.description}</p>
-                <a href={service.link} className={styles.serviceLink}>
-                  Learn More <ChevronRight className={styles.linkIcon} />
-                </a>
+                <div className={styles.serviceIconWrapper}>{feature.icon}</div>
+                <h3>{feature.title}</h3>
+                <p>{feature.description}</p>
+                
               </motion.div>
             ))}
           </motion.div>
 
           <div className={styles.servicesCta}>
-            <p>Looking for a different legal service?</p>
+            <p>Want to explore more platform capabilities?</p>
             <a href="#contact" className={styles.secondaryButton}>
-              View All Services
+              Register Now
             </a>
           </div>
         </div>
@@ -360,13 +367,12 @@ export default function LandingPage() {
                   <h3>{step.title}</h3>
                   <p>{step.description}</p>
                 </div>
-                {/* No connector between steps */}
               </motion.div>
             ))}
           </motion.div>
 
           <motion.div className={styles.processCta} variants={slideUp}>
-            <a href="#contact" className={styles.primaryButton}>
+            <a href="/register" className={styles.primaryButton}>
               Schedule Your Consultation
             </a>
           </motion.div>
@@ -513,9 +519,9 @@ export default function LandingPage() {
                   <div>
                     <h4>Visit Us</h4>
                     <p>
-                      123 Legal Street, Suite 500
+                      123 Street, 500
                       <br />
-                      New York, NY 10001
+                      KTM, NEPAL 10001
                     </p>
                   </div>
                 </div>
@@ -545,7 +551,7 @@ export default function LandingPage() {
           <h2>Ready to Resolve Your Legal Matters?</h2>
           <p>Take the first step towards expert legal representation and peace of mind.</p>
           <motion.div className={styles.ctaButtons} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <a href="#contact" className={`${styles.ctaButton} ${styles.primary}`}>
+            <a href="/register" className={`${styles.ctaButton} ${styles.primary}`}>
               Schedule a Consultation
             </a>
             <a href="#services" className={`${styles.ctaButton} ${styles.secondary}`}>

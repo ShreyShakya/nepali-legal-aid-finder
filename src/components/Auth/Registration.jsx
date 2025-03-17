@@ -1,19 +1,19 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { motion } from "framer-motion"
-import { User, Phone, Mail, MapPin, ArrowRight, CheckCircle, Lock } from "lucide-react"
-import "./Registration.css"
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { User, Phone, Mail, MapPin, ArrowRight, CheckCircle, Lock } from "lucide-react";
+import "./Registration.css";
 
 const fadeIn = {
   hidden: { opacity: 0 },
   visible: { opacity: 1 },
-}
+};
 
 const slideUp = {
   hidden: { y: 50, opacity: 0 },
   visible: { y: 0, opacity: 1 },
-}
+};
 
 export default function Registration() {
   const [formData, setFormData] = useState({
@@ -23,86 +23,82 @@ export default function Registration() {
     email: "",
     password: "",
     city: "",
-  })
+  });
 
-  const [errors, setErrors] = useState({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isSubmitted, setIsSubmitted] = useState(false)
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const handleChange = (e) => {
-    const { name, value } = e.target
+    const { name, value } = e.target;
     setFormData({
       ...formData,
       [name]: value,
-    })
-    // Clear error when user types
+    });
     if (errors[name]) {
       setErrors({
         ...errors,
         [name]: "",
-      })
+      });
     }
-  }
+  };
 
   const validateForm = () => {
-    const newErrors = {}
+    const newErrors = {};
 
     if (!formData.firstName.trim()) {
-      newErrors.firstName = "First name is required"
+      newErrors.firstName = "First name is required";
     }
 
     if (!formData.lastName.trim()) {
-      newErrors.lastName = "Last name is required"
+      newErrors.lastName = "Last name is required";
     }
 
     if (!formData.phoneNumber.trim()) {
-      newErrors.phoneNumber = "Phone number is required"
+      newErrors.phoneNumber = "Phone number is required";
     } else if (!/^\d{10}$/.test(formData.phoneNumber.replace(/\D/g, ""))) {
-      newErrors.phoneNumber = "Please enter a valid 10-digit phone number"
+      newErrors.phoneNumber = "Please enter a valid 10-digit phone number";
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = "Email is required"
+      newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Please enter a valid email address"
+      newErrors.email = "Please enter a valid email address";
     }
 
     if (!formData.password.trim()) {
-      newErrors.password = "Password is required"
+      newErrors.password = "Password is required";
     } else if (formData.password.length < 8) {
-      newErrors.password = "Password must be at least 8 characters"
+      newErrors.password = "Password must be at least 8 characters";
     }
 
     if (!formData.city.trim()) {
-      newErrors.city = "City is required"
+      newErrors.city = "City is required";
     }
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (validateForm()) {
-      setIsSubmitting(true)
+      setIsSubmitting(true);
 
       try {
-        // Send a POST request to the backend register endpoint
-        const response = await fetch('http://localhost:5000/register', {
-          method: 'POST',
+        const response = await fetch("http://127.0.0.1:5000/register", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify(formData),
-        })
+        });
 
-        const data = await response.json()
+        const data = await response.json();
 
-        if (response.ok) {
-          // Registration successful
-          setIsSubmitted(true)
-          // Reset form after successful submission
+        if (response.status === 201) {
+          setIsSubmitted(true);
           setFormData({
             firstName: "",
             lastName: "",
@@ -110,18 +106,18 @@ export default function Registration() {
             email: "",
             password: "",
             city: "",
-          })
+          });
         } else {
-          // Registration failed
-          console.error("Registration failed:", data.error)
+          setErrors({ ...errors, server: data.error || "Registration failed" });
         }
       } catch (error) {
-        console.error("Error submitting form:", error)
+        console.error("Error submitting form:", error);
+        setErrors({ ...errors, server: "An error occurred. Please try again later." });
       } finally {
-        setIsSubmitting(false)
+        setIsSubmitting(false);
       }
     }
-  }
+  };
 
   return (
     <div className="registration-page">
@@ -270,5 +266,5 @@ export default function Registration() {
         </div>
       </motion.section>
     </div>
-  )
+  );
 }

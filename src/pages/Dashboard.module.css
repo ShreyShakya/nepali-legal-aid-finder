@@ -1,4 +1,3 @@
-/* Add these CSS variables at the top to match the landing page theme */
 :root {
   --primary-color: #2c5282;
   --primary-light: #3182ce;
@@ -27,7 +26,6 @@
   position: relative;
 }
 
-/* Sidebar Styles */
 .sidebar {
   width: 220px;
   background-color: white;
@@ -165,7 +163,6 @@
   color: var(--primary-color);
 }
 
-/* Main Content Styles */
 .mainContent {
   flex: 1;
   margin-left: 220px;
@@ -302,7 +299,6 @@
   color: var(--text-medium);
 }
 
-/* Dashboard Content Styles */
 .dashboardContent {
   display: flex;
   flex-direction: column;
@@ -315,11 +311,150 @@
   gap: 1.5rem;
 }
 
+.profileCard {
+  background: white;
+  border-radius: var(--border-radius-md);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--secondary-color);
+}
+
+.profileHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.profileAvatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.profileName {
+  font-size: 1rem;
+  color: var(--text-dark);
+  margin: 0 0 0.125rem;
+  font-weight: 600;
+  text-align: left;
+}
+
+.profileEmail {
+  color: var(--text-medium);
+  margin: 0 0 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.profileInfo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  padding-left: 75px;
+}
+
+.infoGroup h4 {
+  font-size: 0.75rem;
+  color: var(--text-medium);
+  margin: 0 0 0.25rem;
+  font-weight: 500;
+}
+
+.infoGroup p {
+  color: var(--text-dark);
+  margin: 0;
+  font-size: 0.8125rem;
+}
+
+.editButton {
+  color: var(--primary-color);
+  background: transparent;
+  border: 1px solid var(--primary-color);
+  padding: 0.375rem 0.75rem;
+  border-radius: var(--border-radius-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition-normal);
+  font-size: 0.75rem;
+  margin-left: auto;
+}
+
+.editButton:hover {
+  color: white;
+  background: var(--primary-color);
+}
+
+.editProfileForm {
+  margin-top: 1rem;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.formGroup label {
+  font-size: 0.75rem;
+  color: var(--text-medium);
+  font-weight: 500;
+}
+
+.formGroup input {
+  padding: 0.5rem;
+  border: 1px solid var(--secondary-color);
+  border-radius: var(--border-radius-sm);
+  font-size: 0.8125rem;
+}
+
+.formGroup input:focus {
+  outline: none;
+  border-color: var(--primary-light);
+  box-shadow: 0 0 0 1px var(--primary-light);
+}
+
+.uploadControl {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.uploadButton {
+  background-color: var(--primary-dark);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-md);
+  padding: 0.375rem 0.75rem;
+  cursor: pointer;
+  transition: var(--transition-normal);
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.uploadButton:hover {
+  background-color: var(--primary-color);
+}
+
+.fileName {
+  font-size: 0.75rem;
+  color: var(--text-medium);
+}
+
 .statsSection {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
-  margin: 0;
 }
 
 .statCard {
@@ -367,6 +502,18 @@
   font-weight: 600;
   color: var(--text-dark);
   margin: 0;
+}
+
+.activitySection,
+.casesSection,
+.documentsSection,
+.calendarSection,
+.messagesSection {
+  background: white;
+  border-radius: var(--border-radius-md);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--secondary-color);
 }
 
 .sectionHeader {
@@ -473,10 +620,7 @@
   gap: 0.5rem;
 }
 
-.uploadButton,
-.filterButton,
-.newCaseButton,
-.scheduleButton {
+.filterButton {
   display: flex;
   align-items: center;
   gap: 0.375rem;
@@ -486,23 +630,6 @@
   font-weight: 500;
   cursor: pointer;
   transition: var(--transition-normal);
-}
-
-.uploadButton,
-.newCaseButton,
-.scheduleButton {
-  background: var(--primary-dark);
-  color: white;
-  border: none;
-}
-
-.uploadButton:hover,
-.newCaseButton:hover,
-.scheduleButton:hover {
-  background: var(--primary-color);
-}
-
-.filterButton {
   background: white;
   color: var(--text-dark);
   border: 1px solid var(--secondary-color);
@@ -576,81 +703,6 @@
   background: var(--primary-color);
 }
 
-/* Profile card styles */
-.profileCard {
-  background: white;
-  border-radius: var(--border-radius-md);
-  padding: 1.25rem;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--secondary-color);
-}
-
-.profileHeader {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.profileAvatar {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.profileName {
-  font-size: 1rem;
-  color: var(--text-dark);
-  margin: 0 0 0.125rem;
-  font-weight: 600;
-  text-align: left !important;
-}
-
-.profileEmail {
-  color: var(--text-medium);
-  margin: 0;
-  font-size: 0.8125rem;
-}
-
-.profileInfo {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1rem;
-}
-
-.infoGroup h4 {
-  font-size: 0.75rem;
-  color: var(--text-medium);
-  margin: 0 0 0.25rem;
-  font-weight: 500;
-}
-
-.infoGroup p {
-  color: var(--text-dark);
-  margin: 0;
-  font-size: 0.8125rem;
-}
-
-.editButton {
-  color: var(--primary-color);
-  background: transparent;
-  border: 1px solid var(--primary-color);
-  padding: 0.375rem 0.75rem;
-  border-radius: var(--border-radius-sm);
-  font-weight: 500;
-  cursor: pointer;
-  transition: var(--transition-normal);
-  font-size: 0.75rem;
-  margin-left: auto;
-}
-
-.editButton:hover {
-  color: white;
-  background: var(--primary-color);
-}
-
-/* Add styles for empty states */
 .emptyState {
   background: white;
   border-radius: var(--border-radius-md);
@@ -680,24 +732,6 @@
   font-size: 0.875rem;
 }
 
-.emptyState button {
-  background: var(--primary-dark);
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: var(--border-radius-md);
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.75rem;
-}
-
-.emptyState button:hover {
-  background: var(--primary-color);
-}
-
-/* Mobile menu toggle */
 .menuToggle {
   display: none;
   position: fixed;
@@ -711,10 +745,9 @@
   box-shadow: var(--shadow-md);
 }
 
-/* Responsive Design */
 @media (max-width: 1024px) {
   .statsSection {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .sidebar {
@@ -790,8 +823,8 @@
     right: -1rem;
   }
 
-  .activityList {
+  .activityList,
+  .documentsList {
     grid-template-columns: 1fr;
   }
 }
-

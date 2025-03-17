@@ -1,108 +1,98 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { motion } from "framer-motion"
-import { Mail, Lock, ArrowRight, CheckCircle } from "lucide-react"
-import "./Login.css"
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { Mail, Lock, ArrowRight, CheckCircle } from "lucide-react";
+import "./Login.css";
 
 const fadeIn = {
   hidden: { opacity: 0 },
   visible: { opacity: 1 },
-}
+};
 
 const slideUp = {
   hidden: { y: 50, opacity: 0 },
   visible: { y: 0, opacity: 1 },
-}
+};
 
 export default function Login() {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-  })
+  });
 
-  const [errors, setErrors] = useState({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isSubmitted, setIsSubmitted] = useState(false)
-  const [loginError, setLoginError] = useState("")
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [loginError, setLoginError] = useState("");
 
   const handleChange = (e) => {
-    const { name, value } = e.target
+    const { name, value } = e.target;
     setFormData({
       ...formData,
       [name]: value,
-    })
-    // Clear error when user types
+    });
     if (errors[name]) {
       setErrors({
         ...errors,
         [name]: "",
-      })
+      });
     }
-    // Clear login error when user types
     if (loginError) {
-      setLoginError("")
+      setLoginError("");
     }
-  }
+  };
 
   const validateForm = () => {
-    const newErrors = {}
+    const newErrors = {};
 
     if (!formData.email.trim()) {
-      newErrors.email = "Email is required"
+      newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Please enter a valid email address"
+      newErrors.email = "Please enter a valid email address";
     }
 
     if (!formData.password.trim()) {
-      newErrors.password = "Password is required"
+      newErrors.password = "Password is required";
     }
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (validateForm()) {
-      setIsSubmitting(true)
+      setIsSubmitting(true);
 
       try {
-        // Send a POST request to the backend login endpoint
-        const response = await fetch('http://localhost:5000/login', {
-          method: 'POST',
+        const response = await fetch("http://127.0.0.1:5000/login", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            email: formData.email,
-            password: formData.password,
-          }),
-        })
+          body: JSON.stringify(formData),
+        });
 
-        const data = await response.json()
+        const data = await response.json();
 
-        if (response.ok) {
-          // Login successful
-          setIsSubmitted(true)
-          setLoginError("")
-          setTimeout(() => {
-            // Redirect to the dashboard or another page
-            window.location.href = "/dashboard"
-          }, 1000)
+        if (response.status === 200) {
+          localStorage.setItem('token', data.token); // Store token in local storage
+          setIsSubmitted(true);
+          setLoginError("");
+          setTimeout(() => window.location.href = "/dashboard", 1000);
         } else {
-          // Login failed
-          setLoginError(data.error || "Invalid email or password. Please try again.")
+          setLoginError(data.error || "Invalid email or password");
         }
       } catch (error) {
-        console.error("Error submitting form:", error)
-        setLoginError("An error occurred. Please try again later.")
+        console.error("Error submitting form:", error);
+        setLoginError("An error occurred. Please try again later.");
       } finally {
-        setIsSubmitting(false)
+        setIsSubmitting(false);
       }
     }
-  }
+  };
 
   return (
     <div className="login-page">
@@ -192,5 +182,5 @@ export default function Login() {
         </div>
       </motion.section>
     </div>
-  )
+  );
 }

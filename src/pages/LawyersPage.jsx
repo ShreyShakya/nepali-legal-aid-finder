@@ -160,7 +160,7 @@ export default function LawFirmSearch() {
                     <Phone className="action-icon" /> Contact
                   </button>
                   <button className="action-btn profile">
-                    <User className="action-icon" /> View Profile
+                    <User className="action-icon" /> <a href="/lawfirmprofile">View Profile</a>
                   </button>
                 </div>
               </div>
