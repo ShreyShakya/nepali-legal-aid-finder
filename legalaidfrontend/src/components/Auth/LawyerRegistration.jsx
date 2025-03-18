@@ -4,7 +4,8 @@ import { useState } from "react"
 import { motion } from "framer-motion"
 import { Scale } from "lucide-react"
 import axios from "axios"
-import styles from "./LawyerRegistration.module.css" // Import new CSS module
+import { useNavigate, Link } from "react-router-dom" // Added Link and useNavigate
+import styles from "./LawyerRegistration.module.css"
 
 const fadeIn = {
   hidden: { opacity: 0 },
@@ -22,6 +23,9 @@ export default function LawyerRegistration() {
     password: ""
   })
   const [message, setMessage] = useState("")
+  const [isError, setIsError] = useState(false) // Added to distinguish success/error
+  const [isLoading, setIsLoading] = useState(false) // Added for loading state
+  const navigate = useNavigate() // Added for navigation
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -29,12 +33,21 @@ export default function LawyerRegistration() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setIsLoading(true)
+    setMessage("")
+    setIsError(false)
+
     try {
       const response = await axios.post('http://127.0.0.1:5000/api/register-lawyer', formData)
       setMessage(response.data.message)
+      setIsError(false)
       setFormData({ name: "", specialization: "", location: "", availability: "", bio: "", email: "", password: "" })
+      setTimeout(() => navigate('/lawyer-login'), 2000) // Redirect to login after 2 seconds
     } catch (error) {
       setMessage(error.response?.data?.error || "Registration failed")
+      setIsError(true)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -69,6 +82,7 @@ export default function LawyerRegistration() {
                 onChange={handleChange}
                 required
                 className={styles.formInput}
+                disabled={isLoading}
               />
               <input
                 type="text"
@@ -77,6 +91,7 @@ export default function LawyerRegistration() {
                 value={formData.specialization}
                 onChange={handleChange}
                 className={styles.formInput}
+                disabled={isLoading}
               />
               <input
                 type="text"
@@ -85,6 +100,7 @@ export default function LawyerRegistration() {
                 value={formData.location}
                 onChange={handleChange}
                 className={styles.formInput}
+                disabled={isLoading}
               />
               <input
                 type="text"
@@ -93,6 +109,7 @@ export default function LawyerRegistration() {
                 value={formData.availability}
                 onChange={handleChange}
                 className={styles.formInput}
+                disabled={isLoading}
               />
               <textarea
                 name="bio"
@@ -100,6 +117,7 @@ export default function LawyerRegistration() {
                 value={formData.bio}
                 onChange={handleChange}
                 className={styles.formTextarea}
+                disabled={isLoading}
               />
               <input
                 type="email"
@@ -109,6 +127,7 @@ export default function LawyerRegistration() {
                 onChange={handleChange}
                 required
                 className={styles.formInput}
+                disabled={isLoading}
               />
               <input
                 type="password"
@@ -118,12 +137,24 @@ export default function LawyerRegistration() {
                 onChange={handleChange}
                 required
                 className={styles.formInput}
+                disabled={isLoading}
               />
-              <button type="submit" className={styles.submitButton}>
-                Register
+              <button
+                type="submit"
+                className={styles.submitButton}
+                disabled={isLoading}
+              >
+                {isLoading ? "Registering..." : "Register"}
               </button>
             </form>
-            {message && <p className={styles.message}>{message}</p>}
+            {message && (
+              <p className={`${styles.message} ${isError ? styles.error : ''}`}>
+                {message}
+              </p>
+            )}
+            <p className={styles.authLink}>
+              Already have an account? <Link to="/lawyer-login">Login here</Link>
+            </p>
           </motion.div>
         </div>
       </section>

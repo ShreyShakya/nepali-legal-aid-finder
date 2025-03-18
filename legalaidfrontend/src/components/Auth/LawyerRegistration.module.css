@@ -142,3 +142,19 @@
   .message:global(.error) {
     color: #e74c3c; /* Red for error */
   }
+
+.authLink {
+  margin-top: 1rem;
+  font-size: 1rem;
+  color: #7f8c8d;
+}
+
+.authLink a {
+  color: #3498db;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.authLink a:hover {
+  text-decoration: underline;
+}

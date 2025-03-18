@@ -4,7 +4,7 @@ import { useState } from "react"
 import { motion } from "framer-motion"
 import { Scale } from "lucide-react"
 import axios from "axios"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom" // Added Link
 import styles from "./LawyerLogin.module.css"
 
 const fadeIn = {
@@ -108,6 +108,9 @@ export default function LawyerLogin() {
                 {message}
               </p>
             )}
+            <p className={styles.authLink}>
+              Don't have an account yet? <Link to="/register-lawyer">Register here</Link>
+            </p>
           </motion.div>
         </div>
       </section>
