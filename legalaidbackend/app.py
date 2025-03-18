@@ -53,6 +53,11 @@ def register_lawyer():
         bio = data.get('bio')
         email = data.get('email')
         password = data.get('password')
+        email_notifications = data.get('email_notifications', 1)
+        availability_status = data.get('availability_status', 'Available')
+        working_hours_start = data.get('working_hours_start', '09:00')
+        working_hours_end = data.get('working_hours_end', '17:00')
+        preferred_contact = data.get('preferred_contact', 'Email')
 
         if not all([name, email, password]):
             return jsonify({'error': 'Name, email, and password are required'}), 400
@@ -63,10 +68,12 @@ def register_lawyer():
         conn = pymysql.connect(**db_config)
         with conn.cursor() as cursor:
             sql = """
-                INSERT INTO lawyers (name, specialization, location, availability, bio, email, password)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO lawyers (name, specialization, location, availability, bio, email, password, 
+                    email_notifications, availability_status, working_hours_start, working_hours_end, preferred_contact)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
-            cursor.execute(sql, (name, specialization, location, availability, bio, email, hashed_password))
+            cursor.execute(sql, (name, specialization, location, availability, bio, email, hashed_password,
+                                 email_notifications, availability_status, working_hours_start, working_hours_end, preferred_contact))
             conn.commit()
         conn.close()
         return jsonify({'message': 'Lawyer registered successfully'}), 201
@@ -103,24 +110,37 @@ def login_lawyer():
 
         stored_password = base64.b64decode(lawyer['password'])
         if verify_password(stored_password, password):
+            expiration_time = datetime.utcnow() + timedelta(hours=24)
             token_payload = {
                 'lawyer_id': lawyer['id'],
                 'email': lawyer['email'],
-                'exp': datetime.utcnow() + timedelta(hours=24)
+                'exp': int(expiration_time.timestamp())
             }
             token = jwt.encode(token_payload, SECRET_KEY, algorithm='HS256')
+
+            # Convert timedelta objects to strings for JSON serialization
+            lawyer_response = lawyer.copy()
+            if isinstance(lawyer['working_hours_start'], timedelta):
+                lawyer_response['working_hours_start'] = str(lawyer['working_hours_start'])
+            if isinstance(lawyer['working_hours_end'], timedelta):
+                lawyer_response['working_hours_end'] = str(lawyer['working_hours_end'])
 
             return jsonify({
                 'message': 'Login successful',
                 'token': token,
                 'lawyer': {
-                    'id': lawyer['id'],
-                    'name': lawyer['name'],
-                    'email': lawyer['email'],
-                    'specialization': lawyer['specialization'],
-                    'location': lawyer['location'],
-                    'availability': lawyer['availability'],
-                    'bio': lawyer['bio']
+                    'id': lawyer_response['id'],
+                    'name': lawyer_response['name'],
+                    'email': lawyer_response['email'],
+                    'specialization': lawyer_response['specialization'],
+                    'location': lawyer_response['location'],
+                    'availability': lawyer_response['availability'],
+                    'bio': lawyer_response['bio'],
+                    'email_notifications': lawyer_response['email_notifications'],
+                    'availability_status': lawyer_response['availability_status'],
+                    'working_hours_start': lawyer_response['working_hours_start'],
+                    'working_hours_end': lawyer_response['working_hours_end'],
+                    'preferred_contact': lawyer_response['preferred_contact']
                 }
             }), 200
         else:
@@ -144,7 +164,11 @@ def lawyer_profile():
 
         conn = pymysql.connect(**db_config)
         with conn.cursor() as cursor:
-            sql = "SELECT id, name, email, specialization, location, availability, bio FROM lawyers WHERE id = %s"
+            sql = """
+                SELECT id, name, email, specialization, location, availability, bio, email_notifications, 
+                       availability_status, working_hours_start, working_hours_end, preferred_contact
+                FROM lawyers WHERE id = %s
+            """
             cursor.execute(sql, (lawyer_id,))
             lawyer = cursor.fetchone()
 
@@ -153,7 +177,14 @@ def lawyer_profile():
         if not lawyer:
             return jsonify({'error': 'Lawyer not found'}), 404
 
-        return jsonify({'lawyer': lawyer}), 200
+        # Convert timedelta objects to strings for JSON serialization
+        lawyer_response = lawyer.copy()
+        if isinstance(lawyer['working_hours_start'], timedelta):
+            lawyer_response['working_hours_start'] = str(lawyer['working_hours_start'])
+        if isinstance(lawyer['working_hours_end'], timedelta):
+            lawyer_response['working_hours_end'] = str(lawyer['working_hours_end'])
+
+        return jsonify({'lawyer': lawyer_response}), 200
 
     except jwt.ExpiredSignatureError:
         return jsonify({'error': 'Token has expired'}), 401
@@ -183,7 +214,9 @@ def update_lawyer_profile():
         with conn.cursor() as cursor:
             sql = """
                 UPDATE lawyers 
-                SET specialization = %s, location = %s, availability = %s, bio = %s 
+                SET specialization = %s, location = %s, availability = %s, bio = %s, 
+                    email_notifications = %s, availability_status = %s, 
+                    working_hours_start = %s, working_hours_end = %s, preferred_contact = %s
                 WHERE id = %s
             """
             cursor.execute(sql, (
@@ -191,15 +224,32 @@ def update_lawyer_profile():
                 data.get('location', ''),
                 data.get('availability', ''),
                 data.get('bio', ''),
+                data.get('email_notifications', 1),
+                data.get('availability_status', 'Available'),
+                data.get('working_hours_start', '09:00'),
+                data.get('working_hours_end', '17:00'),
+                data.get('preferred_contact', 'Email'),
                 lawyer_id
             ))
             conn.commit()
 
-            cursor.execute("SELECT id, name, email, specialization, location, availability, bio FROM lawyers WHERE id = %s", (lawyer_id,))
+            cursor.execute("""
+                SELECT id, name, email, specialization, location, availability, bio, email_notifications, 
+                       availability_status, working_hours_start, working_hours_end, preferred_contact
+                FROM lawyers WHERE id = %s
+            """, (lawyer_id,))
             lawyer = cursor.fetchone()
 
         conn.close()
-        return jsonify({'lawyer': lawyer}), 200
+
+        # Convert timedelta objects to strings for JSON serialization
+        lawyer_response = lawyer.copy()
+        if isinstance(lawyer['working_hours_start'], timedelta):
+            lawyer_response['working_hours_start'] = str(lawyer['working_hours_start'])
+        if isinstance(lawyer['working_hours_end'], timedelta):
+            lawyer_response['working_hours_end'] = str(lawyer['working_hours_end'])
+
+        return jsonify({'lawyer': lawyer_response, 'message': 'Profile updated successfully'}), 200
 
     except jwt.ExpiredSignatureError:
         return jsonify({'error': 'Token has expired'}), 401
@@ -255,6 +305,9 @@ def update_lawyer_password():
             return jsonify({'error': 'New password is required'}), 400
 
         new_password = data['new_password']
+        if len(new_password) < 8:
+            return jsonify({'error': 'Password must be at least 8 characters long'}), 400
+
         hashed_bytes = hash_password(new_password)
         hashed_password = base64.b64encode(hashed_bytes).decode('utf-8')
 
@@ -275,7 +328,6 @@ def update_lawyer_password():
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-# New endpoint: Accept a case
 @app.route('/api/lawyer-case/<int:case_id>/accept', methods=['PUT'])
 def accept_case(case_id):
     token = request.headers.get('Authorization')
@@ -290,7 +342,6 @@ def accept_case(case_id):
 
         conn = pymysql.connect(**db_config)
         with conn.cursor() as cursor:
-            # Verify case belongs to lawyer and is pending
             sql = "SELECT status FROM cases WHERE id = %s AND lawyer_id = %s"
             cursor.execute(sql, (case_id, lawyer_id))
             case = cursor.fetchone()
@@ -314,7 +365,6 @@ def accept_case(case_id):
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-# New endpoint: Reject a case
 @app.route('/api/lawyer-case/<int:case_id>/reject', methods=['PUT'])
 def reject_case(case_id):
     token = request.headers.get('Authorization')
@@ -329,7 +379,6 @@ def reject_case(case_id):
 
         conn = pymysql.connect(**db_config)
         with conn.cursor() as cursor:
-            # Verify case belongs to lawyer and is pending
             sql = "SELECT status FROM cases WHERE id = %s AND lawyer_id = %s"
             cursor.execute(sql, (case_id, lawyer_id))
             case = cursor.fetchone()

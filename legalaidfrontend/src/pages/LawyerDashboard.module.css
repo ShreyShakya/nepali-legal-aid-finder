@@ -4,6 +4,12 @@
   font-family: 'Arial', sans-serif;
   display: flex;
   flex-direction: column;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.darkTheme {
+  background-color: #1e2a3c;
+  color: #e0e0e0;
 }
 
 .header {
@@ -14,6 +20,12 @@
   width: 100%;
   top: 0;
   z-index: 1000;
+  transition: background-color 0.3s ease;
+}
+
+.darkTheme .header {
+  background-color: #2c3e50;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
 .headerContainer {
@@ -39,6 +51,10 @@
   color: #1a3c5e;
 }
 
+.darkTheme .menuIcon {
+  color: #b0c4de;
+}
+
 .logo {
   display: flex;
   align-items: center;
@@ -51,10 +67,40 @@
   color: #1a3c5e;
 }
 
+.darkTheme .logoIcon {
+  color: #b0c4de;
+}
+
 .logo span {
   font-size: 1.9rem;
   font-weight: 700;
   color: #1a3c5e;
+}
+
+.darkTheme .logo span {
+  color: #e0e0e0;
+}
+
+.headerActions {
+  display: flex;
+  gap: 1rem;
+}
+
+.themeButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+}
+
+.themeButton svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #1a3c5e;
+}
+
+.darkTheme .themeButton svg {
+  color: #b0c4de;
 }
 
 .logoutButton {
@@ -73,6 +119,61 @@
   transform: translateY(-2px);
 }
 
+.notificationContainer {
+  position: fixed;
+  top: 5rem;
+  right: 2rem;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.notification {
+  padding: 0.8rem 1.5rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  max-width: 300px;
+}
+
+.successNotification {
+  background-color: #388e3c;
+  color: #ffffff;
+}
+
+.errorNotification {
+  background-color: #d32f2f;
+  color: #ffffff;
+}
+
+.loaderOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1200;
+}
+
+.loader {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #1976d2;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 .layout {
   display: flex;
   flex: 1;
@@ -89,6 +190,10 @@
   bottom: 0;
   z-index: 900;
   transition: transform 0.3s ease;
+}
+
+.darkTheme .sidebar {
+  background-color: #2c3e50;
 }
 
 .sidebarHidden {
@@ -144,6 +249,10 @@
   text-align: center;
 }
 
+.darkTheme .title {
+  color: #e0e0e0;
+}
+
 .profileCard {
   background-color: #ffffff;
   padding: 2rem;
@@ -151,6 +260,12 @@
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   margin-bottom: 2rem;
   border-left: 5px solid #1976d2;
+  transition: background-color 0.3s ease;
+}
+
+.darkTheme .profileCard {
+  background-color: #34495e;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 .sectionTitle {
@@ -159,6 +274,10 @@
   margin-bottom: 1.5rem;
   font-weight: 500;
   position: relative;
+}
+
+.darkTheme .sectionTitle {
+  color: #e0e0e0;
 }
 
 .sectionTitle::after {
@@ -178,10 +297,18 @@
   line-height: 1.6;
 }
 
+.darkTheme .profileItem {
+  color: #b0c4de;
+}
+
 .profileItem strong {
   color: #1a3c5e;
   font-weight: 600;
   margin-right: 0.75rem;
+}
+
+.darkTheme .profileItem strong {
+  color: #e0e0e0;
 }
 
 .editForm {
@@ -202,6 +329,10 @@
   font-weight: 500;
 }
 
+.darkTheme .formGroup label {
+  color: #e0e0e0;
+}
+
 .formInput {
   padding: 0.8rem;
   font-size: 1rem;
@@ -209,7 +340,13 @@
   border-radius: 6px;
   width: 100%;
   box-sizing: border-box;
-  transition: border-color 0.3s ease;
+  transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+
+.darkTheme .formInput {
+  border-color: #546e7a;
+  background-color: #455a64;
+  color: #e0e0e0;
 }
 
 .formInput:focus {
@@ -222,6 +359,19 @@
   cursor: not-allowed;
 }
 
+.darkTheme .formInput:disabled {
+  background-color: #37474f;
+}
+
+.inputError {
+  border-color: #d32f2f;
+}
+
+.errorText {
+  color: #d32f2f;
+  font-size: 0.9rem;
+}
+
 .formTextarea {
   padding: 0.8rem;
   font-size: 1rem;
@@ -231,7 +381,13 @@
   min-height: 100px;
   resize: vertical;
   box-sizing: border-box;
-  transition: border-color 0.3s ease;
+  transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+
+.darkTheme .formTextarea {
+  border-color: #546e7a;
+  background-color: #455a64;
+  color: #e0e0e0;
 }
 
 .formTextarea:focus {
@@ -260,6 +416,12 @@
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
+  transition: background-color 0.3s ease;
+}
+
+.darkTheme .caseItem {
+  color: #b0c4de;
+  background-color: #37474f;
 }
 
 .caseStatus {
@@ -288,6 +450,12 @@
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   margin-bottom: 2rem;
   border-left: 5px solid #388e3c;
+  transition: background-color 0.3s ease;
+}
+
+.darkTheme .card {
+  background-color: #34495e;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 .actionButton {
@@ -306,6 +474,12 @@
   transform: translateY(-2px);
 }
 
+.actionButton:disabled {
+  background-color: #90a4ae;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .cancelButton {
   padding: 0.7rem 1.5rem;
   font-size: 1rem;
@@ -322,12 +496,10 @@
   transform: translateY(-2px);
 }
 
-.error {
-  font-size: 1.3rem;
-  color: #d32f2f;
-  text-align: center;
-  margin: 2rem 0;
-  font-weight: 500;
+.cancelButton:disabled {
+  background-color: #90a4ae;
+  cursor: not-allowed;
+  transform: none;
 }
 
 @media (max-width: 1024px) {
@@ -369,6 +541,17 @@
   .logoutButton {
     padding: 0.6rem 1.2rem;
     font-size: 0.9rem;
+  }
+
+  .notificationContainer {
+    top: 4.5rem;
+    right: 1rem;
+    width: calc(100% - 2rem);
+  }
+
+  .notification {
+    max-width: none;
+    width: 100%;
   }
 
   .layout {
