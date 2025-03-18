@@ -4,6 +4,7 @@ import { useState } from "react"
 import { motion } from "framer-motion"
 import { Scale } from "lucide-react"
 import axios from "axios"
+import { useNavigate } from "react-router-dom"
 import styles from "./LawyerLogin.module.css"
 
 const fadeIn = {
@@ -17,6 +18,9 @@ export default function LawyerLogin() {
     password: ""
   })
   const [message, setMessage] = useState("")
+  const [isError, setIsError] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const navigate = useNavigate()
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -24,14 +28,27 @@ export default function LawyerLogin() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setIsLoading(true)
+    setMessage("")
+    setIsError(false)
+
     try {
       const response = await axios.post('http://127.0.0.1:5000/api/login-lawyer', formData)
       setMessage(response.data.message)
-      // Store lawyer data or redirect to dashboard (for now, just log it)
-      console.log("Logged in lawyer:", response.data.lawyer)
-      setFormData({ email: "", password: "" })
+      setIsError(false)
+
+      // Store JWT in localStorage
+      localStorage.setItem('token', response.data.token)
+      localStorage.setItem('lawyer', JSON.stringify(response.data.lawyer))
+
+      // Redirect to dashboard
+      navigate('/lawyerdashboard')
     } catch (error) {
       setMessage(error.response?.data?.error || "Login failed")
+      setIsError(true)
+    } finally {
+      setIsLoading(false)
+      setFormData({ email: "", password: "" })
     }
   }
 
@@ -66,6 +83,7 @@ export default function LawyerLogin() {
                 onChange={handleChange}
                 required
                 className={styles.formInput}
+                disabled={isLoading}
               />
               <input
                 type="password"
@@ -75,12 +93,21 @@ export default function LawyerLogin() {
                 onChange={handleChange}
                 required
                 className={styles.formInput}
+                disabled={isLoading}
               />
-              <button type="submit" className={styles.submitButton}>
-                Login
+              <button
+                type="submit"
+                className={styles.submitButton}
+                disabled={isLoading}
+              >
+                {isLoading ? "Logging in..." : "Login"}
               </button>
             </form>
-            {message && <p className={styles.message}>{message}</p>}
+            {message && (
+              <p className={`${styles.message} ${isError ? styles.error : ''}`}>
+                {message}
+              </p>
+            )}
           </motion.div>
         </div>
       </section>

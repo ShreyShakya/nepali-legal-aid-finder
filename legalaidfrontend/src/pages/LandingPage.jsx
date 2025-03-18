@@ -228,8 +228,8 @@ export default function LandingPage() {
               </button>
               {lawyerDropdownOpen && (
                 <div className={styles.dropdownMenu}>
-                  <a href="/registerlawyer">Register Lawyer</a>
-                  <a href="/loginlawyer">Login</a>
+                  <a href="/register-lawyer">Register</a>
+                  <a href="/lawyer-login">Login</a>
                 </div>
               )}
             </div>

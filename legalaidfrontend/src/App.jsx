@@ -51,10 +51,10 @@ function App() {
                     <Route path="/lawyerdashboard" element={<LawyerDashboard />} />
 
                     {/* Lawyer Registration */}
-                    <Route path="/registerlawyer" element={<LawyerRegistration />} />
+                    <Route path="/register-lawyer" element={<LawyerRegistration />} />
 
                     {/* Lawyer Login */}
-                    <Route path="/loginlawyer" element={<LawyerLogin />} />
+                    <Route path="/lawyer-login" element={<LawyerLogin />} />
                 </Routes>
             </Router>
     );
