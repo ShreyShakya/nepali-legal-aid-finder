@@ -10,7 +10,8 @@ import LawFirmProfile from './pages/LawFirmProfile';
 import Registration from './components/Auth/Registration';
 import Login from './components/Auth/Login';
 import LawyerDashboard from './pages/LawyerDashboard';
-import LawFirmRegistration from './components/Auth/LawFirmRegistration';
+import LawyerRegistration from './components/Auth/LawyerRegistration';
+import LawyerLogin from './components/Auth/LawyerLogin';
 
 function App() {
     return (
@@ -40,9 +41,6 @@ function App() {
                     {/* Law Firm Profile */}
                     <Route path="/lawfirmprofile" element={<LawFirmProfile />} />
 
-                    {/* Law Firm Registration */}
-                    <Route path="/lawfirmregistration" element={<LawFirmRegistration />} />
-
                     {/* Registration */}
                     <Route path="/register" element={<Registration />} />
 
@@ -51,6 +49,12 @@ function App() {
 
                     {/* Lawyer Dashboard */}
                     <Route path="/lawyerdashboard" element={<LawyerDashboard />} />
+
+                    {/* Lawyer Registration */}
+                    <Route path="/registerlawyer" element={<LawyerRegistration />} />
+
+                    {/* Lawyer Login */}
+                    <Route path="/loginlawyer" element={<LawyerLogin />} />
                 </Routes>
             </Router>
     );
