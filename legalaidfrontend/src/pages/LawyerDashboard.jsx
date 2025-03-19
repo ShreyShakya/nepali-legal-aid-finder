@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Scale, Menu, Sun, Moon, Info } from "lucide-react"
+import { Scale, Sun, Moon, Info } from "lucide-react"
 import axios from "axios"
 import { useNavigate, NavLink } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
@@ -12,7 +12,6 @@ export default function LawyerDashboard() {
   const [lawyer, setLawyer] = useState(null)
   const [cases, setCases] = useState([])
   const [notifications, setNotifications] = useState([])
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [formData, setFormData] = useState({})
   const [profilePictureFile, setProfilePictureFile] = useState(null)
@@ -64,8 +63,6 @@ export default function LawyerDashboard() {
     }
     fetchData()
   }, [navigate])
-
-  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
 
   const handleLogout = () => {
     setDialog({
@@ -167,9 +164,6 @@ export default function LawyerDashboard() {
     <div className={`${styles.dashboardPage} ${theme === 'dark' ? styles.darkTheme : ''}`}>
       <header className={styles.header}>
         <div className={styles.headerContainer}>
-          <button className={styles.menuButton} onClick={toggleSidebar}>
-            <Menu className={styles.menuIcon} />
-          </button>
           <div className={styles.logo}>
             <Scale className={styles.logoIcon} />
             <span>NepaliLegalAidFinder</span>
@@ -213,25 +207,6 @@ export default function LawyerDashboard() {
       {isLoading && <div className={styles.loaderOverlay}><div className={styles.loader}></div></div>}
 
       <div className={styles.layout}>
-        <motion.nav
-          className={`${styles.sidebar} ${isSidebarOpen ? '' : styles.sidebarHidden}`}
-          initial={{ x: "-100%" }}
-          animate={{ x: isSidebarOpen ? 0 : "-100%" }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        >
-          <div className={styles.sidebarHeader}>
-            <h2>NepaliLegalAidFinder</h2>
-            <p>Hi, {lawyer.name}</p>
-          </div>
-          <ul>
-            <li><NavLink to="#dashboard" onClick={toggleSidebar}>Dashboard</NavLink></li>
-            <li><NavLink to="#cases" onClick={toggleSidebar}>Cases</NavLink></li>
-            <li><NavLink to="#appointments" onClick={toggleSidebar}>Appointments</NavLink></li>
-            <li><NavLink to="#profile" onClick={toggleSidebar}>Profile</NavLink></li>
-            <li><NavLink to="#settings" onClick={toggleSidebar}>Settings</NavLink></li>
-          </ul>
-        </motion.nav>
-
         <main className={styles.main}>
           <div className={styles.dashboardContent}>
             <h1 className={styles.title}>Dashboard</h1>
