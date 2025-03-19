@@ -84,6 +84,16 @@
 .headerActions {
   display: flex;
   gap: 1rem;
+  align-items: center;
+}
+
+.currentDate {
+  font-size: 1rem;
+  color: #1a3c5e;
+}
+
+.darkTheme .currentDate {
+  color: #b0c4de;
 }
 
 .themeButton {
@@ -199,10 +209,18 @@
   transform: translateX(-100%);
 }
 
-.sidebar h2 {
-  font-size: 1.5rem;
+.sidebarHeader {
   margin-bottom: 2rem;
+}
+
+.sidebarHeader h2 {
+  font-size: 1.5rem;
   font-weight: 600;
+}
+
+.sidebarHeader p {
+  font-size: 1rem;
+  color: #b0c4de;
 }
 
 .sidebar ul {
@@ -252,17 +270,56 @@
   color: #e0e0e0;
 }
 
-.profileCard {
+.statsContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.statCard {
+  background-color: #ffffff;
+  padding: 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  transition: background-color 0.3s ease;
+}
+
+.darkTheme .statCard {
+  background-color: #34495e;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.statCard h3 {
+  font-size: 2rem;
+  color: #1a3c5e;
+  margin-bottom: 0.5rem;
+}
+
+.darkTheme .statCard h3 {
+  color: #e0e0e0;
+}
+
+.statCard p {
+  font-size: 1rem;
+  color: #7f8c8d;
+}
+
+.darkTheme .statCard p {
+  color: #b0c4de;
+}
+
+.card {
   background-color: #ffffff;
   padding: 2rem;
   border-radius: 10px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   margin-bottom: 2rem;
-  border-left: 5px solid #1976d2;
   transition: background-color 0.3s ease;
 }
 
-.darkTheme .profileCard {
+.darkTheme .card {
   background-color: #34495e;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
@@ -272,21 +329,112 @@
   color: #1a3c5e;
   margin-bottom: 1.5rem;
   font-weight: 500;
-  position: relative;
 }
 
 .darkTheme .sectionTitle {
   color: #e0e0e0;
 }
 
-.sectionTitle::after {
-  content: '';
-  position: absolute;
-  bottom: -0.3rem;
-  left: 0;
-  width: 50px;
-  height: 3px;
-  background-color: #1976d2;
+.caseTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.caseTable th,
+.caseTable td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.darkTheme .caseTable th,
+.darkTheme .caseTable td {
+  border-bottom: 1px solid #546e7a;
+}
+
+.caseTable th {
+  background-color: #f9f9f9;
+  color: #1a3c5e;
+  font-weight: 600;
+}
+
+.darkTheme .caseTable th {
+  background-color: #37474f;
+  color: #e0e0e0;
+}
+
+.caseTable td {
+  color: #444;
+}
+
+.darkTheme .caseTable td {
+  color: #b0c4de;
+}
+
+.caseActions {
+  display: flex;
+  gap: 0.8rem;
+}
+
+.actionButton {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  background-color: #388e3c;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.actionButton:hover {
+  background-color: #2e7d32;
+}
+
+.statusSelect {
+  padding: 0.5rem;
+  font-size: 0.9rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+  color: #444;
+  cursor: pointer;
+  transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+
+.darkTheme .statusSelect {
+  border-color: #546e7a;
+  background-color: #455a64;
+  color: #e0e0e0;
+}
+
+.statusSelect:focus {
+  border-color: #1976d2;
+  outline: none;
+}
+
+.statusSelect:disabled {
+  background-color: #f0f0f0;
+  cursor: not-allowed;
+}
+
+.darkTheme .statusSelect:disabled {
+  background-color: #37474f;
+}
+
+.profileCard {
+  background-color: #ffffff;
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+  transition: background-color 0.3s ease;
+}
+
+.darkTheme .profileCard {
+  background-color: #34495e;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 .profileItem {
@@ -398,15 +546,6 @@
   background-color: #37474f;
 }
 
-.inputError {
-  border-color: #d32f2f;
-}
-
-.errorText {
-  color: #d32f2f;
-  font-size: 0.9rem;
-}
-
 .formTextarea {
   padding: 0.8rem;
   font-size: 1rem;
@@ -433,103 +572,6 @@
 .formActions {
   display: flex;
   gap: 1rem;
-}
-
-.filterGroup {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.filterGroup label {
-  font-size: 1.1rem;
-  color: #1a3c5e;
-  font-weight: 500;
-}
-
-.darkTheme .filterGroup label {
-  color: #e0e0e0;
-}
-
-.caseList {
-  list-style: none;
-  padding: 0;
-}
-
-.caseItem {
-  font-size: 1.1rem;
-  color: #444;
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  background-color: #f9f9f9;
-  border-radius: 6px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  transition: background-color 0.3s ease;
-}
-
-.darkTheme .caseItem {
-  color: #b0c4de;
-  background-color: #37474f;
-}
-
-.caseStatus {
-  color: #388e3c;
-  font-weight: 500;
-  margin-left: 0.5rem;
-}
-
-.caseItem .caseStatus:global(.pending) {
-  color: #f57c00;
-}
-
-.caseItem .caseStatus:global(.rejected) {
-  color: #d32f2f;
-}
-
-.caseActions {
-  display: flex;
-  gap: 0.8rem;
-}
-
-.card {
-  background-color: #ffffff;
-  padding: 2rem;
-  border-radius: 10px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  margin-bottom: 2rem;
-  border-left: 5px solid #388e3c;
-  transition: background-color 0.3s ease;
-}
-
-.darkTheme .card {
-  background-color: #34495e;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-}
-
-.actionButton {
-  padding: 0.7rem 1.5rem;
-  font-size: 1rem;
-  background-color: #1976d2;
-  color: #ffffff;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-}
-
-.actionButton:hover {
-  background-color: #115293;
-  transform: translateY(-2px);
-}
-
-.actionButton:disabled {
-  background-color: #90a4ae;
-  cursor: not-allowed;
-  transform: none;
 }
 
 .cancelButton {
@@ -673,20 +715,17 @@
     font-size: 1.5rem;
   }
 
-  .profileItem,
-  .caseItem {
+  .profileItem {
     font-size: 1rem;
   }
 
-  .caseItem {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.8rem;
+  .caseTable {
+    font-size: 0.9rem;
   }
 
-  .caseActions {
-    width: 100%;
-    justify-content: flex-start;
+  .caseTable th,
+  .caseTable td {
+    padding: 0.5rem;
   }
 
   .formActions,
@@ -698,28 +737,5 @@
   .profilePictureWrapper {
     flex-direction: column;
     align-items: flex-start;
-  }
-
-  .filterGroup {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-}
-
-.caseActions {
-  display: flex;
-  gap: 0.8rem;
-  align-items: center;
-}
-
-.caseActions button {
-  padding: 0.5rem; /* Smaller padding for Info button */
-}
-
-@media (max-width: 768px) {
-  .caseActions {
-    width: 100%;
-    justify-content: flex-start;
-    flex-wrap: wrap;
   }
 }

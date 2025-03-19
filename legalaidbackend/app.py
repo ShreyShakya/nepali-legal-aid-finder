@@ -291,7 +291,6 @@ def update_lawyer_profile():
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-# Other endpoints (unchanged for brevity, but ensure profile_picture is included where needed)
 @app.route('/api/lawyer-cases', methods=['GET'])
 def lawyer_cases():
     token = request.headers.get('Authorization')
@@ -306,7 +305,11 @@ def lawyer_cases():
 
         conn = pymysql.connect(**db_config)
         with conn.cursor() as cursor:
-            sql = "SELECT id, title, description, status, created_at FROM cases WHERE lawyer_id = %s"
+            sql = """
+                SELECT id, title, description, status, created_at, priority
+                FROM cases
+                WHERE lawyer_id = %s
+            """
             cursor.execute(sql, (lawyer_id,))
             cases = cursor.fetchall()
 
@@ -321,7 +324,50 @@ def lawyer_cases():
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-# Remaining endpoints (password update, accept/reject case) remain unchanged
+@app.route('/api/lawyer-case/<int:case_id>/update-status', methods=['PUT'])
+def update_case_status(case_id):
+    token = request.headers.get('Authorization')
+    if not token:
+        return jsonify({'error': 'Token is missing'}), 401
+
+    try:
+        if token.startswith('Bearer '):
+            token = token.split(' ')[1]
+        decoded = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        lawyer_id = decoded['lawyer_id']
+
+        data = request.json
+        if not data or 'status' not in data:
+            return jsonify({'error': 'Status is required'}), 400
+
+        new_status = data['status']
+        if new_status not in ['pending', 'accepted', 'rejected', 'completed']:
+            return jsonify({'error': 'Invalid status value'}), 400
+
+        conn = pymysql.connect(**db_config)
+        with conn.cursor() as cursor:
+            # Verify the case belongs to the lawyer
+            sql = "SELECT lawyer_id FROM cases WHERE id = %s"
+            cursor.execute(sql, (case_id,))
+            case = cursor.fetchone()
+            if not case or case['lawyer_id'] != lawyer_id:
+                return jsonify({'error': 'Case not found or unauthorized'}), 403
+
+            # Update the status
+            sql = "UPDATE cases SET status = %s WHERE id = %s"
+            cursor.execute(sql, (new_status, case_id))
+            conn.commit()
+
+        conn.close()
+        return jsonify({'message': 'Case status updated successfully'}), 200
+
+    except jwt.ExpiredSignatureError:
+        return jsonify({'error': 'Token has expired'}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({'error': 'Invalid token'}), 401
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='127.0.0.1', port=5000)

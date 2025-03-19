@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Scale, Menu, Sun, Moon, Upload, Info } from "lucide-react"
+import { Scale, Menu, Sun, Moon, Info } from "lucide-react"
 import axios from "axios"
 import { useNavigate, NavLink } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
@@ -14,15 +14,11 @@ export default function LawyerDashboard() {
   const [notifications, setNotifications] = useState([])
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isEditingProfile, setIsEditingProfile] = useState(false)
-  const [isEditingPassword, setIsEditingPassword] = useState(false)
   const [formData, setFormData] = useState({})
   const [profilePictureFile, setProfilePictureFile] = useState(null)
-  const [passwordData, setPasswordData] = useState({ new_password: "" })
-  const [passwordError, setPasswordError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light')
   const [dialog, setDialog] = useState({ isOpen: false, message: "", onConfirm: null })
-  const [caseFilter, setCaseFilter] = useState("All")
   const [selectedCase, setSelectedCase] = useState(null)
   const navigate = useNavigate()
 
@@ -128,88 +124,36 @@ export default function LawyerDashboard() {
     }
   }
 
-  const handlePasswordChange = (e) => {
-    const value = e.target.value
-    setPasswordData({ ...passwordData, [e.target.name]: value })
-    setPasswordError(value.length < 8 ? "Password must be at least 8 characters" : "")
+  const handleCaseDetails = (caseItem) => {
+    setSelectedCase(caseItem)
   }
 
-  const handlePasswordSave = async (e) => {
-    e.preventDefault()
-    if (passwordError) return
+  const handleStatusChange = async (caseId, newStatus) => {
     const token = localStorage.getItem('token')
     setIsLoading(true)
     try {
-      const response = await axios.put('http://127.0.0.1:5000/api/lawyer-password', passwordData, {
+      const response = await axios.put(
+        `http://127.0.0.1:5000/api/lawyer-case/${caseId}/update-status`,
+        { status: newStatus },
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      const casesResponse = await axios.get('http://127.0.0.1:5000/api/lawyer-cases', {
         headers: { Authorization: `Bearer ${token}` }
       })
-      setPasswordData({ new_password: "" })
-      setIsEditingPassword(false)
-      addNotification(response.data.message || "Password updated successfully", "success")
+      setCases(casesResponse.data.cases)
+      addNotification(response.data.message || "Case status updated successfully", "success")
     } catch (err) {
-      addNotification(err.response?.data?.error || "Failed to update password", "error")
+      addNotification(err.response?.data?.error || "Failed to update case status", "error")
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleAcceptCase = (caseId) => {
-    setDialog({
-      isOpen: true,
-      message: "Are you sure you want to accept this case?",
-      onConfirm: async () => {
-        const token = localStorage.getItem('token')
-        setIsLoading(true)
-        try {
-          const response = await axios.put(`http://127.0.0.1:5000/api/lawyer-case/${caseId}/accept`, {}, {
-            headers: { Authorization: `Bearer ${token}` }
-          })
-          const casesResponse = await axios.get('http://127.0.0.1:5000/api/lawyer-cases', {
-            headers: { Authorization: `Bearer ${token}` }
-          })
-          setCases(casesResponse.data.cases)
-          addNotification(response.data.message || "Case accepted successfully", "success")
-        } catch (err) {
-          addNotification(err.response?.data?.error || "Failed to accept case", "error")
-        } finally {
-          setIsLoading(false)
-        }
-      }
-    })
-  }
-
-  const handleRejectCase = (caseId) => {
-    setDialog({
-      isOpen: true,
-      message: "Are you sure you want to reject this case?",
-      onConfirm: async () => {
-        const token = localStorage.getItem('token')
-        setIsLoading(true)
-        try {
-          const response = await axios.put(`http://127.0.0.1:5000/api/lawyer-case/${caseId}/reject`, {}, {
-            headers: { Authorization: `Bearer ${token}` }
-          })
-          const casesResponse = await axios.get('http://127.0.0.1:5000/api/lawyer-cases', {
-            headers: { Authorization: `Bearer ${token}` }
-          })
-          setCases(casesResponse.data.cases)
-          addNotification(response.data.message || "Case rejected successfully", "success")
-        } catch (err) {
-          addNotification(err.response?.data?.error || "Failed to reject case", "error")
-        } finally {
-          setIsLoading(false)
-        }
-      }
-    })
-  }
-
-  const handleCaseDetails = (caseItem) => {
-    setSelectedCase(caseItem)
-  }
-
-  const filteredCases = cases.filter((caseItem) =>
-    caseFilter === "All" ? true : caseItem.status === caseFilter.toLowerCase()
-  )
+  // Calculate stats
+  const totalCases = cases.length
+  const pendingCases = cases.filter(c => c.status === 'pending').length
+  const highPriorityCases = cases.filter(c => c.priority === 'High').length
+  const completedCases = cases.filter(c => c.status === 'completed').length
 
   if (!lawyer) {
     return (
@@ -231,6 +175,9 @@ export default function LawyerDashboard() {
             <span>NepaliLegalAidFinder</span>
           </div>
           <div className={styles.headerActions}>
+            <span className={styles.currentDate}>
+              {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-')}
+            </span>
             <button onClick={toggleTheme} className={styles.themeButton} data-tooltip-id="theme-tooltip" data-tooltip-content="Toggle theme">
               {theme === 'light' ? <Moon /> : <Sun />}
             </button>
@@ -244,8 +191,6 @@ export default function LawyerDashboard() {
       <Tooltip id="theme-tooltip" />
       <Tooltip id="logout-tooltip" />
       <Tooltip id="edit-tooltip" />
-      <Tooltip id="accept-tooltip" />
-      <Tooltip id="reject-tooltip" />
       <Tooltip id="details-tooltip" />
 
       <div className={styles.notificationContainer}>
@@ -274,17 +219,106 @@ export default function LawyerDashboard() {
           animate={{ x: isSidebarOpen ? 0 : "-100%" }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
-          <h2>Dashboard</h2>
+          <div className={styles.sidebarHeader}>
+            <h2>NepaliLegalAidFinder</h2>
+            <p>Hi, {lawyer.name}</p>
+          </div>
           <ul>
-            <li><NavLink to="#profile" onClick={toggleSidebar}>Profile</NavLink></li>
+            <li><NavLink to="#dashboard" onClick={toggleSidebar}>Dashboard</NavLink></li>
             <li><NavLink to="#cases" onClick={toggleSidebar}>Cases</NavLink></li>
+            <li><NavLink to="#appointments" onClick={toggleSidebar}>Appointments</NavLink></li>
+            <li><NavLink to="#profile" onClick={toggleSidebar}>Profile</NavLink></li>
             <li><NavLink to="#settings" onClick={toggleSidebar}>Settings</NavLink></li>
           </ul>
         </motion.nav>
 
         <main className={styles.main}>
           <div className={styles.dashboardContent}>
-            <h1 className={styles.title}>Welcome, {lawyer.name}</h1>
+            <h1 className={styles.title}>Dashboard</h1>
+
+            <div className={styles.statsContainer}>
+              <div className={styles.statCard}>
+                <h3>{totalCases}</h3>
+                <p>Total Cases</p>
+              </div>
+              <div className={styles.statCard}>
+                <h3>{pendingCases}</h3>
+                <p>Pending Cases</p>
+              </div>
+              <div className={styles.statCard}>
+                <h3>{highPriorityCases}</h3>
+                <p>High-Priority Cases</p>
+              </div>
+              <div className={styles.statCard}>
+                <h3>{completedCases}</h3>
+                <p>Completed Cases</p>
+              </div>
+            </div>
+
+            <div className={styles.card} id="cases">
+              <h2 className={styles.sectionTitle}>Case List</h2>
+              {cases.length > 0 ? (
+                <table className={styles.caseTable}>
+                  <thead>
+                    <tr>
+                      <th>No</th>
+                      <th>Case No</th>
+                      <th>Case</th>
+                      <th>Priority</th>
+                      <th>Status</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cases.map((caseItem, index) => (
+                      <tr key={caseItem.id}>
+                        <td>{index + 1}</td>
+                        <td>{caseItem.id}</td>
+                        <td>{caseItem.title} {caseItem.description && `- ${caseItem.description}`}</td>
+                        <td>{caseItem.priority}</td>
+                        <td>
+                          <select
+                            value={caseItem.status}
+                            onChange={(e) => handleStatusChange(caseItem.id, e.target.value)}
+                            className={styles.statusSelect}
+                            disabled={isLoading}
+                          >
+                            <option value="pending">Pending</option>
+                            <option value="accepted">Accepted</option>
+                            <option value="rejected">Rejected</option>
+                            <option value="completed">Completed</option>
+                          </select>
+                        </td>
+                        <td>
+                          <div className={styles.caseActions}>
+                            <button
+                              onClick={() => handleCaseDetails(caseItem)}
+                              className={styles.actionButton}
+                              data-tooltip-id="details-tooltip"
+                              data-tooltip-content="View case details"
+                            >
+                              View Details
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p className={styles.profileItem}>No cases assigned yet.</p>
+              )}
+            </div>
+
+            <div className={styles.card} id="appointments">
+              <h2 className={styles.sectionTitle}>Appointments</h2>
+              <p className={styles.profileItem}>Today you have No Appointment.</p>
+            </div>
+
+            <div className={styles.card} id="calendar">
+              <h2 className={styles.sectionTitle}>Calendar</h2>
+              <p className={styles.profileItem}>[Placeholder: Calendar to be implemented]</p>
+            </div>
 
             <div className={styles.profileCard} id="profile">
               <h2 className={styles.sectionTitle}>Your Profile</h2>
@@ -299,7 +333,6 @@ export default function LawyerDashboard() {
                         className={styles.profilePicture}
                       />
                       <label htmlFor="profilePictureUpload" className={styles.uploadButton}>
-                        <Upload size={20} />
                         Upload
                         <input
                           id="profilePictureUpload"
@@ -393,91 +426,6 @@ export default function LawyerDashboard() {
                 </>
               )}
             </div>
-
-            <div className={styles.card} id="cases">
-              <h2 className={styles.sectionTitle}>Your Cases</h2>
-              <div className={styles.filterGroup}>
-                <label>Filter Cases:</label>
-                <select value={caseFilter} onChange={(e) => setCaseFilter(e.target.value)} className={styles.formInput}>
-                  <option value="All">All</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Accepted">Accepted</option>
-                  <option value="Rejected">Rejected</option>
-                </select>
-              </div>
-              {filteredCases.length > 0 ? (
-                <ul className={styles.caseList}>
-                  {filteredCases.map((caseItem) => (
-                    <li key={caseItem.id} className={styles.caseItem}>
-                      <div>
-                        <strong>{caseItem.title}</strong> - {caseItem.description || "No description"}
-                        <span className={styles.caseStatus}> ({caseItem.status})</span>
-                      </div>
-                      <div className={styles.caseActions}>
-                        <button
-                          onClick={() => handleCaseDetails(caseItem)}
-                          className={styles.actionButton}
-                          data-tooltip-id="details-tooltip"
-                          data-tooltip-content="View case details"
-                        >
-                          <Info size={20} />
-                        </button>
-                        {caseItem.status === 'pending' && (
-                          <>
-                            <button 
-                              onClick={() => handleAcceptCase(caseItem.id)} 
-                              className={styles.actionButton} 
-                              disabled={isLoading}
-                              data-tooltip-id="accept-tooltip"
-                              data-tooltip-content="Accept this case"
-                            >
-                              Accept
-                            </button>
-                            <button 
-                              onClick={() => handleRejectCase(caseItem.id)} 
-                              className={styles.cancelButton} 
-                              disabled={isLoading}
-                              data-tooltip-id="reject-tooltip"
-                              data-tooltip-content="Reject this case"
-                            >
-                              Reject
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className={styles.profileItem}>No cases match the selected filter.</p>
-              )}
-            </div>
-
-            <div className={styles.card} id="settings">
-              <h2 className={styles.sectionTitle}>Settings</h2>
-              {isEditingPassword ? (
-                <form onSubmit={handlePasswordSave} className={styles.editForm}>
-                  <div className={styles.formGroup}>
-                    <label>New Password:</label>
-                    <input
-                      type="password"
-                      name="new_password"
-                      value={passwordData.new_password}
-                      onChange={handlePasswordChange}
-                      className={`${styles.formInput} ${passwordError ? styles.inputError : ''}`}
-                      required
-                    />
-                    {passwordError && <span className={styles.errorText}>{passwordError}</span>}
-                  </div>
-                  <div className={styles.formActions}>
-                    <button type="submit" className={styles.actionButton} disabled={isLoading || passwordError}>Save</button>
-                    <button type="button" onClick={() => setIsEditingPassword(false)} className={styles.cancelButton} disabled={isLoading}>Cancel</button>
-                  </div>
-                </form>
-              ) : (
-                <button onClick={() => setIsEditingPassword(true)} className={styles.actionButton}>Change Password</button>
-              )}
-            </div>
           </div>
         </main>
       </div>
@@ -524,6 +472,7 @@ export default function LawyerDashboard() {
               <p><strong>Title:</strong> {selectedCase.title}</p>
               <p><strong>Description:</strong> {selectedCase.description || "No description"}</p>
               <p><strong>Status:</strong> {selectedCase.status}</p>
+              <p><strong>Priority:</strong> {selectedCase.priority}</p>
               <p><strong>Created At:</strong> {new Date(selectedCase.created_at).toLocaleString()}</p>
               <div className={styles.dialogActions}>
                 <button onClick={() => setSelectedCase(null)} className={styles.actionButton}>Close</button>
