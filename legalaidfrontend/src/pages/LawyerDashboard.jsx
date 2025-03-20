@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Scale, Sun, Moon, FileText, Clock, Calendar, User, Settings, AlertCircle, CheckCircle, Menu, X } from "lucide-react"
+import { Scale, Sun, Moon, FileText, Clock, Calendar, User, Settings, AlertCircle, CheckCircle, Menu, X, MoreVertical, BarChart2 } from "lucide-react"
 import axios from "axios"
 import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
@@ -14,6 +14,7 @@ export default function LawyerDashboard() {
   const [notifications, setNotifications] = useState([])
   const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [formData, setFormData] = useState({})
+  const [settingsFormData, setSettingsFormData] = useState({}) // New state for settings form
   const [profilePictureFile, setProfilePictureFile] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light')
@@ -54,6 +55,10 @@ export default function LawyerDashboard() {
         ])
         setLawyer(profileResponse.data.lawyer)
         setFormData(profileResponse.data.lawyer)
+        setSettingsFormData({
+          email_notifications: profileResponse.data.lawyer.email_notifications,
+          preferred_contact: profileResponse.data.lawyer.preferred_contact
+        })
         setCases(casesResponse.data.cases)
       } catch (err) {
         addNotification(err.response?.data?.error || "Failed to load data", "error")
@@ -83,6 +88,11 @@ export default function LawyerDashboard() {
   const handleProfileChange = (e) => {
     const { name, value, type, checked } = e.target
     setFormData({ ...formData, [name]: type === 'checkbox' ? checked : value })
+  }
+
+  const handleSettingsChange = (e) => {
+    const { name, value, type, checked } = e.target
+    setSettingsFormData({ ...settingsFormData, [name]: type === 'checkbox' ? checked : value })
   }
 
   const handleProfilePictureChange = (e) => {
@@ -119,6 +129,26 @@ export default function LawyerDashboard() {
       addNotification(response.data.message || "Profile updated successfully", "success")
     } catch (err) {
       addNotification(err.response?.data?.error || "Failed to update profile", "error")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSettingsSave = async (e) => {
+    e.preventDefault()
+    const token = localStorage.getItem('token')
+    setIsLoading(true)
+    try {
+      const response = await axios.put('http://127.0.0.1:5000/api/lawyer-profile', settingsFormData, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+        }
+      })
+      setLawyer(response.data.lawyer)
+      localStorage.setItem('lawyer', JSON.stringify(response.data.lawyer))
+      addNotification(response.data.message || "Settings updated successfully", "success")
+    } catch (err) {
+      addNotification(err.response?.data?.error || "Failed to update settings", "error")
     } finally {
       setIsLoading(false)
     }
@@ -203,7 +233,7 @@ export default function LawyerDashboard() {
               onClick={() => { setActiveTab("dashboard"); setIsSidebarOpen(false); }}
               className={`${styles.navLink} ${activeTab === "dashboard" ? styles.activeNavLink : ''}`}
             >
-              <FileText className={styles.navIcon} /> Dashboard
+              <BarChart2 className={styles.navIcon} /> Dashboard
             </button>
             <button
               onClick={() => { setActiveTab("cases"); setIsSidebarOpen(false); }}
@@ -266,33 +296,38 @@ export default function LawyerDashboard() {
                       <table className={styles.caseTable}>
                         <thead>
                           <tr>
-                            <th>No</th>
+                            <th>Case Info</th>
                             <th>Case No</th>
-                            <th>Case</th>
                             <th>Priority</th>
                             <th>Status</th>
-                            <th>Action</th>
+                            <th>Created At</th>
+                            <th></th>
                           </tr>
                         </thead>
                         <tbody>
                           {recentCases.map((caseItem, index) => (
                             <tr key={caseItem.id}>
-                              <td>{index + 1}</td>
+                              <td>
+                                <div className={styles.caseInfo}>
+                                  <div className={styles.caseDetails}>
+                                    <span className={styles.caseTitle}>{caseItem.title}</span>
+                                    <span className={styles.caseDescription}>{caseItem.description || "No description"}</span>
+                                  </div>
+                                </div>
+                              </td>
                               <td>{caseItem.id}</td>
-                              <td>{caseItem.title} {caseItem.description && `- ${caseItem.description}`}</td>
                               <td>{caseItem.priority}</td>
                               <td>{caseItem.status}</td>
+                              <td>{new Date(caseItem.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
                               <td>
-                                <div className={styles.caseActions}>
-                                  <button
-                                    onClick={() => handleCaseDetails(caseItem)}
-                                    className={styles.actionButton}
-                                    data-tooltip-id="details-tooltip"
-                                    data-tooltip-content="View case details"
-                                  >
-                                    View Details
-                                  </button>
-                                </div>
+                                <button
+                                  onClick={() => handleCaseDetails(caseItem)}
+                                  className={styles.ellipsisButton}
+                                  data-tooltip-id="details-tooltip"
+                                  data-tooltip-content="View case details"
+                                >
+                                  <MoreVertical className={styles.ellipsisIcon} />
+                                </button>
                               </td>
                             </tr>
                           ))}
@@ -324,42 +359,6 @@ export default function LawyerDashboard() {
                     </button>
                   </div>
                 </div>
-
-                {/* Summarized Profile Section */}
-                <div className={styles.card} id="profile-summary">
-                  <div className={styles.profileHeader}>
-                    <div className={styles.profilePictureWrapper}>
-                      <img
-                        src={lawyer.profile_picture ? `http://127.0.0.1:5000${lawyer.profile_picture}` : "https://via.placeholder.com/100"}
-                        alt="Profile"
-                        className={styles.profilePicture}
-                      />
-                    </div>
-                    <div className={styles.profileInfo}>
-                      <h3>{lawyer.name || "Lawyer Name"}</h3>
-                      <p className={styles.profileSubtitle}>{lawyer.specialization || "Specialization N/A"}</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setActiveTab("profile")}
-                    className={styles.actionButton}
-                  >
-                    Edit Profile
-                  </button>
-                </div>
-
-                {/* Summarized Settings Section */}
-                <div className={styles.card} id="settings-summary">
-                  <div className={styles.placeholderContent}>
-                    <p className={styles.emptyMessage}>Manage your account settings.</p>
-                    <button
-                      onClick={() => setActiveTab("settings")}
-                      className={styles.actionButton}
-                    >
-                      Go to Settings
-                    </button>
-                  </div>
-                </div>
               </>
             )}
 
@@ -371,20 +370,26 @@ export default function LawyerDashboard() {
                     <table className={styles.caseTable}>
                       <thead>
                         <tr>
-                          <th>No</th>
+                          <th>Case Info</th>
                           <th>Case No</th>
-                          <th>Case</th>
                           <th>Priority</th>
                           <th>Status</th>
-                          <th>Action</th>
+                          <th>Created At</th>
+                          <th></th>
                         </tr>
                       </thead>
                       <tbody>
                         {cases.map((caseItem, index) => (
                           <tr key={caseItem.id}>
-                            <td>{index + 1}</td>
+                            <td>
+                              <div className={styles.caseInfo}>
+                                <div className={styles.caseDetails}>
+                                  <span className={styles.caseTitle}>{caseItem.title}</span>
+                                  <span className={styles.caseDescription}>{caseItem.description || "No description"}</span>
+                                </div>
+                              </div>
+                            </td>
                             <td>{caseItem.id}</td>
-                            <td>{caseItem.title} {caseItem.description && `- ${caseItem.description}`}</td>
                             <td>{caseItem.priority}</td>
                             <td>
                               <select
@@ -399,17 +404,16 @@ export default function LawyerDashboard() {
                                 <option value="completed">Completed</option>
                               </select>
                             </td>
+                            <td>{new Date(caseItem.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
                             <td>
-                              <div className={styles.caseActions}>
-                                <button
-                                  onClick={() => handleCaseDetails(caseItem)}
-                                  className={styles.actionButton}
-                                  data-tooltip-id="details-tooltip"
-                                  data-tooltip-content="View case details"
-                                >
-                                  View Details
-                                </button>
-                              </div>
+                              <button
+                                onClick={() => handleCaseDetails(caseItem)}
+                                className={styles.ellipsisButton}
+                                data-tooltip-id="details-tooltip"
+                                data-tooltip-content="View case details"
+                              >
+                                <MoreVertical className={styles.ellipsisIcon} />
+                              </button>
                             </td>
                           </tr>
                         ))}
@@ -486,12 +490,6 @@ export default function LawyerDashboard() {
                       <textarea name="bio" value={formData.bio || ""} onChange={handleProfileChange} className={styles.formTextarea} />
                     </div>
                     <div className={styles.formGroup}>
-                      <label>
-                        <input type="checkbox" name="email_notifications" checked={formData.email_notifications} onChange={handleProfileChange} />
-                        Receive Email Notifications
-                      </label>
-                    </div>
-                    <div className={styles.formGroup}>
                       <label>Availability Status:</label>
                       <select name="availability_status" value={formData.availability_status} onChange={handleProfileChange} className={styles.formInput}>
                         <option value="Available">Available</option>
@@ -505,13 +503,6 @@ export default function LawyerDashboard() {
                     <div className={styles.formGroup}>
                       <label>Working Hours End:</label>
                       <input type="time" name="working_hours_end" value={formData.working_hours_end || "17:00"} onChange={handleProfileChange} className={styles.formInput} />
-                    </div>
-                    <div className={styles.formGroup}>
-                      <label>Preferred Contact Method:</label>
-                      <select name="preferred_contact" value={formData.preferred_contact} onChange={handleProfileChange} className={styles.formInput}>
-                        <option value="Email">Email</option>
-                        <option value="Phone">Phone</option>
-                      </select>
                     </div>
                     <div className={styles.formActions}>
                       <button type="submit" className={styles.actionButton} disabled={isLoading}>Save</button>
@@ -538,10 +529,8 @@ export default function LawyerDashboard() {
                       <p className={styles.profileItem}><strong>Location:</strong> {lawyer.location || "N/A"}</p>
                       <p className={styles.profileItem}><strong>Availability:</strong> {lawyer.availability || "N/A"}</p>
                       <p className={styles.profileItem}><strong>Bio:</strong> {lawyer.bio || "N/A"}</p>
-                      <p className={styles.profileItem}><strong>Email Notifications:</strong> {lawyer.email_notifications ? "Enabled" : "Disabled"}</p>
                       <p className={styles.profileItem}><strong>Status:</strong> {lawyer.availability_status}</p>
                       <p className={styles.profileItem}><strong>Working Hours:</strong> {lawyer.working_hours_start} - {lawyer.working_hours_end}</p>
-                      <p className={styles.profileItem}><strong>Preferred Contact:</strong> {lawyer.preferred_contact}</p>
                     </div>
                     <button 
                       onClick={() => setIsEditingProfile(true)} 
@@ -558,10 +547,35 @@ export default function LawyerDashboard() {
 
             {activeTab === "settings" && (
               <div className={styles.card} id="settings">
-                <div className={styles.placeholderContent}>
-                  <p className={styles.emptyMessage}>[Placeholder: Settings options to be implemented]</p>
-                  <p>Here you can manage your account settings, such as changing your password, notification preferences, or theme.</p>
-                </div>
+                <h2 className={styles.sectionTitle}>Account Settings</h2>
+                <form onSubmit={handleSettingsSave} className={styles.editForm}>
+                  <div className={styles.formGroup}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        name="email_notifications"
+                        checked={settingsFormData.email_notifications}
+                        onChange={handleSettingsChange}
+                      />
+                      Receive Email Notifications
+                    </label>
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label>Preferred Contact Method:</label>
+                    <select
+                      name="preferred_contact"
+                      value={settingsFormData.preferred_contact}
+                      onChange={handleSettingsChange}
+                      className={styles.formInput}
+                    >
+                      <option value="Email">Email</option>
+                      <option value="Phone">Phone</option>
+                    </select>
+                  </div>
+                  <div className={styles.formActions}>
+                    <button type="submit" className={styles.actionButton} disabled={isLoading}>Save Settings</button>
+                  </div>
+                </form>
               </div>
             )}
           </div>

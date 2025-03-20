@@ -8,6 +8,7 @@ import base64
 import jwt
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
+import re
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "http://localhost:5173"}})
@@ -26,7 +27,10 @@ db_config = {
     'cursorclass': pymysql.cursors.DictCursor
 }
 
-SECRET_KEY = "your-secret-key-here"  # Replace with a secure key in production
+# Load SECRET_KEY from environment variable
+SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-here')  # Fallback for development
+if SECRET_KEY == 'your-secret-key-here':
+    print("WARNING: Using default SECRET_KEY. Set the SECRET_KEY environment variable in production.")
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -38,7 +42,7 @@ def hash_password(password, salt=None):
         algorithm=hashes.SHA256(),
         length=32,
         salt=salt,
-        iterations=100000,
+        iterations=310000,  # Increased iterations for better security
     )
     key = base64.urlsafe_b64encode(kdf.derive(password.encode()))
     return salt + key if salt else key
@@ -48,6 +52,23 @@ def verify_password(stored_password, provided_password):
     stored_key = stored_password[16:]
     provided_key = hash_password(provided_password, salt)
     return stored_key == provided_key[16:]
+
+def validate_email(email):
+    email_pattern = re.compile(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$')
+    return bool(email_pattern.match(email))
+
+def validate_password_strength(password):
+    if len(password) < 8:
+        return False, "Password must be at least 8 characters long"
+    if not re.search(r'[A-Z]', password):
+        return False, "Password must contain at least one uppercase letter"
+    if not re.search(r'[a-z]', password):
+        return False, "Password must contain at least one lowercase letter"
+    if not re.search(r'[0-9]', password):
+        return False, "Password must contain at least one digit"
+    if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+        return False, "Password must contain at least one special character"
+    return True, ""
 
 @app.route('/api/register-lawyer', methods=['POST'])
 def register_lawyer():
@@ -71,6 +92,15 @@ def register_lawyer():
 
         if not all([name, email, password]):
             return jsonify({'error': 'Name, email, and password are required'}), 400
+
+        # Validate email
+        if not validate_email(email):
+            return jsonify({'error': 'Invalid email format'}), 400
+
+        # Validate password strength
+        is_valid, password_error = validate_password_strength(password)
+        if not is_valid:
+            return jsonify({'error': password_error}), 400
 
         hashed_bytes = hash_password(password)
         hashed_password = base64.b64encode(hashed_bytes).decode('utf-8')
@@ -117,6 +147,10 @@ def login_lawyer():
 
         if not all([email, password]):
             return jsonify({'error': 'Email and password are required'}), 400
+
+        # Validate email
+        if not validate_email(email):
+            return jsonify({'error': 'Invalid email format'}), 400
 
         conn = pymysql.connect(**db_config)
         with conn.cursor() as cursor:
@@ -216,7 +250,12 @@ def update_lawyer_profile():
         decoded = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
         lawyer_id = decoded['lawyer_id']
 
-        data = request.form  # Use form data for text fields
+        # Check if the request is JSON or form data
+        if request.is_json:
+            data = request.json
+        else:
+            data = request.form
+
         if not data:
             return jsonify({'error': 'No data provided'}), 400
 
@@ -237,6 +276,9 @@ def update_lawyer_profile():
                 current = cursor.fetchone()
                 profile_picture = current['profile_picture']
 
+            # Convert email_notifications to 1/0 for the database
+            email_notifications = 1 if data.get('email_notifications', 1) in [True, '1', 1] else 0
+
             sql = """
                 UPDATE lawyers 
                 SET specialization = %s, location = %s, availability = %s, bio = %s, 
@@ -250,7 +292,7 @@ def update_lawyer_profile():
                 data.get('location', ''),
                 data.get('availability', ''),
                 data.get('bio', ''),
-                data.get('email_notifications', 1),
+                email_notifications,
                 data.get('availability_status', 'Available'),
                 data.get('working_hours_start', '09:00'),
                 data.get('working_hours_end', '17:00'),
@@ -289,6 +331,8 @@ def update_lawyer_profile():
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
+    # Additional security check to prevent directory traversal
+    filename = secure_filename(filename)
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 @app.route('/api/lawyer-cases', methods=['GET'])

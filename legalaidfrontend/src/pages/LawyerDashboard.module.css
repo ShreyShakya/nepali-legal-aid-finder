@@ -18,7 +18,7 @@
 /* Header Styles */
 .header {
   background-color: #ffffff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
   padding: 1rem 0;
   position: fixed;
   width: 100%;
@@ -29,7 +29,7 @@
 
 .darkTheme .header {
   background-color: #2c3e50;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .headerContainer {
@@ -158,7 +158,7 @@
   width: 250px;
   height: 100%;
   background-color: #ffffff;
-  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.05);
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.03);
   padding-top: 5rem;
   z-index: 900;
   transition: transform 0.3s ease;
@@ -166,7 +166,7 @@
 
 .darkTheme .sidebar {
   background-color: #2c3e50;
-  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.2);
 }
 
 .sidebarNav {
@@ -233,7 +233,7 @@
   border-radius: 8px;
   font-size: 1rem;
   font-weight: 500;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
   max-width: 350px;
 }
 
@@ -289,8 +289,8 @@
 
 .main {
   flex: 1;
-  padding: 2rem 1.5rem; /* Reduced padding-top since there's no title */
-  margin-left: 250px; /* Adjust for sidebar width */
+  padding: 2rem 1.5rem;
+  margin-left: 250px;
   transition: margin-left 0.3s ease;
 }
 
@@ -299,37 +299,35 @@
   margin: 0 auto;
 }
 
-/* Removed .title styles since they're no longer needed */
-
 /* Stats Cards */
 .statsContainer {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1.5rem;
-  margin-bottom: 2rem; /* Reduced margin since there's no title above */
+  margin-bottom: 2rem;
 }
 
 .statCard {
   background-color: #ffffff;
   padding: 1.5rem;
   border-radius: 12px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
   text-align: center;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .darkTheme .statCard {
   background-color: #374151;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .statCard:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
 }
 
 .darkTheme .statCard:hover {
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
 }
 
 .statIcon {
@@ -408,70 +406,27 @@
 /* Card Styles */
 .card {
   background-color: #ffffff;
-  padding: 1.5rem; /* Reduced padding since there's no title */
+  padding: 1.5rem;
   border-radius: 12px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
-  margin-bottom: 1.5rem; /* Reduced margin since there's no title */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  margin-bottom: 1.5rem;
   transition: background-color 0.3s ease;
 }
 
 .darkTheme .card {
   background-color: #374151;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .sectionTitle {
-  font-size: 1.5rem; /* Slightly smaller since it's now a subheading */
+  font-size: 1.5rem;
   color: #1f2937;
-  margin-bottom: 1rem; /* Reduced margin */
+  margin-bottom: 1rem;
   font-weight: 600;
 }
 
 .darkTheme .sectionTitle {
   color: #f3f4f6;
-}
-
-/* Summarized Sections on Dashboard */
-#recent-cases .caseTable th,
-#recent-cases .caseTable td {
-  padding: 0.5rem 0.75rem;
-  font-size: 0.85rem;
-}
-
-#recent-cases .actionButton {
-  padding: 0.4rem 0.8rem;
-  font-size: 0.8rem;
-}
-
-#upcoming-appointments .placeholderContent {
-  padding: 1rem;
-}
-
-#profile-summary {
-  padding: 1.5rem;
-}
-
-#profile-summary .profilePicture {
-  width: 60px;
-  height: 60px;
-  border-width: 2px;
-}
-
-#profile-summary .profileHeader {
-  margin-bottom: 1rem;
-  gap: 1rem;
-}
-
-#profile-summary .profileInfo h3 {
-  font-size: 1.25rem;
-}
-
-#profile-summary .profileSubtitle {
-  font-size: 0.9rem;
-}
-
-#settings-summary .placeholderContent {
-  padding: 1rem;
 }
 
 /* Case Table */
@@ -481,16 +436,16 @@
 
 .caseTable {
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  margin-top: 0.5rem; /* Reduced margin since there's no title */
+  border-collapse: collapse;
+  margin-top: 0.5rem;
 }
 
 .caseTable th,
 .caseTable td {
-  padding: 1rem 1.25rem;
+  padding: 0.75rem 1rem;
   text-align: left;
   border-bottom: 1px solid #e5e7eb;
+  font-size: 0.9rem;
 }
 
 .darkTheme .caseTable th,
@@ -500,16 +455,16 @@
 
 .caseTable th {
   background-color: #f9fafb;
-  color: #1f2937;
-  font-weight: 600;
-  font-size: 0.875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  color: #6b7280;
+  font-weight: 500;
+  font-size: 0.85rem;
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 .darkTheme .caseTable th {
   background-color: #4b5563;
-  color: #f3f4f6;
+  color: #d1d5db;
 }
 
 .caseTable tbody tr {
@@ -517,50 +472,84 @@
 }
 
 .caseTable tbody tr:hover {
-  background-color: #f3f4f6;
+  background-color: #e6f0fa;
 }
 
 .darkTheme .caseTable tbody tr:hover {
-  background-color: #4b5563;
+  background-color: #2d3748;
 }
 
 .caseTable td {
   color: #4b5563;
-  font-size: 0.875rem;
+  font-size: 0.9rem;
 }
 
 .darkTheme .caseTable td {
   color: #d1d5db;
 }
 
-.caseActions {
+/* Case Info */
+.caseInfo {
   display: flex;
-  gap: 0.75rem;
+  align-items: center;
 }
 
-.actionButton {
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
+.caseDetails {
+  display: flex;
+  flex-direction: column;
+}
+
+.caseTitle {
   font-weight: 500;
-  background-color: #2563eb;
-  color: #ffffff;
+  color: #1f2937;
+}
+
+.darkTheme .caseTitle {
+  color: #f3f4f6;
+}
+
+.caseDescription {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.darkTheme .caseDescription {
+  color: #9ca3af;
+}
+
+/* Ellipsis Button */
+.ellipsisButton {
+  background: none;
   border: none;
-  border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
+  padding: 0.25rem;
 }
 
-.actionButton:hover {
-  background-color: #1d4ed8;
-  transform: scale(1.05);
+.ellipsisIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #6b7280;
 }
 
+.darkTheme .ellipsisIcon {
+  color: #d1d5db;
+}
+
+.ellipsisButton:hover .ellipsisIcon {
+  color: #2563eb;
+}
+
+.darkTheme .ellipsisButton:hover .ellipsisIcon {
+  color: #60a5fa;
+}
+
+/* Status Select */
 .statusSelect {
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.85rem;
   font-weight: 500;
   border: 1px solid #d1d5db;
-  border-radius: 8px;
+  border-radius: 6px;
   background-color: #ffffff;
   color: #4b5563;
   cursor: pointer;
@@ -587,6 +576,17 @@
   background-color: #374151;
 }
 
+/* Summarized Sections on Dashboard */
+#recent-cases .caseTable th,
+#recent-cases .caseTable td {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+#upcoming-appointments .placeholderContent {
+  padding: 1rem;
+}
+
 /* Placeholder Content */
 .placeholderContent {
   display: flex;
@@ -609,16 +609,16 @@
 /* Profile Card */
 .profileCard {
   background-color: #ffffff;
-  padding: 1.5rem; /* Reduced padding */
+  padding: 1.5rem;
   border-radius: 12px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
-  margin-bottom: 1.5rem; /* Reduced margin */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  margin-bottom: 1.5rem;
   transition: background-color 0.3s ease;
 }
 
 .darkTheme .profileCard {
   background-color: #374151;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .profileHeader {
@@ -684,7 +684,7 @@
   border-radius: 50%;
   object-fit: cover;
   border: 3px solid #2563eb;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
 
 .uploadButton {
@@ -798,6 +798,24 @@
   transform: none;
 }
 
+/* Action Button */
+.actionButton {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background-color: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.actionButton:hover {
+  background-color: #1d4ed8;
+  transform: scale(1.05);
+}
+
 /* Dialog Styles */
 .dialogOverlay {
   position: fixed;
@@ -816,7 +834,7 @@
   background-color: #ffffff;
   padding: 2rem;
   border-radius: 12px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   max-width: 450px;
   width: 90%;
   text-align: center;
@@ -824,6 +842,7 @@
 
 .darkTheme .dialog {
   background-color: #374151;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .dialog h3 {
@@ -876,7 +895,7 @@
 /* Responsive Design */
 @media (max-width: 1024px) {
   .main {
-    padding: 1.5rem 1rem; /* Adjusted padding */
+    padding: 1.5rem 1rem;
     margin-left: 250px;
   }
 
@@ -885,7 +904,7 @@
   }
 
   .sectionTitle {
-    font-size: 1.25rem; /* Smaller subheading */
+    font-size: 1.25rem;
   }
 
   #recent-cases .caseTable th,
@@ -894,17 +913,12 @@
     font-size: 0.8rem;
   }
 
-  #profile-summary .profilePicture {
-    width: 50px;
-    height: 50px;
+  .caseTitle {
+    font-size: 0.9rem;
   }
 
-  #profile-summary .profileInfo h3 {
-    font-size: 1.1rem;
-  }
-
-  #profile-summary .profileSubtitle {
-    font-size: 0.85rem;
+  .caseDescription {
+    font-size: 0.75rem;
   }
 }
 
@@ -928,7 +942,7 @@
 
   .main {
     margin-left: 0;
-    padding: 1rem 0.75rem; /* Adjusted padding */
+    padding: 1rem 0.75rem;
   }
 
   .logo span {
@@ -957,7 +971,7 @@
   }
 
   .sectionTitle {
-    font-size: 1.1rem; /* Smaller subheading */
+    font-size: 1.1rem;
   }
 
   .statCard h3 {
@@ -970,8 +984,8 @@
 
   .caseTable th,
   .caseTable td {
-    padding: 0.75rem;
-    font-size: 0.75rem;
+    padding: 0.5rem;
+    font-size: 0.8rem;
   }
 
   .actionButton,
@@ -1005,21 +1019,11 @@
     font-size: 0.75rem;
   }
 
-  #recent-cases .actionButton {
-    padding: 0.3rem 0.6rem;
-    font-size: 0.75rem;
+  .caseTitle {
+    font-size: 0.85rem;
   }
 
-  #profile-summary .profilePicture {
-    width: 40px;
-    height: 40px;
-  }
-
-  #profile-summary .profileInfo h3 {
-    font-size: 1rem;
-  }
-
-  #profile-summary .profileSubtitle {
-    font-size: 0.8rem;
+  .caseDescription {
+    font-size: 0.7rem;
   }
 }
