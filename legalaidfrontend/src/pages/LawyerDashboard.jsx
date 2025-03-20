@@ -14,7 +14,7 @@ export default function LawyerDashboard() {
   const [notifications, setNotifications] = useState([])
   const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [formData, setFormData] = useState({})
-  const [settingsFormData, setSettingsFormData] = useState({}) // New state for settings form
+  const [settingsFormData, setSettingsFormData] = useState({})
   const [profilePictureFile, setProfilePictureFile] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light')
@@ -267,30 +267,46 @@ export default function LawyerDashboard() {
               <>
                 <div className={styles.statsContainer}>
                   <div className={`${styles.statCard} ${styles.totalCases}`}>
-                    <FileText className={styles.statIcon} />
-                    <h3>{totalCases}</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                      <FileText className={styles.statIcon} />
+                      <h3>{totalCases}</h3>
+                    </div>
                     <p>Total Cases</p>
                   </div>
                   <div className={`${styles.statCard} ${styles.pendingCases}`}>
-                    <Clock className={styles.statIcon} />
-                    <h3>{pendingCases}</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                      <Clock className={styles.statIcon} />
+                      <h3>{pendingCases}</h3>
+                    </div>
                     <p>Pending Cases</p>
                   </div>
                   <div className={`${styles.statCard} ${styles.highPriorityCases}`}>
-                    <AlertCircle className={styles.statIcon} />
-                    <h3>{highPriorityCases}</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                      <AlertCircle className={styles.statIcon} />
+                      <h3>{highPriorityCases}</h3>
+                    </div>
                     <p>High-Priority Cases</p>
                   </div>
                   <div className={`${styles.statCard} ${styles.completedCases}`}>
-                    <CheckCircle className={styles.statIcon} />
-                    <h3>{completedCases}</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                      <CheckCircle className={styles.statIcon} />
+                      <h3>{completedCases}</h3>
+                    </div>
                     <p>Completed Cases</p>
                   </div>
                 </div>
 
                 {/* Summarized Cases Section */}
                 <div className={styles.card} id="recent-cases">
-                  <h2 className={styles.sectionTitle}>Recent Cases</h2>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <h2 className={styles.sectionTitle}>Recent Cases</h2>
+                    <button
+                      onClick={() => setActiveTab("cases")}
+                      className={styles.actionButton}
+                    >
+                      View All Cases
+                    </button>
+                  </div>
                   {recentCases.length > 0 ? (
                     <div className={styles.tableWrapper}>
                       <table className={styles.caseTable}>
@@ -337,26 +353,21 @@ export default function LawyerDashboard() {
                   ) : (
                     <p className={styles.emptyMessage}>No cases assigned yet.</p>
                   )}
-                  <button
-                    onClick={() => setActiveTab("cases")}
-                    className={styles.actionButton}
-                    style={{ marginTop: '1rem' }}
-                  >
-                    View All Cases
-                  </button>
                 </div>
 
                 {/* Summarized Appointments Section */}
                 <div className={styles.card} id="upcoming-appointments">
-                  <h2 className={styles.sectionTitle}>Upcoming Appointments</h2>
-                  <div className={styles.placeholderContent}>
-                    <p className={styles.emptyMessage}>Today you have No Appointment.</p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <h2 className={styles.sectionTitle}>Upcoming Appointments</h2>
                     <button
                       onClick={() => setActiveTab("appointments")}
                       className={styles.actionButton}
                     >
                       View All Appointments
                     </button>
+                  </div>
+                  <div className={styles.placeholderContent}>
+                    <p className={styles.emptyMessage}>Today you have No Appointment.</p>
                   </div>
                 </div>
               </>

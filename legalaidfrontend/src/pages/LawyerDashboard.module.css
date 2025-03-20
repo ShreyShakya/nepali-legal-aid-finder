@@ -331,20 +331,20 @@
 }
 
 .statIcon {
-  width: 2rem;
-  height: 2rem;
-  margin-bottom: 0.5rem;
+  width: 1.5rem;
+  height: 1.5rem;
 }
 
 .statCard h3 {
-  font-size: 2.25rem;
+  font-size: 2rem;
   font-weight: 700;
-  margin-bottom: 0.25rem;
+  margin: 0;
 }
 
 .statCard p {
   font-size: 1rem;
   font-weight: 500;
+  margin-top: 0.5rem;
 }
 
 .totalCases {
@@ -803,8 +803,8 @@
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
   font-weight: 500;
-  background-color: #2563eb;
-  color: #ffffff;
+  background-color: 4b5563;
+  color: gray;
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -812,7 +812,8 @@
 }
 
 .actionButton:hover {
-  background-color: #1d4ed8;
+  background-color: #ffffff;
+  color: #1d4ed8;
   transform: scale(1.05);
 }
 
@@ -907,6 +908,15 @@
     font-size: 1.25rem;
   }
 
+  .statCard h3 {
+    font-size: 1.75rem;
+  }
+
+  .statIcon {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
   #recent-cases .caseTable th,
   #recent-cases .caseTable td {
     padding: 0.4rem 0.6rem;
@@ -975,7 +985,12 @@
   }
 
   .statCard h3 {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
+  }
+
+  .statIcon {
+    width: 1rem;
+    height: 1rem;
   }
 
   .statCard p {
