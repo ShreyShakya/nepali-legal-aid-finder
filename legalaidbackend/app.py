@@ -369,5 +369,140 @@ def update_case_status(case_id):
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
+@app.route('/api/register-client', methods=['POST'])
+def register_client():
+    try:
+        data = request.form
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+
+        name = data.get('name')
+        email = data.get('email')
+        password = data.get('password')
+        phone = data.get('phone')  # Optional field for clients
+
+        if not all([name, email, password]):
+            return jsonify({'error': 'Name, email, and password are required'}), 400
+
+        hashed_bytes = hash_password(password)
+        hashed_password = base64.b64encode(hashed_bytes).decode('utf-8')
+
+        conn = pymysql.connect(**db_config)
+        with conn.cursor() as cursor:
+            sql = """
+                INSERT INTO clients (name, email, password, phone)
+                VALUES (%s, %s, %s, %s)
+            """
+            cursor.execute(sql, (name, email, hashed_password, phone))
+            conn.commit()
+        conn.close()
+        return jsonify({'message': 'Client registered successfully'}), 201
+
+    except pymysql.err.IntegrityError:
+        return jsonify({'error': 'Email already exists'}), 409
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/login-client', methods=['POST'])
+def login_client():
+    try:
+        data = request.json
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+
+        email = data.get('email')
+        password = data.get('password')
+
+        if not all([email, password]):
+            return jsonify({'error': 'Email and password are required'}), 400
+
+        conn = pymysql.connect(**db_config)
+        with conn.cursor() as cursor:
+            sql = "SELECT * FROM clients WHERE email = %s"
+            cursor.execute(sql, (email,))
+            client = cursor.fetchone()
+
+        conn.close()
+
+        if not client:
+            return jsonify({'error': 'Invalid email or password'}), 401
+
+        stored_password = base64.b64decode(client['password'])
+        if verify_password(stored_password, password):
+            expiration_time = datetime.utcnow() + timedelta(hours=24)
+            token_payload = {
+                'client_id': client['id'],
+                'email': client['email'],
+                'exp': int(expiration_time.timestamp())
+            }
+            token = jwt.encode(token_payload, SECRET_KEY, algorithm='HS256')
+
+            client_response = client.copy()
+            return jsonify({
+                'message': 'Login successful',
+                'token': token,
+                'client': client_response
+            }), 200
+        else:
+            return jsonify({'error': 'Invalid email or password'}), 401
+
+    except Exception as e:
+        print(f"Error during login: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/lawyers', methods=['GET'])
+def get_lawyers():
+    try:
+        # Get query parameters for filtering
+        specialization = request.args.get('specialization', '')
+        location = request.args.get('location', '')
+        availability_status = request.args.get('availability_status', '')
+
+        conn = pymysql.connect(**db_config)
+        with conn.cursor() as cursor:
+            # Build the SQL query with dynamic conditions
+            sql = """
+                SELECT id, name, specialization, location, availability, bio, 
+                       email_notifications, availability_status, working_hours_start, 
+                       working_hours_end, preferred_contact, profile_picture
+                FROM lawyers
+                WHERE 1=1
+            """
+            params = []
+
+            if specialization:
+                sql += " AND specialization LIKE %s"
+                params.append(f"%{specialization}%")
+            if location:
+                sql += " AND location LIKE %s"
+                params.append(f"%{location}%")
+            if availability_status:
+                sql += " AND availability_status = %s"
+                params.append(availability_status)
+
+            cursor.execute(sql, params)
+            lawyers = cursor.fetchall()
+
+        conn.close()
+
+        # Format the response
+        lawyers_response = []
+        for lawyer in lawyers:
+            lawyer_dict = lawyer.copy()
+            if isinstance(lawyer['working_hours_start'], timedelta):
+                lawyer_dict['working_hours_start'] = str(lawyer['working_hours_start'])
+            if isinstance(lawyer['working_hours_end'], timedelta):
+                lawyer_dict['working_hours_end'] = str(lawyer['working_hours_end'])
+            if lawyer['profile_picture']:
+                lawyer_dict['profile_picture'] = f"/uploads/{lawyer['profile_picture']}"
+            lawyers_response.append(lawyer_dict)
+
+        return jsonify({'lawyers': lawyers_response}), 200
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
 if __name__ == '__main__':
     app.run(debug=True, host='127.0.0.1', port=5000)

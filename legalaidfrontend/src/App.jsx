@@ -7,11 +7,12 @@ import DocumentTemplates from './pages/DocumentTemplates';
 import FAQ from './pages/FAQ';
 import AboutUs from './pages/AboutUs';
 import LawFirmProfile from './pages/LawFirmProfile';
-import Registration from './components/Auth/Registration';
-import Login from './components/Auth/Login';
 import LawyerDashboard from './pages/LawyerDashboard';
 import LawyerRegistration from './components/Auth/LawyerRegistration';
 import LawyerLogin from './components/Auth/LawyerLogin';
+import ClientRegistration from './components/Auth/ClientRegistration';
+import ClientLogin from './components/Auth/ClientLogin';
+import ClientDashboard from './pages/ClientDashboard';
 
 function App() {
     return (
@@ -41,12 +42,6 @@ function App() {
                     {/* Law Firm Profile */}
                     <Route path="/lawfirmprofile" element={<LawFirmProfile />} />
 
-                    {/* Registration */}
-                    <Route path="/register" element={<Registration />} />
-
-                    {/* Login */}
-                    <Route path="/login" element={<Login />} />
-
                     {/* Lawyer Dashboard */}
                     <Route path="/lawyerdashboard" element={<LawyerDashboard />} />
 
@@ -55,6 +50,14 @@ function App() {
 
                     {/* Lawyer Login */}
                     <Route path="/lawyer-login" element={<LawyerLogin />} />
+
+                    <Route path="/client-registration" element={<ClientRegistration />} />
+
+                    <Route path='/client-login' element={<ClientLogin />} />
+
+                    <Route path="/client-dashboard" element={<ClientDashboard />} />
+
+                    <Route path="/lawyer-profile/:id" element={<div>Lawyer Profile Page (To Be Implemented)</div>} />
                 </Routes>
             </Router>
     );
