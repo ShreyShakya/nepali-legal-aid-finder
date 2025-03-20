@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Scale, Sun, Moon, Info } from "lucide-react"
+import { Scale, Sun, Moon, FileText, Clock, Calendar, User, Settings, AlertCircle, CheckCircle, Menu, X } from "lucide-react"
 import axios from "axios"
-import { useNavigate, NavLink } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { Tooltip } from 'react-tooltip'
 import styles from "./LawyerDashboard.module.css"
@@ -19,6 +19,8 @@ export default function LawyerDashboard() {
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light')
   const [dialog, setDialog] = useState({ isOpen: false, message: "", onConfirm: null })
   const [selectedCase, setSelectedCase] = useState(null)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState("dashboard")
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -27,6 +29,7 @@ export default function LawyerDashboard() {
   }, [theme])
 
   const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light')
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
 
   const addNotification = (message, type = 'success') => {
     const id = Date.now()
@@ -152,6 +155,9 @@ export default function LawyerDashboard() {
   const highPriorityCases = cases.filter(c => c.priority === 'High').length
   const completedCases = cases.filter(c => c.status === 'completed').length
 
+  // Get recent cases for the dashboard summary (e.g., top 3)
+  const recentCases = cases.slice(0, 3)
+
   if (!lawyer) {
     return (
       <div className={`${styles.dashboardPage} ${theme === 'dark' ? styles.darkTheme : ''}`}>
@@ -165,6 +171,9 @@ export default function LawyerDashboard() {
       <header className={styles.header}>
         <div className={styles.headerContainer}>
           <div className={styles.logo}>
+            <button className={styles.menuButton} onClick={toggleSidebar}>
+              {isSidebarOpen ? <X className={styles.icon} /> : <Menu className={styles.icon} />}
+            </button>
             <Scale className={styles.logoIcon} />
             <span>NepaliLegalAidFinder</span>
           </div>
@@ -173,7 +182,7 @@ export default function LawyerDashboard() {
               {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-')}
             </span>
             <button onClick={toggleTheme} className={styles.themeButton} data-tooltip-id="theme-tooltip" data-tooltip-content="Toggle theme">
-              {theme === 'light' ? <Moon /> : <Sun />}
+              {theme === 'light' ? <Moon className={styles.icon} /> : <Sun className={styles.icon} />}
             </button>
             <button onClick={handleLogout} className={styles.logoutButton} data-tooltip-id="logout-tooltip" data-tooltip-content="Log out of your account">
               Logout
@@ -187,17 +196,390 @@ export default function LawyerDashboard() {
       <Tooltip id="edit-tooltip" />
       <Tooltip id="details-tooltip" />
 
+      <div className={styles.layout}>
+        <aside className={`${styles.sidebar} ${isSidebarOpen ? styles.sidebarOpen : ''}`}>
+          <nav className={styles.sidebarNav}>
+            <button
+              onClick={() => { setActiveTab("dashboard"); setIsSidebarOpen(false); }}
+              className={`${styles.navLink} ${activeTab === "dashboard" ? styles.activeNavLink : ''}`}
+            >
+              <FileText className={styles.navIcon} /> Dashboard
+            </button>
+            <button
+              onClick={() => { setActiveTab("cases"); setIsSidebarOpen(false); }}
+              className={`${styles.navLink} ${activeTab === "cases" ? styles.activeNavLink : ''}`}
+            >
+              <FileText className={styles.navIcon} /> Cases
+            </button>
+            <button
+              onClick={() => { setActiveTab("appointments"); setIsSidebarOpen(false); }}
+              className={`${styles.navLink} ${activeTab === "appointments" ? styles.activeNavLink : ''}`}
+            >
+              <Clock className={styles.navIcon} /> Appointments
+            </button>
+            <button
+              onClick={() => { setActiveTab("profile"); setIsSidebarOpen(false); }}
+              className={`${styles.navLink} ${activeTab === "profile" ? styles.activeNavLink : ''}`}
+            >
+              <User className={styles.navIcon} /> Profile
+            </button>
+            <button
+              onClick={() => { setActiveTab("settings"); setIsSidebarOpen(false); }}
+              className={`${styles.navLink} ${activeTab === "settings" ? styles.activeNavLink : ''}`}
+            >
+              <Settings className={styles.navIcon} /> Settings
+            </button>
+          </nav>
+        </aside>
+        <main className={styles.main}>
+          <div className={styles.dashboardContent}>
+            {activeTab === "dashboard" && (
+              <>
+                <div className={styles.statsContainer}>
+                  <div className={`${styles.statCard} ${styles.totalCases}`}>
+                    <FileText className={styles.statIcon} />
+                    <h3>{totalCases}</h3>
+                    <p>Total Cases</p>
+                  </div>
+                  <div className={`${styles.statCard} ${styles.pendingCases}`}>
+                    <Clock className={styles.statIcon} />
+                    <h3>{pendingCases}</h3>
+                    <p>Pending Cases</p>
+                  </div>
+                  <div className={`${styles.statCard} ${styles.highPriorityCases}`}>
+                    <AlertCircle className={styles.statIcon} />
+                    <h3>{highPriorityCases}</h3>
+                    <p>High-Priority Cases</p>
+                  </div>
+                  <div className={`${styles.statCard} ${styles.completedCases}`}>
+                    <CheckCircle className={styles.statIcon} />
+                    <h3>{completedCases}</h3>
+                    <p>Completed Cases</p>
+                  </div>
+                </div>
+
+                {/* Summarized Cases Section */}
+                <div className={styles.card} id="recent-cases">
+                  <h2 className={styles.sectionTitle}>Recent Cases</h2>
+                  {recentCases.length > 0 ? (
+                    <div className={styles.tableWrapper}>
+                      <table className={styles.caseTable}>
+                        <thead>
+                          <tr>
+                            <th>No</th>
+                            <th>Case No</th>
+                            <th>Case</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {recentCases.map((caseItem, index) => (
+                            <tr key={caseItem.id}>
+                              <td>{index + 1}</td>
+                              <td>{caseItem.id}</td>
+                              <td>{caseItem.title} {caseItem.description && `- ${caseItem.description}`}</td>
+                              <td>{caseItem.priority}</td>
+                              <td>{caseItem.status}</td>
+                              <td>
+                                <div className={styles.caseActions}>
+                                  <button
+                                    onClick={() => handleCaseDetails(caseItem)}
+                                    className={styles.actionButton}
+                                    data-tooltip-id="details-tooltip"
+                                    data-tooltip-content="View case details"
+                                  >
+                                    View Details
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className={styles.emptyMessage}>No cases assigned yet.</p>
+                  )}
+                  <button
+                    onClick={() => setActiveTab("cases")}
+                    className={styles.actionButton}
+                    style={{ marginTop: '1rem' }}
+                  >
+                    View All Cases
+                  </button>
+                </div>
+
+                {/* Summarized Appointments Section */}
+                <div className={styles.card} id="upcoming-appointments">
+                  <h2 className={styles.sectionTitle}>Upcoming Appointments</h2>
+                  <div className={styles.placeholderContent}>
+                    <p className={styles.emptyMessage}>Today you have No Appointment.</p>
+                    <button
+                      onClick={() => setActiveTab("appointments")}
+                      className={styles.actionButton}
+                    >
+                      View All Appointments
+                    </button>
+                  </div>
+                </div>
+
+                {/* Summarized Profile Section */}
+                <div className={styles.card} id="profile-summary">
+                  <div className={styles.profileHeader}>
+                    <div className={styles.profilePictureWrapper}>
+                      <img
+                        src={lawyer.profile_picture ? `http://127.0.0.1:5000${lawyer.profile_picture}` : "https://via.placeholder.com/100"}
+                        alt="Profile"
+                        className={styles.profilePicture}
+                      />
+                    </div>
+                    <div className={styles.profileInfo}>
+                      <h3>{lawyer.name || "Lawyer Name"}</h3>
+                      <p className={styles.profileSubtitle}>{lawyer.specialization || "Specialization N/A"}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab("profile")}
+                    className={styles.actionButton}
+                  >
+                    Edit Profile
+                  </button>
+                </div>
+
+                {/* Summarized Settings Section */}
+                <div className={styles.card} id="settings-summary">
+                  <div className={styles.placeholderContent}>
+                    <p className={styles.emptyMessage}>Manage your account settings.</p>
+                    <button
+                      onClick={() => setActiveTab("settings")}
+                      className={styles.actionButton}
+                    >
+                      Go to Settings
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {activeTab === "cases" && (
+              <div className={styles.card} id="cases">
+                <h2 className={styles.sectionTitle}>Case List</h2>
+                {cases.length > 0 ? (
+                  <div className={styles.tableWrapper}>
+                    <table className={styles.caseTable}>
+                      <thead>
+                        <tr>
+                          <th>No</th>
+                          <th>Case No</th>
+                          <th>Case</th>
+                          <th>Priority</th>
+                          <th>Status</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {cases.map((caseItem, index) => (
+                          <tr key={caseItem.id}>
+                            <td>{index + 1}</td>
+                            <td>{caseItem.id}</td>
+                            <td>{caseItem.title} {caseItem.description && `- ${caseItem.description}`}</td>
+                            <td>{caseItem.priority}</td>
+                            <td>
+                              <select
+                                value={caseItem.status}
+                                onChange={(e) => handleStatusChange(caseItem.id, e.target.value)}
+                                className={styles.statusSelect}
+                                disabled={isLoading}
+                              >
+                                <option value="pending">Pending</option>
+                                <option value="accepted">Accepted</option>
+                                <option value="rejected">Rejected</option>
+                                <option value="completed">Completed</option>
+                              </select>
+                            </td>
+                            <td>
+                              <div className={styles.caseActions}>
+                                <button
+                                  onClick={() => handleCaseDetails(caseItem)}
+                                  className={styles.actionButton}
+                                  data-tooltip-id="details-tooltip"
+                                  data-tooltip-content="View case details"
+                                >
+                                  View Details
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className={styles.emptyMessage}>No cases assigned yet.</p>
+                )}
+              </div>
+            )}
+
+            {activeTab === "appointments" && (
+              <>
+                <div className={styles.card} id="appointments">
+                  <h2 className={styles.sectionTitle}>Appointments</h2>
+                  <div className={styles.placeholderContent}>
+                    <p className={styles.emptyMessage}>Today you have No Appointment.</p>
+                    <button className={styles.actionButton}>Set Up Appointments</button>
+                  </div>
+                </div>
+                <div className={styles.card} id="calendar">
+                  <h2 className={styles.sectionTitle}>Calendar</h2>
+                  <div className={styles.placeholderContent}>
+                    <p className={styles.emptyMessage}>[Placeholder: Calendar to be implemented]</p>
+                    <button className={styles.actionButton}>Add Events to Calendar</button>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {activeTab === "profile" && (
+              <div className={styles.profileCard} id="profile">
+                {isEditingProfile ? (
+                  <form onSubmit={handleProfileSave} className={styles.editForm}>
+                    <div className={styles.formGroup}>
+                      <label>Profile Picture:</label>
+                      <div className={styles.profilePictureWrapper}>
+                        <img
+                          src={formData.profile_picture || "https://via.placeholder.com/100"}
+                          alt="Profile"
+                          className={styles.profilePicture}
+                        />
+                        <label htmlFor="profilePictureUpload" className={styles.uploadButton}>
+                          Upload
+                          <input
+                            id="profilePictureUpload"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleProfilePictureChange}
+                            className={styles.fileInput}
+                          />
+                        </label>
+                      </div>
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Email:</label>
+                      <input type="email" name="email" value={formData.email} className={styles.formInput} disabled />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Specialization:</label>
+                      <input type="text" name="specialization" value={formData.specialization || ""} onChange={handleProfileChange} className={styles.formInput} />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Location:</label>
+                      <input type="text" name="location" value={formData.location || ""} onChange={handleProfileChange} className={styles.formInput} />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Availability Description:</label>
+                      <input type="text" name="availability" value={formData.availability || ""} onChange={handleProfileChange} className={styles.formInput} />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Bio:</label>
+                      <textarea name="bio" value={formData.bio || ""} onChange={handleProfileChange} className={styles.formTextarea} />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>
+                        <input type="checkbox" name="email_notifications" checked={formData.email_notifications} onChange={handleProfileChange} />
+                        Receive Email Notifications
+                      </label>
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Availability Status:</label>
+                      <select name="availability_status" value={formData.availability_status} onChange={handleProfileChange} className={styles.formInput}>
+                        <option value="Available">Available</option>
+                        <option value="Busy">Busy</option>
+                      </select>
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Working Hours Start:</label>
+                      <input type="time" name="working_hours_start" value={formData.working_hours_start || "09:00"} onChange={handleProfileChange} className={styles.formInput} />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Working Hours End:</label>
+                      <input type="time" name="working_hours_end" value={formData.working_hours_end || "17:00"} onChange={handleProfileChange} className={styles.formInput} />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Preferred Contact Method:</label>
+                      <select name="preferred_contact" value={formData.preferred_contact} onChange={handleProfileChange} className={styles.formInput}>
+                        <option value="Email">Email</option>
+                        <option value="Phone">Phone</option>
+                      </select>
+                    </div>
+                    <div className={styles.formActions}>
+                      <button type="submit" className={styles.actionButton} disabled={isLoading}>Save</button>
+                      <button type="button" onClick={() => setIsEditingProfile(false)} className={styles.cancelButton} disabled={isLoading}>Cancel</button>
+                    </div>
+                  </form>
+                ) : (
+                  <>
+                    <div className={styles.profileHeader}>
+                      <div className={styles.profilePictureWrapper}>
+                        <img
+                          src={lawyer.profile_picture ? `http://127.0.0.1:5000${lawyer.profile_picture}` : "https://via.placeholder.com/100"}
+                          alt="Profile"
+                          className={styles.profilePicture}
+                        />
+                      </div>
+                      <div className={styles.profileInfo}>
+                        <h3>{lawyer.name || "Lawyer Name"}</h3>
+                        <p className={styles.profileSubtitle}>{lawyer.specialization || "Specialization N/A"}</p>
+                      </div>
+                    </div>
+                    <div className={styles.profileDetails}>
+                      <p className={styles.profileItem}><strong>Email:</strong> {lawyer.email}</p>
+                      <p className={styles.profileItem}><strong>Location:</strong> {lawyer.location || "N/A"}</p>
+                      <p className={styles.profileItem}><strong>Availability:</strong> {lawyer.availability || "N/A"}</p>
+                      <p className={styles.profileItem}><strong>Bio:</strong> {lawyer.bio || "N/A"}</p>
+                      <p className={styles.profileItem}><strong>Email Notifications:</strong> {lawyer.email_notifications ? "Enabled" : "Disabled"}</p>
+                      <p className={styles.profileItem}><strong>Status:</strong> {lawyer.availability_status}</p>
+                      <p className={styles.profileItem}><strong>Working Hours:</strong> {lawyer.working_hours_start} - {lawyer.working_hours_end}</p>
+                      <p className={styles.profileItem}><strong>Preferred Contact:</strong> {lawyer.preferred_contact}</p>
+                    </div>
+                    <button 
+                      onClick={() => setIsEditingProfile(true)} 
+                      className={styles.actionButton} 
+                      data-tooltip-id="edit-tooltip" 
+                      data-tooltip-content="Edit your profile details"
+                    >
+                      Edit Profile
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+
+            {activeTab === "settings" && (
+              <div className={styles.card} id="settings">
+                <div className={styles.placeholderContent}>
+                  <p className={styles.emptyMessage}>[Placeholder: Settings options to be implemented]</p>
+                  <p>Here you can manage your account settings, such as changing your password, notification preferences, or theme.</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
+
       <div className={styles.notificationContainer}>
         <AnimatePresence>
           {notifications.map((notification) => (
             <motion.div
               key={notification.id}
               className={`${styles.notification} ${notification.type === 'error' ? styles.errorNotification : styles.successNotification}`}
-              initial={{ opacity: 0, y: -50 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -50 }}
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 50 }}
               transition={{ duration: 0.3 }}
             >
+              {notification.type === 'success' ? <CheckCircle className={styles.notificationIcon} /> : <AlertCircle className={styles.notificationIcon} />}
               {notification.message}
             </motion.div>
           ))}
@@ -205,205 +587,6 @@ export default function LawyerDashboard() {
       </div>
 
       {isLoading && <div className={styles.loaderOverlay}><div className={styles.loader}></div></div>}
-
-      <div className={styles.layout}>
-        <main className={styles.main}>
-          <div className={styles.dashboardContent}>
-            <h1 className={styles.title}>Dashboard</h1>
-
-            <div className={styles.statsContainer}>
-              <div className={styles.statCard}>
-                <h3>{totalCases}</h3>
-                <p>Total Cases</p>
-              </div>
-              <div className={styles.statCard}>
-                <h3>{pendingCases}</h3>
-                <p>Pending Cases</p>
-              </div>
-              <div className={styles.statCard}>
-                <h3>{highPriorityCases}</h3>
-                <p>High-Priority Cases</p>
-              </div>
-              <div className={styles.statCard}>
-                <h3>{completedCases}</h3>
-                <p>Completed Cases</p>
-              </div>
-            </div>
-
-            <div className={styles.card} id="cases">
-              <h2 className={styles.sectionTitle}>Case List</h2>
-              {cases.length > 0 ? (
-                <table className={styles.caseTable}>
-                  <thead>
-                    <tr>
-                      <th>No</th>
-                      <th>Case No</th>
-                      <th>Case</th>
-                      <th>Priority</th>
-                      <th>Status</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {cases.map((caseItem, index) => (
-                      <tr key={caseItem.id}>
-                        <td>{index + 1}</td>
-                        <td>{caseItem.id}</td>
-                        <td>{caseItem.title} {caseItem.description && `- ${caseItem.description}`}</td>
-                        <td>{caseItem.priority}</td>
-                        <td>
-                          <select
-                            value={caseItem.status}
-                            onChange={(e) => handleStatusChange(caseItem.id, e.target.value)}
-                            className={styles.statusSelect}
-                            disabled={isLoading}
-                          >
-                            <option value="pending">Pending</option>
-                            <option value="accepted">Accepted</option>
-                            <option value="rejected">Rejected</option>
-                            <option value="completed">Completed</option>
-                          </select>
-                        </td>
-                        <td>
-                          <div className={styles.caseActions}>
-                            <button
-                              onClick={() => handleCaseDetails(caseItem)}
-                              className={styles.actionButton}
-                              data-tooltip-id="details-tooltip"
-                              data-tooltip-content="View case details"
-                            >
-                              View Details
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : (
-                <p className={styles.profileItem}>No cases assigned yet.</p>
-              )}
-            </div>
-
-            <div className={styles.card} id="appointments">
-              <h2 className={styles.sectionTitle}>Appointments</h2>
-              <p className={styles.profileItem}>Today you have No Appointment.</p>
-            </div>
-
-            <div className={styles.card} id="calendar">
-              <h2 className={styles.sectionTitle}>Calendar</h2>
-              <p className={styles.profileItem}>[Placeholder: Calendar to be implemented]</p>
-            </div>
-
-            <div className={styles.profileCard} id="profile">
-              <h2 className={styles.sectionTitle}>Your Profile</h2>
-              {isEditingProfile ? (
-                <form onSubmit={handleProfileSave} className={styles.editForm}>
-                  <div className={styles.formGroup}>
-                    <label>Profile Picture:</label>
-                    <div className={styles.profilePictureWrapper}>
-                      <img
-                        src={formData.profile_picture || "https://via.placeholder.com/100"}
-                        alt="Profile"
-                        className={styles.profilePicture}
-                      />
-                      <label htmlFor="profilePictureUpload" className={styles.uploadButton}>
-                        Upload
-                        <input
-                          id="profilePictureUpload"
-                          type="file"
-                          accept="image/*"
-                          onChange={handleProfilePictureChange}
-                          className={styles.fileInput}
-                        />
-                      </label>
-                    </div>
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label>Email:</label>
-                    <input type="email" name="email" value={formData.email} className={styles.formInput} disabled />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label>Specialization:</label>
-                    <input type="text" name="specialization" value={formData.specialization || ""} onChange={handleProfileChange} className={styles.formInput} />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label>Location:</label>
-                    <input type="text" name="location" value={formData.location || ""} onChange={handleProfileChange} className={styles.formInput} />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label>Availability Description:</label>
-                    <input type="text" name="availability" value={formData.availability || ""} onChange={handleProfileChange} className={styles.formInput} />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label>Bio:</label>
-                    <textarea name="bio" value={formData.bio || ""} onChange={handleProfileChange} className={styles.formTextarea} />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label>
-                      <input type="checkbox" name="email_notifications" checked={formData.email_notifications} onChange={handleProfileChange} />
-                      Receive Email Notifications
-                    </label>
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label>Availability Status:</label>
-                    <select name="availability_status" value={formData.availability_status} onChange={handleProfileChange} className={styles.formInput}>
-                      <option value="Available">Available</option>
-                      <option value="Busy">Busy</option>
-                    </select>
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label>Working Hours Start:</label>
-                    <input type="time" name="working_hours_start" value={formData.working_hours_start || "09:00"} onChange={handleProfileChange} className={styles.formInput} />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label>Working Hours End:</label>
-                    <input type="time" name="working_hours_end" value={formData.working_hours_end || "17:00"} onChange={handleProfileChange} className={styles.formInput} />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label>Preferred Contact Method:</label>
-                    <select name="preferred_contact" value={formData.preferred_contact} onChange={handleProfileChange} className={styles.formInput}>
-                      <option value="Email">Email</option>
-                      <option value="Phone">Phone</option>
-                    </select>
-                  </div>
-                  <div className={styles.formActions}>
-                    <button type="submit" className={styles.actionButton} disabled={isLoading}>Save</button>
-                    <button type="button" onClick={() => setIsEditingProfile(false)} className={styles.cancelButton} disabled={isLoading}>Cancel</button>
-                  </div>
-                </form>
-              ) : (
-                <>
-                  <div className={styles.profilePictureWrapper}>
-                    <img
-                      src={lawyer.profile_picture ? `http://127.0.0.1:5000${lawyer.profile_picture}` : "https://via.placeholder.com/100"}
-                      alt="Profile"
-                      className={styles.profilePicture}
-                    />
-                  </div>
-                  <p className={styles.profileItem}><strong>Email:</strong> {lawyer.email}</p>
-                  <p className={styles.profileItem}><strong>Specialization:</strong> {lawyer.specialization || "N/A"}</p>
-                  <p className={styles.profileItem}><strong>Location:</strong> {lawyer.location || "N/A"}</p>
-                  <p className={styles.profileItem}><strong>Availability:</strong> {lawyer.availability || "N/A"}</p>
-                  <p className={styles.profileItem}><strong>Bio:</strong> {lawyer.bio || "N/A"}</p>
-                  <p className={styles.profileItem}><strong>Email Notifications:</strong> {lawyer.email_notifications ? "Enabled" : "Disabled"}</p>
-                  <p className={styles.profileItem}><strong>Status:</strong> {lawyer.availability_status}</p>
-                  <p className={styles.profileItem}><strong>Working Hours:</strong> {lawyer.working_hours_start} - {lawyer.working_hours_end}</p>
-                  <p className={styles.profileItem}><strong>Preferred Contact:</strong> {lawyer.preferred_contact}</p>
-                  <button 
-                    onClick={() => setIsEditingProfile(true)} 
-                    className={styles.actionButton} 
-                    data-tooltip-id="edit-tooltip" 
-                    data-tooltip-content="Edit your profile details"
-                  >
-                    Edit Profile
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        </main>
-      </div>
 
       <AnimatePresence>
         {dialog.isOpen && (
@@ -419,6 +602,7 @@ export default function LawyerDashboard() {
               animate={{ scale: 1 }}
               exit={{ scale: 0.8 }}
             >
+              <h3>Confirm Action</h3>
               <p>{dialog.message}</p>
               <div className={styles.dialogActions}>
                 <button onClick={dialog.onConfirm} className={styles.actionButton}>Yes</button>
@@ -444,11 +628,13 @@ export default function LawyerDashboard() {
               exit={{ scale: 0.8 }}
             >
               <h3>Case Details</h3>
-              <p><strong>Title:</strong> {selectedCase.title}</p>
-              <p><strong>Description:</strong> {selectedCase.description || "No description"}</p>
-              <p><strong>Status:</strong> {selectedCase.status}</p>
-              <p><strong>Priority:</strong> {selectedCase.priority}</p>
-              <p><strong>Created At:</strong> {new Date(selectedCase.created_at).toLocaleString()}</p>
+              <div className={styles.dialogContent}>
+                <p><strong>Title:</strong> {selectedCase.title}</p>
+                <p><strong>Description:</strong> {selectedCase.description || "No description"}</p>
+                <p><strong>Status:</strong> {selectedCase.status}</p>
+                <p><strong>Priority:</strong> {selectedCase.priority}</p>
+                <p><strong>Created At:</strong> {new Date(selectedCase.created_at).toLocaleString()}</p>
+              </div>
               <div className={styles.dialogActions}>
                 <button onClick={() => setSelectedCase(null)} className={styles.actionButton}>Close</button>
               </div>
