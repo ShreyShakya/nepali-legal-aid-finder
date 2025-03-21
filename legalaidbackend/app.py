@@ -21,7 +21,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 db_config = {
     'host': 'localhost',
     'user': 'root',
-    'password': '',
+    'password': '',  # Update with your MySQL password
     'database': 'legalaid_db',
     'cursorclass': pymysql.cursors.DictCursor
 }
@@ -48,6 +48,22 @@ def verify_password(stored_password, provided_password):
     stored_key = stored_password[16:]
     provided_key = hash_password(provided_password, salt)
     return stored_key == provided_key[16:]
+
+# Helper function to validate JWT token
+def validate_token():
+    token = request.headers.get('Authorization')
+    if not token:
+        return None, jsonify({'error': 'Token is missing'}), 401
+
+    try:
+        if token.startswith('Bearer '):
+            token = token.split(' ')[1]
+        decoded = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        return decoded, None, None
+    except jwt.ExpiredSignatureError:
+        return None, jsonify({'error': 'Token has expired'}), 401
+    except jwt.InvalidTokenError:
+        return None, jsonify({'error': 'Invalid token'}), 401
 
 @app.route('/api/register-lawyer', methods=['POST'])
 def register_lawyer():
@@ -159,18 +175,17 @@ def login_lawyer():
         print(f"Error during login: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-@app.route('/api/lawyer-profile', methods=['GET'])
+@app.route('/api/lawyer-profile', methods=['GET', 'OPTIONS'])
 def lawyer_profile():
-    token = request.headers.get('Authorization')
-    if not token:
-        return jsonify({'error': 'Token is missing'}), 401
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
 
     try:
-        if token.startswith('Bearer '):
-            token = token.split(' ')[1]
-        decoded = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
         lawyer_id = decoded['lawyer_id']
-
         conn = pymysql.connect(**db_config)
         with conn.cursor() as cursor:
             sql = """
@@ -196,26 +211,21 @@ def lawyer_profile():
 
         return jsonify({'lawyer': lawyer_response}), 200
 
-    except jwt.ExpiredSignatureError:
-        return jsonify({'error': 'Token has expired'}), 401
-    except jwt.InvalidTokenError:
-        return jsonify({'error': 'Invalid token'}), 401
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-@app.route('/api/lawyer-profile', methods=['PUT'])
+@app.route('/api/lawyer-profile', methods=['PUT', 'OPTIONS'])
 def update_lawyer_profile():
-    token = request.headers.get('Authorization')
-    if not token:
-        return jsonify({'error': 'Token is missing'}), 401
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
 
     try:
-        if token.startswith('Bearer '):
-            token = token.split(' ')[1]
-        decoded = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
         lawyer_id = decoded['lawyer_id']
-
         data = request.form  # Use form data for text fields
         if not data:
             return jsonify({'error': 'No data provided'}), 400
@@ -279,10 +289,6 @@ def update_lawyer_profile():
 
         return jsonify({'lawyer': lawyer_response, 'message': 'Profile updated successfully'}), 200
 
-    except jwt.ExpiredSignatureError:
-        return jsonify({'error': 'Token has expired'}), 401
-    except jwt.InvalidTokenError:
-        return jsonify({'error': 'Invalid token'}), 401
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
@@ -291,24 +297,24 @@ def update_lawyer_profile():
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-@app.route('/api/lawyer-cases', methods=['GET'])
+@app.route('/api/lawyer-cases', methods=['GET', 'OPTIONS'])
 def lawyer_cases():
-    token = request.headers.get('Authorization')
-    if not token:
-        return jsonify({'error': 'Token is missing'}), 401
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
 
     try:
-        if token.startswith('Bearer '):
-            token = token.split(' ')[1]
-        decoded = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
         lawyer_id = decoded['lawyer_id']
-
         conn = pymysql.connect(**db_config)
         with conn.cursor() as cursor:
             sql = """
-                SELECT id, title, description, status, created_at, priority
-                FROM cases
-                WHERE lawyer_id = %s
+                SELECT c.id, c.title, c.description, c.status, c.created_at, c.priority, cl.name AS client_name
+                FROM cases c
+                JOIN clients cl ON c.client_id = cl.id
+                WHERE c.lawyer_id = %s
             """
             cursor.execute(sql, (lawyer_id,))
             cases = cursor.fetchall()
@@ -316,26 +322,21 @@ def lawyer_cases():
         conn.close()
         return jsonify({'cases': cases}), 200
 
-    except jwt.ExpiredSignatureError:
-        return jsonify({'error': 'Token has expired'}), 401
-    except jwt.InvalidTokenError:
-        return jsonify({'error': 'Invalid token'}), 401
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-@app.route('/api/lawyer-case/<int:case_id>/update-status', methods=['PUT'])
+@app.route('/api/lawyer-case/<int:case_id>/update-status', methods=['PUT', 'OPTIONS'])
 def update_case_status(case_id):
-    token = request.headers.get('Authorization')
-    if not token:
-        return jsonify({'error': 'Token is missing'}), 401
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
 
     try:
-        if token.startswith('Bearer '):
-            token = token.split(' ')[1]
-        decoded = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
         lawyer_id = decoded['lawyer_id']
-
         data = request.json
         if not data or 'status' not in data:
             return jsonify({'error': 'Status is required'}), 400
@@ -361,10 +362,6 @@ def update_case_status(case_id):
         conn.close()
         return jsonify({'message': 'Case status updated successfully'}), 200
 
-    except jwt.ExpiredSignatureError:
-        return jsonify({'error': 'Token has expired'}), 401
-    except jwt.InvalidTokenError:
-        return jsonify({'error': 'Invalid token'}), 401
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
@@ -458,6 +455,7 @@ def get_lawyers():
         specialization = request.args.get('specialization', '')
         location = request.args.get('location', '')
         availability_status = request.args.get('availability_status', '')
+        min_rating = request.args.get('min_rating', '')
 
         conn = pymysql.connect(**db_config)
         with conn.cursor() as cursor:
@@ -465,7 +463,7 @@ def get_lawyers():
             sql = """
                 SELECT id, name, specialization, location, availability, bio, 
                        email_notifications, availability_status, working_hours_start, 
-                       working_hours_end, preferred_contact, profile_picture
+                       working_hours_end, preferred_contact, profile_picture, rating
                 FROM lawyers
                 WHERE 1=1
             """
@@ -480,6 +478,9 @@ def get_lawyers():
             if availability_status:
                 sql += " AND availability_status = %s"
                 params.append(availability_status)
+            if min_rating:
+                sql += " AND rating >= %s"
+                params.append(float(min_rating))
 
             cursor.execute(sql, params)
             lawyers = cursor.fetchall()
@@ -502,6 +503,273 @@ def get_lawyers():
 
     except Exception as e:
         print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/lawyer/<int:lawyer_id>', methods=['GET'])
+def get_lawyer(lawyer_id):
+    try:
+        conn = pymysql.connect(**db_config)
+        with conn.cursor() as cursor:
+            sql = """
+                SELECT id, name, specialization, location, availability, bio, 
+                       email_notifications, availability_status, working_hours_start, 
+                       working_hours_end, preferred_contact, profile_picture, rating
+                FROM lawyers
+                WHERE id = %s
+            """
+            cursor.execute(sql, (lawyer_id,))
+            lawyer = cursor.fetchone()
+
+        conn.close()
+
+        if not lawyer:
+            return jsonify({'error': 'Lawyer not found'}), 404
+
+        # Format the response
+        lawyer_response = lawyer.copy()
+        if isinstance(lawyer['working_hours_start'], timedelta):
+            lawyer_response['working_hours_start'] = str(lawyer['working_hours_start'])
+        if isinstance(lawyer['working_hours_end'], timedelta):
+            lawyer_response['working_hours_end'] = str(lawyer['working_hours_end'])
+        if lawyer['profile_picture']:
+            lawyer_response['profile_picture'] = f"/uploads/{lawyer['profile_picture']}"
+
+        return jsonify({'lawyer': lawyer_response}), 200
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/book-appointment', methods=['POST', 'OPTIONS'])
+def book_appointment():
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
+
+    try:
+        client_id = decoded['client_id']
+        data = request.json
+        lawyer_id = data.get('lawyer_id')
+        appointment_date = data.get('appointment_date')
+
+        if not all([lawyer_id, appointment_date]):
+            return jsonify({'error': 'Lawyer ID and appointment date are required'}), 400
+
+        conn = pymysql.connect(**db_config)
+        with conn.cursor() as cursor:
+            # Check if the lawyer exists
+            cursor.execute("SELECT id FROM lawyers WHERE id = %s", (lawyer_id,))
+            lawyer = cursor.fetchone()
+            if not lawyer:
+                return jsonify({'error': 'Lawyer not found'}), 404
+
+            # Book the appointment
+            sql = """
+                INSERT INTO appointments (client_id, lawyer_id, appointment_date)
+                VALUES (%s, %s, %s)
+            """
+            cursor.execute(sql, (client_id, lawyer_id, appointment_date))
+            conn.commit()
+
+        conn.close()
+        return jsonify({'message': 'Appointment booked successfully'}), 201
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/client-appointments', methods=['GET', 'OPTIONS'])
+def get_client_appointments():
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
+
+    try:
+        client_id = decoded['client_id']
+        conn = pymysql.connect(**db_config)
+        with conn.cursor() as cursor:
+            sql = """
+                SELECT a.id, a.appointment_date, a.status, a.created_at, 
+                       l.name AS lawyer_name, l.specialization
+                FROM appointments a
+                JOIN lawyers l ON a.lawyer_id = l.id
+                WHERE a.client_id = %s
+                ORDER BY a.appointment_date DESC
+            """
+            cursor.execute(sql, (client_id,))
+            appointments = cursor.fetchall()
+
+        conn.close()
+        return jsonify({'appointments': appointments}), 200
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/lawyer-appointments/<int:lawyer_id>', methods=['GET', 'OPTIONS'])
+def get_lawyer_appointments(lawyer_id):
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
+
+    try:
+        current_lawyer_id = decoded['lawyer_id']
+        if current_lawyer_id != lawyer_id:
+            return jsonify({'error': 'Unauthorized access'}), 403
+
+        conn = pymysql.connect(**db_config)
+        with conn.cursor() as cursor:
+            sql = """
+                SELECT a.id, a.client_id, a.lawyer_id, a.appointment_date, a.status, a.created_at, 
+                       c.name AS client_name
+                FROM appointments a
+                JOIN clients c ON a.client_id = c.id
+                WHERE a.lawyer_id = %s
+                ORDER BY a.appointment_date DESC
+            """
+            cursor.execute(sql, (lawyer_id,))
+            appointments = cursor.fetchall()
+
+        conn.close()
+        return jsonify({'appointments': appointments}), 200
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/update-appointment-status/<int:appointment_id>', methods=['PUT', 'OPTIONS'])
+def update_appointment_status(appointment_id):
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
+
+    try:
+        lawyer_id = decoded['lawyer_id']
+        data = request.json
+        if not data or 'status' not in data:
+            return jsonify({'error': 'Status is required'}), 400
+
+        new_status = data['status']
+        if new_status not in ['confirmed', 'cancelled']:
+            return jsonify({'error': 'Invalid status value'}), 400
+
+        conn = pymysql.connect(**db_config)
+        with conn.cursor() as cursor:
+            # Verify the appointment belongs to the lawyer
+            sql = "SELECT lawyer_id FROM appointments WHERE id = %s"
+            cursor.execute(sql, (appointment_id,))
+            appointment = cursor.fetchone()
+            if not appointment or appointment['lawyer_id'] != lawyer_id:
+                return jsonify({'error': 'Appointment not found or unauthorized'}), 403
+
+            # Update the appointment status
+            sql = "UPDATE appointments SET status = %s WHERE id = %s"
+            cursor.execute(sql, (new_status, appointment_id))
+            conn.commit()
+
+        conn.close()
+        return jsonify({'message': f'Appointment {new_status} successfully'}), 200
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/create-case', methods=['POST', 'OPTIONS'])
+def create_case():
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
+
+    try:
+        lawyer_id = decoded['lawyer_id']
+        data = request.json
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+
+        client_id = data.get('client_id')
+        title = data.get('title')
+        description = data.get('description')
+        status = data.get('status', 'pending')
+        priority = data.get('priority', 'Medium')
+
+        if not all([client_id, title]):
+            return jsonify({'error': 'Client ID and title are required'}), 400
+
+        # Validate status and priority
+        if status not in ['pending', 'accepted', 'rejected', 'completed']:
+            return jsonify({'error': 'Invalid status value'}), 400
+        if priority not in ['Low', 'Medium', 'High']:
+            return jsonify({'error': 'Invalid priority value'}), 400
+
+        conn = pymysql.connect(**db_config)
+        with conn.cursor() as cursor:
+            # Verify the client exists
+            cursor.execute("SELECT id FROM clients WHERE id = %s", (client_id,))
+            client = cursor.fetchone()
+            if not client:
+                return jsonify({'error': 'Client not found'}), 404
+
+            # Insert the new case
+            sql = """
+                INSERT INTO cases (lawyer_id, client_id, title, description, status, priority)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """
+            cursor.execute(sql, (lawyer_id, client_id, title, description, status, priority))
+            conn.commit()
+
+        conn.close()
+        return jsonify({'message': 'Case created successfully'}), 201
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/lawyer-clients', methods=['GET', 'OPTIONS'])
+def lawyer_clients():
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
+
+    try:
+        lawyer_id = decoded['lawyer_id']
+        conn = pymysql.connect(**db_config)
+        with conn.cursor() as cursor:
+            # Fetch clients who have appointments with this lawyer
+            sql = """
+                SELECT DISTINCT c.id, c.name
+                FROM clients c
+                JOIN appointments a ON c.id = a.client_id
+                WHERE a.lawyer_id = %s
+            """
+            cursor.execute(sql, (lawyer_id,))
+            clients = cursor.fetchall()
+
+        conn.close()
+
+        # Format the response
+        clients_data = [{"id": client['id'], "name": client['name']} for client in clients]
+        return jsonify({"clients": clients_data}), 200
+
+    except Exception as e:
+        print(f"Error fetching clients: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 if __name__ == '__main__':

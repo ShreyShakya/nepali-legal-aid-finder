@@ -1,3 +1,5 @@
+/* LawyerDashboard.module.css */
+
 /* Import a modern font */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
@@ -429,11 +431,12 @@
   color: #f3f4f6;
 }
 
-/* Case Table */
+/* Table Wrapper */
 .tableWrapper {
   overflow-x: auto;
 }
 
+/* Case Table */
 .caseTable {
   width: 100%;
   border-collapse: collapse;
@@ -517,6 +520,123 @@
   color: #9ca3af;
 }
 
+/* Appointment Table */
+.appointmentTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+}
+
+.appointmentTable th,
+.appointmentTable td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.9rem;
+}
+
+.darkTheme .appointmentTable th,
+.darkTheme .appointmentTable td {
+  border-bottom: 1px solid #4b5563;
+}
+
+.appointmentTable th {
+  background-color: #f9fafb;
+  color: #6b7280;
+  font-weight: 500;
+  font-size: 0.85rem;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.darkTheme .appointmentTable th {
+  background-color: #4b5563;
+  color: #d1d5db;
+}
+
+.appointmentTable tbody tr {
+  transition: background-color 0.3s ease;
+}
+
+.appointmentTable tbody tr:hover {
+  background-color: #e6f0fa;
+}
+
+.darkTheme .appointmentTable tbody tr:hover {
+  background-color: #2d3748;
+}
+
+.appointmentTable td {
+  color: #4b5563;
+  font-size: 0.9rem;
+}
+
+.darkTheme .appointmentTable td {
+  color: #d1d5db;
+}
+
+/* Client Name Styling (to match caseTitle) */
+.appointmentTable td:first-child {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.darkTheme .appointmentTable td:first-child {
+  color: #f3f4f6;
+}
+
+/* Appointment Actions */
+.appointmentActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.confirmButton {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  background-color: #10b981;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.confirmButton:hover {
+  background-color: #059669;
+  transform: scale(1.05);
+}
+
+.confirmButton:disabled {
+  background-color: #34d399;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.cancelAppointmentButton {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  background-color: #ef4444;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.cancelAppointmentButton:hover {
+  background-color: #dc2626;
+  transform: scale(1.05);
+}
+
+.cancelAppointmentButton:disabled {
+  background-color: #f87171;
+  cursor: not-allowed;
+  transform: none;
+}
+
 /* Ellipsis Button */
 .ellipsisButton {
   background: none;
@@ -583,8 +703,10 @@
   font-size: 0.85rem;
 }
 
-#upcoming-appointments .placeholderContent {
-  padding: 1rem;
+#upcoming-appointments .appointmentTable th,
+#upcoming-appointments .appointmentTable td {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
 }
 
 /* Placeholder Content */
@@ -803,8 +925,8 @@
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
   font-weight: 500;
-  background-color: 4b5563;
-  color: gray;
+  background-color: #91969e;
+  color: #ffffff;
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -812,8 +934,7 @@
 }
 
 .actionButton:hover {
-  background-color: #ffffff;
-  color: #1d4ed8;
+  background-color: #2563eb;
   transform: scale(1.05);
 }
 
@@ -893,6 +1014,21 @@
   gap: 1rem;
 }
 
+/* Create Case Form */
+.createCaseForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1rem;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.darkTheme .createCaseForm {
+  background-color: #2d3748;
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
   .main {
@@ -917,10 +1053,16 @@
     height: 1.25rem;
   }
 
-  #recent-cases .caseTable th,
-  #recent-cases .caseTable td {
-    padding: 0.4rem 0.6rem;
-    font-size: 0.8rem;
+  .caseTable th,
+  .caseTable td {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .appointmentTable th,
+  .appointmentTable td {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
   }
 
   .caseTitle {
@@ -1003,6 +1145,18 @@
     font-size: 0.8rem;
   }
 
+  .appointmentTable th,
+  .appointmentTable td {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  .confirmButton,
+  .cancelAppointmentButton {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
   .actionButton,
   .statusSelect {
     font-size: 0.75rem;
@@ -1034,11 +1188,35 @@
     font-size: 0.75rem;
   }
 
+  #upcoming-appointments .appointmentTable th,
+  #upcoming-appointments .appointmentTable td {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
   .caseTitle {
     font-size: 0.85rem;
   }
 
   .caseDescription {
     font-size: 0.7rem;
+  }
+
+  .createCaseForm {
+    padding: 0.75rem;
+  }
+
+  .formGroup label {
+    font-size: 0.9rem;
+  }
+
+  .formInput,
+  .formTextarea {
+    font-size: 0.9rem;
+    padding: 0.5rem;
+  }
+
+  .formTextarea {
+    min-height: 100px;
   }
 }

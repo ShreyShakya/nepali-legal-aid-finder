@@ -193,6 +193,10 @@ button {
 .hero {
   padding: 10rem 0 6rem;
   background-color: #f8fafc;
+  background-image: url('/images/abc.jpg');
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: opacity(1);
   position: relative;
 }
 
@@ -207,7 +211,7 @@ button {
   font-weight: 700;
   margin-bottom: 1.5rem;
   line-height: 1.2;
-  color: #1e293b;
+  color: #fff;
 }
 
 .hero p {
