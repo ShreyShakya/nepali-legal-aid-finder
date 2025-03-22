@@ -15,6 +15,7 @@ import ClientLogin from './components/Auth/ClientLogin';
 import ClientDashboard from './pages/ClientDashboard';
 import BrowseLawyers from './pages/BrowseLawyers';
 import LawyerProfile from './components/Auth/LawyerProfile';
+import CaseDetails from './pages/CaseDetails';
 
 function App() {
     return (
@@ -62,6 +63,7 @@ function App() {
                     <Route path="/lawyer-profile/:id" element={<LawyerProfile />} />
                     <Route path="/browse-lawyers" element={<BrowseLawyers />} />
                     <Route path="lawyer-profile" element={<LawyerProfile />} />
+                    <Route path="/case-details/:caseId" element={<CaseDetails />} />
                 </Routes>
             </Router>
     );

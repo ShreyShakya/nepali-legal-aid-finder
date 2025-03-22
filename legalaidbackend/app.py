@@ -14,9 +14,13 @@ CORS(app, resources={r"/api/*": {"origins": "http://localhost:5173"}})
 
 # Configuration for file uploads
 UPLOAD_FOLDER = 'uploads'
+EVIDENCE_FOLDER = 'evidence'
+COURT_FILES_FOLDER = 'court_files'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(EVIDENCE_FOLDER, exist_ok=True)
+os.makedirs(COURT_FILES_FOLDER, exist_ok=True)
 
 db_config = {
     'host': 'localhost',
@@ -68,7 +72,7 @@ def validate_token():
 @app.route('/api/register-lawyer', methods=['POST'])
 def register_lawyer():
     try:
-        data = request.form  # Use form data for text fields
+        data = request.form
         if not data:
             return jsonify({'error': 'No data provided'}), 400
 
@@ -226,7 +230,7 @@ def update_lawyer_profile():
 
     try:
         lawyer_id = decoded['lawyer_id']
-        data = request.form  # Use form data for text fields
+        data = request.form
         if not data:
             return jsonify({'error': 'No data provided'}), 400
 
@@ -241,7 +245,6 @@ def update_lawyer_profile():
 
         conn = pymysql.connect(**db_config)
         with conn.cursor() as cursor:
-            # Fetch current profile picture if not updating it
             if not profile_picture:
                 cursor.execute("SELECT profile_picture FROM lawyers WHERE id = %s", (lawyer_id,))
                 current = cursor.fetchone()
@@ -297,6 +300,14 @@ def update_lawyer_profile():
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
+@app.route('/evidence/<filename>')
+def evidence_file(filename):
+    return send_from_directory(EVIDENCE_FOLDER, filename)
+
+@app.route('/court-files/<filename>')
+def court_file(filename):
+    return send_from_directory(COURT_FILES_FOLDER, filename)
+
 @app.route('/api/lawyer-cases', methods=['GET', 'OPTIONS'])
 def lawyer_cases():
     if request.method == "OPTIONS":
@@ -311,7 +322,9 @@ def lawyer_cases():
         conn = pymysql.connect(**db_config)
         with conn.cursor() as cursor:
             sql = """
-                SELECT c.id, c.title, c.description, c.status, c.created_at, c.priority, cl.name AS client_name
+                SELECT c.id, c.title, c.case_type, c.description, c.status, c.created_at, c.priority,
+                       c.filing_date, c.jurisdiction, c.plaintiff_name, c.defendant_name,
+                       cl.name AS client_name
                 FROM cases c
                 JOIN clients cl ON c.client_id = cl.id
                 WHERE c.lawyer_id = %s
@@ -347,14 +360,12 @@ def update_case_status(case_id):
 
         conn = pymysql.connect(**db_config)
         with conn.cursor() as cursor:
-            # Verify the case belongs to the lawyer
             sql = "SELECT lawyer_id FROM cases WHERE id = %s"
             cursor.execute(sql, (case_id,))
             case = cursor.fetchone()
             if not case or case['lawyer_id'] != lawyer_id:
                 return jsonify({'error': 'Case not found or unauthorized'}), 403
 
-            # Update the status
             sql = "UPDATE cases SET status = %s WHERE id = %s"
             cursor.execute(sql, (new_status, case_id))
             conn.commit()
@@ -376,7 +387,7 @@ def register_client():
         name = data.get('name')
         email = data.get('email')
         password = data.get('password')
-        phone = data.get('phone')  # Optional field for clients
+        phone = data.get('phone')
 
         if not all([name, email, password]):
             return jsonify({'error': 'Name, email, and password are required'}), 400
@@ -451,7 +462,6 @@ def login_client():
 @app.route('/api/lawyers', methods=['GET'])
 def get_lawyers():
     try:
-        # Get query parameters for filtering
         specialization = request.args.get('specialization', '')
         location = request.args.get('location', '')
         availability_status = request.args.get('availability_status', '')
@@ -459,7 +469,6 @@ def get_lawyers():
 
         conn = pymysql.connect(**db_config)
         with conn.cursor() as cursor:
-            # Build the SQL query with dynamic conditions
             sql = """
                 SELECT id, name, specialization, location, availability, bio, 
                        email_notifications, availability_status, working_hours_start, 
@@ -487,7 +496,6 @@ def get_lawyers():
 
         conn.close()
 
-        # Format the response
         lawyers_response = []
         for lawyer in lawyers:
             lawyer_dict = lawyer.copy()
@@ -525,7 +533,6 @@ def get_lawyer(lawyer_id):
         if not lawyer:
             return jsonify({'error': 'Lawyer not found'}), 404
 
-        # Format the response
         lawyer_response = lawyer.copy()
         if isinstance(lawyer['working_hours_start'], timedelta):
             lawyer_response['working_hours_start'] = str(lawyer['working_hours_start'])
@@ -560,13 +567,11 @@ def book_appointment():
 
         conn = pymysql.connect(**db_config)
         with conn.cursor() as cursor:
-            # Check if the lawyer exists
             cursor.execute("SELECT id FROM lawyers WHERE id = %s", (lawyer_id,))
             lawyer = cursor.fetchone()
             if not lawyer:
                 return jsonify({'error': 'Lawyer not found'}), 404
 
-            # Book the appointment
             sql = """
                 INSERT INTO appointments (client_id, lawyer_id, appointment_date)
                 VALUES (%s, %s, %s)
@@ -667,14 +672,12 @@ def update_appointment_status(appointment_id):
 
         conn = pymysql.connect(**db_config)
         with conn.cursor() as cursor:
-            # Verify the appointment belongs to the lawyer
             sql = "SELECT lawyer_id FROM appointments WHERE id = %s"
             cursor.execute(sql, (appointment_id,))
             appointment = cursor.fetchone()
             if not appointment or appointment['lawyer_id'] != lawyer_id:
                 return jsonify({'error': 'Appointment not found or unauthorized'}), 403
 
-            # Update the appointment status
             sql = "UPDATE appointments SET status = %s WHERE id = %s"
             cursor.execute(sql, (new_status, appointment_id))
             conn.commit()
@@ -703,14 +706,18 @@ def create_case():
 
         client_id = data.get('client_id')
         title = data.get('title')
-        description = data.get('description')
+        case_type = data.get('case_type')
         status = data.get('status', 'pending')
+        filing_date = data.get('filing_date')
+        jurisdiction = data.get('jurisdiction')
+        description = data.get('description')
+        plaintiff_name = data.get('plaintiff_name')
+        defendant_name = data.get('defendant_name')
         priority = data.get('priority', 'Medium')
 
-        if not all([client_id, title]):
-            return jsonify({'error': 'Client ID and title are required'}), 400
+        if not all([client_id, title, case_type, filing_date, jurisdiction, plaintiff_name, defendant_name]):
+            return jsonify({'error': 'Client ID, title, case type, filing date, jurisdiction, plaintiff name, and defendant name are required'}), 400
 
-        # Validate status and priority
         if status not in ['pending', 'accepted', 'rejected', 'completed']:
             return jsonify({'error': 'Invalid status value'}), 400
         if priority not in ['Low', 'Medium', 'High']:
@@ -718,22 +725,128 @@ def create_case():
 
         conn = pymysql.connect(**db_config)
         with conn.cursor() as cursor:
-            # Verify the client exists
             cursor.execute("SELECT id FROM clients WHERE id = %s", (client_id,))
             client = cursor.fetchone()
             if not client:
                 return jsonify({'error': 'Client not found'}), 404
 
-            # Insert the new case
             sql = """
-                INSERT INTO cases (lawyer_id, client_id, title, description, status, priority)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                INSERT INTO cases (lawyer_id, client_id, title, case_type, status, filing_date, jurisdiction, description, plaintiff_name, defendant_name, priority)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
-            cursor.execute(sql, (lawyer_id, client_id, title, description, status, priority))
+            cursor.execute(sql, (lawyer_id, client_id, title, case_type, status, filing_date, jurisdiction, description, plaintiff_name, defendant_name, priority))
             conn.commit()
 
         conn.close()
         return jsonify({'message': 'Case created successfully'}), 201
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/case/<int:case_id>', methods=['GET'])
+def get_case(case_id):
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
+
+    try:
+        lawyer_id = decoded['lawyer_id']
+        conn = pymysql.connect(**db_config)
+        with conn.cursor() as cursor:
+            sql = """
+                SELECT c.*, l.name AS lawyer_name, cl.name AS client_name
+                FROM cases c
+                JOIN lawyers l ON c.lawyer_id = l.id
+                JOIN clients cl ON c.client_id = cl.id
+                WHERE c.id = %s AND c.lawyer_id = %s
+            """
+            cursor.execute(sql, (case_id, lawyer_id))
+            case_data = cursor.fetchone()
+
+            if not case_data:
+                return jsonify({'error': 'Case not found or unauthorized'}), 403
+
+        conn.close()
+        return jsonify({'case': case_data}), 200
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/case/<int:case_id>', methods=['PUT', 'OPTIONS'])
+def update_case(case_id):
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
+
+    try:
+        lawyer_id = decoded['lawyer_id']
+        data = request.form
+        evidence_files = request.files.getlist('evidence_files')
+        court_files = request.files.getlist('court_files')
+
+        conn = pymysql.connect(**db_config)
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT lawyer_id FROM cases WHERE id = %s", (case_id,))
+            case = cursor.fetchone()
+            if not case or case['lawyer_id'] != lawyer_id:
+                return jsonify({'error': 'Case not found or unauthorized'}), 403
+
+            sql = """
+                UPDATE cases
+                SET next_hearing_date = %s, case_progress_notes = %s, status = %s,
+                    verdict_summary = %s, case_discussion_notes = %s, client_contact_info = %s,
+                    is_pro_bono = %s
+                WHERE id = %s
+            """
+            cursor.execute(sql, (
+                data.get('next_hearing_date') or None,
+                data.get('case_progress_notes', ''),
+                data.get('case_status', 'pending'),
+                data.get('verdict_summary', ''),
+                data.get('case_discussion_notes', ''),
+                data.get('client_contact_info', ''),
+                1 if data.get('is_pro_bono', 'false') == 'true' else 0,
+                case_id
+            ))
+
+            for file in evidence_files:
+                if file and allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    file_path = os.path.join(EVIDENCE_FOLDER, filename)
+                    file.save(file_path)
+                    cursor.execute(
+                        "INSERT INTO evidence_files (case_id, file_path) VALUES (%s, %s)",
+                        (case_id, filename)
+                    )
+
+            for file in court_files:
+                if file and allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    file_path = os.path.join(COURT_FILES_FOLDER, filename)
+                    file.save(file_path)
+                    cursor.execute(
+                        "INSERT INTO court_files (case_id, file_path) VALUES (%s, %s)",
+                        (case_id, filename)
+                    )
+
+            conn.commit()
+
+            cursor.execute("""
+                SELECT c.*, l.name AS lawyer_name, cl.name AS client_name
+                FROM cases c
+                JOIN lawyers l ON c.lawyer_id = l.id
+                JOIN clients cl ON c.client_id = cl.id
+                WHERE c.id = %s
+            """, (case_id,))
+            updated_case = cursor.fetchone()
+
+        conn.close()
+        return jsonify({'case': updated_case, 'message': 'Case updated successfully'}), 200
 
     except Exception as e:
         print(f"Error: {str(e)}")
@@ -752,7 +865,6 @@ def lawyer_clients():
         lawyer_id = decoded['lawyer_id']
         conn = pymysql.connect(**db_config)
         with conn.cursor() as cursor:
-            # Fetch clients who have appointments with this lawyer
             sql = """
                 SELECT DISTINCT c.id, c.name
                 FROM clients c
@@ -764,7 +876,6 @@ def lawyer_clients():
 
         conn.close()
 
-        # Format the response
         clients_data = [{"id": client['id'], "name": client['name']} for client in clients]
         return jsonify({"clients": clients_data}), 200
 

@@ -41,7 +41,7 @@ export default function ClientLogin() {
       localStorage.setItem('clientToken', response.data.token)
       localStorage.setItem('client', JSON.stringify(response.data.client))
 
-      setTimeout(() => navigate('/client-dashboard'), 2000) // Redirect to client dashboard
+      setTimeout(() => navigate('/client-dashboard'), 500) // Redirect to client dashboard
     } catch (error) {
       setMessage(error.response?.data?.error || "Login failed")
       setIsError(true)

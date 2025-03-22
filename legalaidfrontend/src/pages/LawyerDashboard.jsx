@@ -12,7 +12,7 @@ export default function LawyerDashboard() {
   const [lawyer, setLawyer] = useState(null)
   const [cases, setCases] = useState([])
   const [appointments, setAppointments] = useState([])
-  const [clients, setClients] = useState([]) // New state for clients
+  const [clients, setClients] = useState([])
   const [notifications, setNotifications] = useState([])
   const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [formData, setFormData] = useState({})
@@ -25,12 +25,17 @@ export default function LawyerDashboard() {
   const [selectedAppointment, setSelectedAppointment] = useState(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [activeTab, setActiveTab] = useState("dashboard")
-  const [isCreatingCase, setIsCreatingCase] = useState(false) // New state for create case form
+  const [isCreatingCase, setIsCreatingCase] = useState(false)
   const [newCaseData, setNewCaseData] = useState({
     client_id: "",
     title: "",
-    description: "",
+    case_type: "Civil",
     status: "pending",
+    filing_date: new Date().toISOString().split('T')[0],
+    jurisdiction: "District Court",
+    description: "",
+    plaintiff_name: "",
+    defendant_name: "",
     priority: "Medium"
   })
   const navigate = useNavigate()
@@ -60,7 +65,6 @@ export default function LawyerDashboard() {
 
       setIsLoading(true)
       try {
-        // Fetch profile first
         const profileResponse = await axios.get('http://127.0.0.1:5000/api/lawyer-profile', {
           headers: { Authorization: `Bearer ${token}` }
         })
@@ -71,13 +75,11 @@ export default function LawyerDashboard() {
           preferred_contact: profileResponse.data.lawyer.preferred_contact
         })
 
-        // Fetch cases
         const casesResponse = await axios.get('http://127.0.0.1:5000/api/lawyer-cases', {
           headers: { Authorization: `Bearer ${token}` }
         })
         setCases(casesResponse.data.cases)
 
-        // Fetch appointments
         try {
           const appointmentsResponse = await axios.get(
             `http://127.0.0.1:5000/api/lawyer-appointments/${profileResponse.data.lawyer.id}`,
@@ -89,7 +91,6 @@ export default function LawyerDashboard() {
           setAppointments([])
         }
 
-        // Fetch clients for the create case form
         try {
           const clientsResponse = await axios.get('http://127.0.0.1:5000/api/lawyer-clients', {
             headers: { Authorization: `Bearer ${token}` }
@@ -195,7 +196,7 @@ export default function LawyerDashboard() {
   }
 
   const handleCaseDetails = (caseItem) => {
-    setSelectedCase(caseItem)
+    navigate(`/case-details/${caseItem.id}`)
   }
 
   const handleAppointmentDetails = (appointment) => {
@@ -265,8 +266,13 @@ export default function LawyerDashboard() {
       setNewCaseData({
         client_id: "",
         title: "",
-        description: "",
+        case_type: "Civil",
         status: "pending",
+        filing_date: new Date().toISOString().split('T')[0],
+        jurisdiction: "District Court",
+        description: "",
+        plaintiff_name: "",
+        defendant_name: "",
         priority: "Medium"
       })
       addNotification(response.data.message || "Case created successfully", "success")
@@ -277,16 +283,13 @@ export default function LawyerDashboard() {
     }
   }
 
-  // Calculate stats
   const totalCases = cases.length
   const pendingCases = cases.filter(c => c.status === 'pending').length
   const highPriorityCases = cases.filter(c => c.priority === 'High').length
   const completedCases = cases.filter(c => c.status === 'completed').length
 
-  // Get recent cases for the dashboard summary (e.g., top 3)
   const recentCases = cases.slice(0, 3)
 
-  // Get upcoming appointments for the dashboard summary (e.g., top 3 upcoming)
   const upcomingAppointments = appointments
     .filter(appt => new Date(appt.appointment_date) >= new Date() && appt.status !== 'cancelled')
     .sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date))
@@ -401,7 +404,6 @@ export default function LawyerDashboard() {
                   </div>
                 </div>
 
-                {/* Summarized Cases Section */}
                 <div className={styles.card} id="recent-cases">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                     <h2 className={styles.sectionTitle}>Recent Cases</h2>
@@ -460,7 +462,6 @@ export default function LawyerDashboard() {
                   )}
                 </div>
 
-                {/* Summarized Appointments Section */}
                 <div className={styles.card} id="upcoming-appointments">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                     <h2 className={styles.sectionTitle}>Upcoming Appointments</h2>
@@ -527,8 +528,82 @@ export default function LawyerDashboard() {
                 </div>
                 {isCreatingCase ? (
                   <form onSubmit={handleCreateCase} className={styles.createCaseForm}>
+                    <h3>Case Basic Details</h3>
                     <div className={styles.formGroup}>
-                      <label>Client:</label>
+                      <label>Case Title:</label>
+                      <input
+                        type="text"
+                        name="title"
+                        value={newCaseData.title}
+                        onChange={handleNewCaseChange}
+                        className={styles.formInput}
+                        required
+                      />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Case Type:</label>
+                      <select
+                        name="case_type"
+                        value={newCaseData.case_type}
+                        onChange={handleNewCaseChange}
+                        className={styles.formInput}
+                        required
+                      >
+                        <option value="Civil">Civil</option>
+                        <option value="Criminal">Criminal</option>
+                        <option value="Family">Family</option>
+                        <option value="Property">Property</option>
+                        <option value="Labor">Labor</option>
+                      </select>
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Case Status:</label>
+                      <input
+                        type="text"
+                        name="status"
+                        value={newCaseData.status}
+                        className={styles.formInput}
+                        disabled
+                      />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Filing Date:</label>
+                      <input
+                        type="date"
+                        name="filing_date"
+                        value={newCaseData.filing_date}
+                        className={styles.formInput}
+                        disabled
+                      />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Jurisdiction:</label>
+                      <select
+                        name="jurisdiction"
+                        value={newCaseData.jurisdiction}
+                        onChange={handleNewCaseChange}
+                        className={styles.formInput}
+                        required
+                      >
+                        <option value="District Court">District Court</option>
+                        <option value="High Court">High Court</option>
+                        <option value="Supreme Court">Supreme Court</option>
+                      </select>
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Case Description:</label>
+                      <textarea
+                        name="description"
+                        value={newCaseData.description}
+                        onChange={handleNewCaseChange}
+                        className={styles.formTextarea}
+                        required
+                      />
+                    </div>
+
+                    <h3>Parties Involved</h3>
+                    <div className={styles.formGroup}>
+                      <label>Client (Plaintiff):</label>
                       <select
                         name="client_id"
                         value={newCaseData.client_id}
@@ -545,52 +620,37 @@ export default function LawyerDashboard() {
                       </select>
                     </div>
                     <div className={styles.formGroup}>
-                      <label>Title:</label>
+                      <label>Plaintiff Name(s):</label>
                       <input
                         type="text"
-                        name="title"
-                        value={newCaseData.title}
+                        name="plaintiff_name"
+                        value={newCaseData.plaintiff_name}
                         onChange={handleNewCaseChange}
                         className={styles.formInput}
                         required
                       />
                     </div>
                     <div className={styles.formGroup}>
-                      <label>Description:</label>
-                      <textarea
-                        name="description"
-                        value={newCaseData.description}
+                      <label>Defendant Name(s):</label>
+                      <input
+                        type="text"
+                        name="defendant_name"
+                        value={newCaseData.defendant_name}
                         onChange={handleNewCaseChange}
-                        className={styles.formTextarea}
+                        className={styles.formInput}
+                        required
                       />
                     </div>
                     <div className={styles.formGroup}>
-                      <label>Status:</label>
-                      <select
-                        name="status"
-                        value={newCaseData.status}
-                        onChange={handleNewCaseChange}
+                      <label>Assigned Lawyer:</label>
+                      <input
+                        type="text"
+                        value={lawyer?.name || "Loading..."}
                         className={styles.formInput}
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="accepted">Accepted</option>
-                        <option value="rejected">Rejected</option>
-                        <option value="completed">Completed</option>
-                      </select>
+                        disabled
+                      />
                     </div>
-                    <div className={styles.formGroup}>
-                      <label>Priority:</label>
-                      <select
-                        name="priority"
-                        value={newCaseData.priority}
-                        onChange={handleNewCaseChange}
-                        className={styles.formInput}
-                      >
-                        <option value="Low">Low</option>
-                        <option value="Medium">Medium</option>
-                        <option value="High">High</option>
-                      </select>
-                    </div>
+
                     <div className={styles.formActions}>
                       <button type="submit" className={styles.actionButton} disabled={isLoading}>Create</button>
                       <button
@@ -842,15 +902,13 @@ export default function LawyerDashboard() {
                 <h2 className={styles.sectionTitle}>Account Settings</h2>
                 <form onSubmit={handleSettingsSave} className={styles.editForm}>
                   <div className={styles.formGroup}>
-                    <label>
-                      <input
-                        type="checkbox"
-                        name="email_notifications"
-                        checked={settingsFormData.email_notifications}
-                        onChange={handleSettingsChange}
-                      />
-                      Receive Email Notifications
-                    </label>
+                    <label>Email Notifications:</label>
+                    <input
+                      type="checkbox"
+                      name="email_notifications"
+                      checked={settingsFormData.email_notifications}
+                      onChange={handleSettingsChange}
+                    />
                   </div>
                   <div className={styles.formGroup}>
                     <label>Preferred Contact Method:</label>
@@ -874,28 +932,6 @@ export default function LawyerDashboard() {
         </main>
       </div>
 
-      <div className={styles.notificationContainer}>
-        <AnimatePresence>
-          {notifications.map((notification) => (
-            <motion.div
-              key={notification.id}
-              className={`${styles.notification} ${notification.type === 'error' ? styles.errorNotification : styles.successNotification}`}
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 50 }}
-              transition={{ duration: 0.3 }}
-            >
-              {notification.type === 'success' ? <CheckCircle className={styles.notificationIcon} /> : <AlertCircle className={styles.notificationIcon} />}
-              {notification.message}
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
-
-      <div className={styles.loaderOverlay} style={{ display: isLoading ? 'flex' : 'none' }}>
-        <div className={styles.loader}></div>
-      </div>
-
       <AnimatePresence>
         {dialog.isOpen && (
           <motion.div
@@ -905,16 +941,15 @@ export default function LawyerDashboard() {
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className={styles.dialog}
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.8 }}
+              className={styles.dialogBox}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
             >
-              <h3>Confirm Action</h3>
-              <p>{dialog.message}</p>
+              <h3>{dialog.message}</h3>
               <div className={styles.dialogActions}>
                 <button onClick={dialog.onConfirm} className={styles.actionButton}>Yes</button>
-                <button onClick={() => setDialog({ ...dialog, isOpen: false })} className={styles.cancelButton}>No</button>
+                <button onClick={() => setDialog({ isOpen: false, message: "", onConfirm: null })} className={styles.cancelButton}>No</button>
               </div>
             </motion.div>
           </motion.div>
@@ -930,22 +965,20 @@ export default function LawyerDashboard() {
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className={styles.dialog}
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.8 }}
+              className={styles.dialogBox}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
             >
-              <h3>Case Details</h3>
-              <div className={styles.dialogContent}>
-                <p><strong>Title:</strong> {selectedCase.title}</p>
+              <h3>Case Details: {selectedCase.title}</h3>
+              <div className={styles.caseDialogContent}>
+                <p><strong>Case Number:</strong> {selectedCase.id}</p>
                 <p><strong>Description:</strong> {selectedCase.description || "No description"}</p>
                 <p><strong>Status:</strong> {selectedCase.status}</p>
                 <p><strong>Priority:</strong> {selectedCase.priority}</p>
-                <p><strong>Created At:</strong> {new Date(selectedCase.created_at).toLocaleString()}</p>
+                <p><strong>Created At:</strong> {new Date(selectedCase.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
               </div>
-              <div className={styles.dialogActions}>
-                <button onClick={() => setSelectedCase(null)} className={styles.actionButton}>Close</button>
-              </div>
+              <button onClick={() => setSelectedCase(null)} className={styles.cancelButton}>Close</button>
             </motion.div>
           </motion.div>
         )}
@@ -960,25 +993,49 @@ export default function LawyerDashboard() {
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className={styles.dialog}
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.8 }}
+              className={styles.dialogBox}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
             >
               <h3>Appointment Details</h3>
-              <div className={styles.dialogContent}>
+              <div className={styles.appointmentDialogContent}>
                 <p><strong>Client Name:</strong> {selectedAppointment.client_name}</p>
-                <p><strong>Date & Time:</strong> {new Date(selectedAppointment.appointment_date).toLocaleString()}</p>
+                <p><strong>Date & Time:</strong> {new Date(selectedAppointment.appointment_date).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                 <p><strong>Status:</strong> {selectedAppointment.status}</p>
-                <p><strong>Booked On:</strong> {new Date(selectedAppointment.created_at).toLocaleString()}</p>
+                <p><strong>Booked On:</strong> {new Date(selectedAppointment.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
               </div>
-              <div className={styles.dialogActions}>
-                <button onClick={() => setSelectedAppointment(null)} className={styles.actionButton}>Close</button>
-              </div>
+              <button onClick={() => setSelectedAppointment(null)} className={styles.cancelButton}>Close</button>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      <div className={styles.notificationContainer}>
+        <AnimatePresence>
+          {notifications.map((notification) => (
+            <motion.div
+              key={notification.id}
+              className={`${styles.notification} ${notification.type === 'error' ? styles.errorNotification : styles.successNotification}`}
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 50 }}
+              transition={{ duration: 0.3 }}
+            >
+              {notification.type === 'success' ? (
+                <CheckCircle className={styles.notificationIcon} />
+              ) : (
+                <AlertCircle className={styles.notificationIcon} />
+              )}
+              {notification.message}
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+
+      <div className={styles.loaderOverlay} style={{ display: isLoading ? 'flex' : 'none' }}>
+        <div className={styles.loader}></div>
+      </div>
     </div>
   )
 }
