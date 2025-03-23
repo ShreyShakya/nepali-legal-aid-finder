@@ -296,6 +296,63 @@ def update_lawyer_profile():
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
+# New endpoint for changing password
+@app.route('/api/lawyer/change-password', methods=['PUT', 'OPTIONS'])
+def change_password():
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
+
+    try:
+        lawyer_id = decoded['lawyer_id']
+        data = request.json
+        if not data or 'current_password' not in data or 'new_password' not in data:
+            return jsonify({'error': 'Current password and new password are required'}), 400
+
+        current_password = data['current_password']
+        new_password = data['new_password']
+
+        # Basic validation for new password
+        if len(new_password) < 8:
+            return jsonify({'error': 'New password must be at least 8 characters long'}), 400
+
+        conn = pymysql.connect(**db_config)
+        with conn.cursor() as cursor:
+            # Fetch the current hashed password
+            cursor.execute("SELECT password FROM lawyers WHERE id = %s", (lawyer_id,))
+            lawyer = cursor.fetchone()
+
+            if not lawyer:
+                conn.close()
+                return jsonify({'error': 'Lawyer not found'}), 404
+
+            # Verify the current password
+            stored_password = base64.b64decode(lawyer['password'])
+            if not verify_password(stored_password, current_password):
+                conn.close()
+                return jsonify({'error': 'Current password is incorrect'}), 401
+
+            # Hash the new password
+            hashed_bytes = hash_password(new_password)
+            hashed_new_password = base64.b64encode(hashed_bytes).decode('utf-8')
+
+            # Update the password in the database
+            cursor.execute(
+                "UPDATE lawyers SET password = %s WHERE id = %s",
+                (hashed_new_password, lawyer_id)
+            )
+            conn.commit()
+
+        conn.close()
+        return jsonify({'message': 'Password updated successfully'}), 200
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)

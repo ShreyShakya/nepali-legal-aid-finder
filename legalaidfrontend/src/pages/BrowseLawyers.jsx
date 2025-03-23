@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Scale, Search } from "lucide-react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import legalServices from "../utils/legalServices"; // Import the shared legalServices array
 import styles from "./BrowseLawyers.module.css";
 
 const fadeIn = {
@@ -28,20 +29,20 @@ export default function BrowseLawyers() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  // Hardcoded list of legal services
-  const legalServices = [
-    "Divorce",
-    "Land Settlement",
-    "Corporate Law",
-    "Criminal Defense",
-    "Family Law",
-    "Intellectual Property",
-    "Labor Law",
-    "Immigration Law",
-    "Tax Law",
-    "Personal Injury",
-  ];
+  // Extract the 'service' query parameter from the URL
+  useEffect(() => {
+    const serviceFromUrl = searchParams.get("service");
+
+    if (serviceFromUrl) {
+      setSearchQuery(decodeURIComponent(serviceFromUrl));
+      setSelectedService(decodeURIComponent(serviceFromUrl));
+      fetchLawyers(decodeURIComponent(serviceFromUrl), filters);
+    } else {
+      fetchLawyers("", filters); // Fetch default lawyers if no service is specified
+    }
+  }, [searchParams, filters]);
 
   // Handle search input and show suggestions
   const handleSearchInput = (e) => {
@@ -52,6 +53,8 @@ export default function BrowseLawyers() {
       setSuggestions([]);
       setSelectedService("");
       setLawyers([]);
+      fetchLawyers("", filters);
+      setSearchParams({});
       return;
     }
 
@@ -67,6 +70,7 @@ export default function BrowseLawyers() {
     setSelectedService(service);
     setSuggestions([]);
     fetchLawyers(service, filters);
+    setSearchParams({ service });
   };
 
   // Handle filter changes
@@ -76,6 +80,8 @@ export default function BrowseLawyers() {
       const newFilters = { ...prev, [name]: value };
       if (selectedService) {
         fetchLawyers(selectedService, newFilters);
+      } else {
+        fetchLawyers("", newFilters);
       }
       return newFilters;
     });
@@ -86,9 +92,9 @@ export default function BrowseLawyers() {
     setLoading(true);
     setError("");
     try {
-      const response = await axios.get('http://127.0.0.1:5000/api/lawyers', {
+      const response = await axios.get("http://127.0.0.1:5000/api/lawyers", {
         params: {
-          specialization: service,
+          specialization: service || undefined,
           location: filters.location,
           min_rating: filters.minRating,
           availability_status: filters.availabilityStatus,
@@ -112,15 +118,22 @@ export default function BrowseLawyers() {
     setSelectedService(serviceToSearch);
     setSuggestions([]);
     fetchLawyers(serviceToSearch, filters);
+    setSearchParams({ service: serviceToSearch });
   };
 
   const handleViewProfile = (lawyerId) => {
-    const token = localStorage.getItem('clientToken');
+    const token = localStorage.getItem("clientToken");
     if (!token) {
-      navigate('/client-login');
+      navigate("/client-login");
       return;
     }
     navigate(`/lawyer-profile/${lawyerId}`);
+  };
+
+  // Handle image loading errors by falling back to the placeholder
+  const handleImageError = (e) => {
+    e.target.style.display = "none";
+    e.target.nextSibling.style.display = "flex";
   };
 
   return (
@@ -139,9 +152,15 @@ export default function BrowseLawyers() {
           </div>
           <nav className={styles.mainNav}>
             <ul>
-              <li><a href="/">Home</a></li>
-              <li><a href="/client-login">Client Login</a></li>
-              <li><a href="/lawyer-login">Lawyer Login</a></li>
+              <li>
+                <a href="/">Home</a>
+              </li>
+              <li>
+                <a href="/client-login">Client Login</a>
+              </li>
+              <li>
+                <a href="/lawyer-login">Lawyer Login</a>
+              </li>
             </ul>
           </nav>
         </div>
@@ -191,127 +210,152 @@ export default function BrowseLawyers() {
       </section>
 
       {/* Filters and Results Section */}
-      {selectedService && (
-        <motion.section
-          className={styles.resultsSection}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={fadeIn}
-        >
-          <div className={styles.container}>
-            <div className={styles.sectionHeader}>
-              <motion.h2 variants={slideUp}>
-                Lawyers Specializing in {selectedService}
-              </motion.h2>
+      <motion.section
+        className={styles.resultsSection}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        variants={fadeIn}
+      >
+        <div className={styles.container}>
+          <div className={styles.sectionHeader}>
+            <motion.h2 variants={slideUp}>
+              {selectedService
+                ? `Lawyers Specializing in ${selectedService}`
+                : "Featured Lawyers"}
+            </motion.h2>
+          </div>
+
+          {/* Filter Form */}
+          <form className={styles.filterForm}>
+            <div className={styles.filterGroup}>
+              <label htmlFor="location">Location</label>
+              <input
+                type="text"
+                id="location"
+                name="location"
+                placeholder="e.g., Kathmandu"
+                value={filters.location}
+                onChange={handleFilterChange}
+                className={styles.filterInput}
+              />
             </div>
-
-            {/* Filter Form */}
-            <form className={styles.filterForm}>
-              <div className={styles.filterGroup}>
-                <label htmlFor="location">Location</label>
-                <input
-                  type="text"
-                  id="location"
-                  name="location"
-                  placeholder="e.g., Kathmandu"
-                  value={filters.location}
-                  onChange={handleFilterChange}
-                  className={styles.filterInput}
-                />
-              </div>
-              <div className={styles.filterGroup}>
-                <label htmlFor="minRating">Minimum Rating</label>
-                <select
-                  id="minRating"
-                  name="minRating"
-                  value={filters.minRating}
-                  onChange={handleFilterChange}
-                  className={styles.filterInput}
-                >
-                  <option value="">Any</option>
-                  <option value="1">1 Star & Up</option>
-                  <option value="2">2 Stars & Up</option>
-                  <option value="3">3 Stars & Up</option>
-                  <option value="4">4 Stars & Up</option>
-                  <option value="5">5 Stars</option>
-                </select>
-              </div>
-              <div className={styles.filterGroup}>
-                <label htmlFor="availabilityStatus">Availability</label>
-                <select
-                  id="availabilityStatus"
-                  name="availabilityStatus"
-                  value={filters.availabilityStatus}
-                  onChange={handleFilterChange}
-                  className={styles.filterInput}
-                >
-                  <option value="">Any</option>
-                  <option value="Available">Available</option>
-                  <option value="Busy">Busy</option>
-                </select>
-              </div>
-            </form>
-
-            {/* Results */}
-            {loading ? (
-              <p>Loading...</p>
-            ) : error ? (
-              <p className={styles.error}>{error}</p>
-            ) : lawyers.length === 0 ? (
-              <p>No lawyers found for {selectedService}.</p>
-            ) : (
-              <motion.div
-                className={styles.lawyerGrid}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                variants={{
-                  visible: {
-                    transition: {
-                      staggerChildren: 0.1,
-                    },
-                  },
-                }}
+            <div className={styles.filterGroup}>
+              <label htmlFor="minRating">Minimum Rating</label>
+              <select
+                id="minRating"
+                name="minRating"
+                value={filters.minRating}
+                onChange={handleFilterChange}
+                className={styles.filterInput}
               >
-                {lawyers.map((lawyer) => (
-                  <motion.div
-                    key={lawyer.id}
-                    className={styles.lawyerCard}
-                    variants={slideUp}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <div className={styles.lawyerImage}>
-                      {lawyer.profile_picture ? (
+                <option value="">Any</option>
+                <option value="1">1 Star & Up</option>
+                <option value="2">2 Stars & Up</option>
+                <option value="3">3 Stars & Up</option>
+                <option value="4">4 Stars & Up</option>
+                <option value="5">5 Stars</option>
+              </select>
+            </div>
+            <div className={styles.filterGroup}>
+              <label htmlFor="availabilityStatus">Availability</label>
+              <select
+                id="availabilityStatus"
+                name="availabilityStatus"
+                value={filters.availabilityStatus}
+                onChange={handleFilterChange}
+                className={styles.filterInput}
+              >
+                <option value="">Any</option>
+                <option value="Available">Available</option>
+                <option value="Busy">Busy</option>
+              </select>
+            </div>
+          </form>
+
+          {/* Results */}
+          {loading ? (
+            <p>Loading...</p>
+          ) : error ? (
+            <p className={styles.error}>{error}</p>
+          ) : lawyers.length === 0 ? (
+            <p>
+              {selectedService
+                ? `No lawyers found for ${selectedService}.`
+                : "No lawyers available at the moment."}
+            </p>
+          ) : (
+            <motion.div
+              className={styles.lawyerGrid}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={{
+                visible: {
+                  transition: {
+                    staggerChildren: 0.1,
+                  },
+                },
+              }}
+            >
+              {lawyers.map((lawyer) => (
+                <motion.div
+                  key={lawyer.id}
+                  className={styles.lawyerCard}
+                  variants={slideUp}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className={styles.lawyerImage}>
+                    {lawyer.profile_picture ? (
+                      <>
                         <img
-                          src={lawyer.profile_picture}
+                          src={`http://127.0.0.1:5000${lawyer.profile_picture}`}
                           alt={lawyer.name}
                           className={styles.profilePicture}
+                          onError={handleImageError}
                         />
-                      ) : (
-                        <div className={styles.placeholderPicture}>No Image</div>
-                      )}
-                    </div>
-                    <div className={styles.lawyerInfo}>
-                      <h3>{lawyer.name}</h3>
-                      <p><strong>Specialization:</strong> {lawyer.specialization || 'Not specified'}</p>
-                      <p><strong>Location:</strong> {lawyer.location || 'Not specified'}</p>
-                      <p><strong>Rating:</strong> {lawyer.rating ? lawyer.rating.toFixed(1) : 'Not rated'}</p>
-                      <p><strong>Availability:</strong> {lawyer.availability_status || 'Not specified'}</p>
-                    </div>
-                    <button
-                      onClick={() => handleViewProfile(lawyer.id)}
-                      className={styles.viewProfileButton}
-                    >
-                      View Profile
-                    </button>
-                  </motion.div>
-                ))}
-              </motion.div>
-            )}
-          </div>
-        </motion.section>
-      )}
+                        <div
+                          className={styles.placeholderPicture}
+                          style={{ display: "none" }}
+                        >
+                          No Image
+                        </div>
+                      </>
+                    ) : (
+                      <div className={styles.placeholderPicture}>No Image</div>
+                    )}
+                  </div>
+                  <div className={styles.lawyerInfo}>
+                    <h3>{lawyer.name}</h3>
+                    <p>
+                      <strong>Specialization:</strong>{" "}
+                      {lawyer.specialization || "Not specified"}
+                    </p>
+                    <p>
+                      <strong>Location:</strong>{" "}
+                      {lawyer.location || "Not specified"}
+                    </p>
+                    <p>
+                      <strong>Rating:</strong>{" "}
+                      {lawyer.rating ? lawyer.rating.toFixed(1) : "Not rated"}
+                    </p>
+                    <p>
+                      <strong>Availability:</strong>{" "}
+                      {lawyer.availability_status || "Not specified"}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleViewProfile(lawyer.id)}
+                    className={styles.viewProfileButton}
+                  >
+                    View Profile
+                  </button>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </div>
+      </motion.section>
     </motion.div>
   );
 }

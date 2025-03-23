@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Search, Scale, FileText, Users, MessageSquare, Shield, ArrowRight, Mail, Phone, MapPin, ChevronRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import legalServices from "../utils/legalServices"; // Import the shared legalServices array
 import styles from "./LandingPage.module.css";
 
 const fadeIn = {
@@ -15,17 +17,45 @@ const slideUp = {
 
 export default function LandingPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
   const [isVisible, setIsVisible] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [lawyerDropdownOpen, setLawyerDropdownOpen] = useState(false);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     setIsVisible(true);
   }, []);
 
+  // Handle search input and show suggestions
+  const handleSearchInput = (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+
+    if (query.trim() === "") {
+      setSuggestions([]);
+      return;
+    }
+
+    const filteredSuggestions = legalServices.filter((service) =>
+      service.toLowerCase().includes(query.toLowerCase())
+    );
+    setSuggestions(filteredSuggestions);
+  };
+
+  // Handle suggestion selection
+  const handleSuggestionClick = (service) => {
+    setSearchQuery(service);
+    setSuggestions([]);
+  };
+
   const handleSearch = (e) => {
     e.preventDefault();
-    console.log("Searching for:", searchQuery);
+    if (searchQuery.trim()) {
+      // Navigate to BrowseLawyers with the search query as a URL parameter
+      navigate(`/browse-lawyers?service=${encodeURIComponent(searchQuery)}`);
+    }
   };
 
   const features = [
@@ -91,6 +121,9 @@ export default function LandingPage() {
           <nav className={`${styles.mainNav} ${mobileMenuOpen ? styles.open : ""}`}>
             <ul>
               <li>
+                <a href="/browse-lawyers">Browse Lawyers</a>
+              </li>
+              <li>
                 <a href="#features">Features</a>
               </li>
               <li>
@@ -102,7 +135,6 @@ export default function LandingPage() {
             </ul>
           </nav>
 
-          {/* Group the Get Started button and For Lawyers dropdown together */}
           <div className={styles.headerButtonGroup}>
             <a href="/client-login" className={styles.ctaButton}>
               Get Started
@@ -157,8 +189,22 @@ export default function LandingPage() {
                   type="text"
                   placeholder="What legal assistance do you need?"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={handleSearchInput}
+                  autoComplete="off"
                 />
+                {suggestions.length > 0 && (
+                  <ul className={styles.suggestions}>
+                    {suggestions.map((suggestion, index) => (
+                      <li
+                        key={index}
+                        onClick={() => handleSuggestionClick(suggestion)}
+                        className={styles.suggestionItem}
+                      >
+                        {suggestion}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
               <button type="submit" className={styles.searchButton}>
                 Search

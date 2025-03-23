@@ -135,6 +135,12 @@ export default function LawyerProfile() {
     navigate('/browse-lawyers');
   };
 
+  // Handle image loading errors by falling back to the placeholder
+  const handleImageError = (e) => {
+    e.target.style.display = 'none'; // Hide the broken image
+    e.target.nextSibling.style.display = 'flex'; // Show the placeholder
+  };
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div className={styles.error}>{error}</div>;
   if (!lawyer) return <div>Lawyer not found.</div>;
@@ -175,11 +181,20 @@ export default function LawyerProfile() {
             <div className={styles.profileHeader}>
               <div className={styles.profileImage}>
                 {lawyer.profile_picture ? (
-                  <img
-                    src={lawyer.profile_picture}
-                    alt={lawyer.name}
-                    className={styles.profilePicture}
-                  />
+                  <>
+                    <img
+                      src={`http://127.0.0.1:5000${lawyer.profile_picture}`} // Prepend the base URL
+                      alt={lawyer.name}
+                      className={styles.profilePicture}
+                      onError={handleImageError} // Handle image loading errors
+                    />
+                    <div
+                      className={styles.placeholderPicture}
+                      style={{ display: 'none' }} // Hidden by default, shown on error
+                    >
+                      No Image
+                    </div>
+                  </>
                 ) : (
                   <div className={styles.placeholderPicture}>No Image</div>
                 )}

@@ -125,7 +125,7 @@ export default function CaseDetails() {
     <div className={styles.caseDetailsPage}>
       <header className={styles.header}>
         <h1>Case Details: {caseData.title}</h1>
-        <button onClick={() => navigate("/lawyer-dashboard")} className={styles.backButton}>
+        <button onClick={() => navigate("/lawyerdashboard")} className={styles.backButton}>
           Back to Dashboard
         </button>
       </header>

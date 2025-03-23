@@ -38,6 +38,13 @@ export default function LawyerDashboard() {
     defendant_name: "",
     priority: "Medium"
   })
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmNewPassword: ""
+  })
+  const [passwordError, setPasswordError] = useState("")
+
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -195,6 +202,69 @@ export default function LawyerDashboard() {
     }
   }
 
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target
+    setPasswordData({ ...passwordData, [name]: value })
+    setPasswordError("")
+  }
+
+  const handlePasswordUpdate = async (e) => {
+    e.preventDefault()
+    const token = localStorage.getItem('token')
+    
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmNewPassword) {
+      setPasswordError("All fields are required")
+      return
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmNewPassword) {
+      setPasswordError("New password and confirmation do not match")
+      return
+    }
+
+    if (passwordData.newPassword.length < 8) {
+      setPasswordError("New password must be at least 8 characters long")
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const response = await axios.put(
+        'http://127.0.0.1:5000/api/lawyer/change-password',
+        {
+          current_password: passwordData.currentPassword,
+          new_password: passwordData.newPassword
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      )
+
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmNewPassword: ""
+      })
+      setPasswordError("")
+      addNotification(response.data.message || "Password updated successfully", "success")
+
+      setDialog({
+        isOpen: true,
+        message: "Password changed successfully. You will be logged out. Please log in again with your new password.",
+        onConfirm: () => {
+          localStorage.removeItem('token')
+          localStorage.removeItem('lawyer')
+          navigate('/lawyer-login')
+        }
+      })
+    } catch (err) {
+      setPasswordError(err.response?.data?.error || "Failed to update password")
+      addNotification(err.response?.data?.error || "Failed to update password", "error")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const handleCaseDetails = (caseItem) => {
     navigate(`/case-details/${caseItem.id}`)
   }
@@ -305,29 +375,6 @@ export default function LawyerDashboard() {
 
   return (
     <div className={`${styles.dashboardPage} ${theme === 'dark' ? styles.darkTheme : ''}`}>
-      <header className={styles.header}>
-        <div className={styles.headerContainer}>
-          <div className={styles.logo}>
-            <button className={styles.menuButton} onClick={toggleSidebar}>
-              {isSidebarOpen ? <X className={styles.icon} /> : <Menu className={styles.icon} />}
-            </button>
-            <Scale className={styles.logoIcon} />
-            <span>NepaliLegalAidFinder</span>
-          </div>
-          <div className={styles.headerActions}>
-            <span className={styles.currentDate}>
-              {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-')}
-            </span>
-            <button onClick={toggleTheme} className={styles.themeButton} data-tooltip-id="theme-tooltip" data-tooltip-content="Toggle theme">
-              {theme === 'light' ? <Moon className={styles.icon} /> : <Sun className={styles.icon} />}
-            </button>
-            <button onClick={handleLogout} className={styles.logoutButton} data-tooltip-id="logout-tooltip" data-tooltip-content="Log out of your account">
-              Logout
-            </button>
-          </div>
-        </div>
-      </header>
-
       <Tooltip id="theme-tooltip" />
       <Tooltip id="logout-tooltip" />
       <Tooltip id="edit-tooltip" />
@@ -336,6 +383,18 @@ export default function LawyerDashboard() {
 
       <div className={styles.layout}>
         <aside className={`${styles.sidebar} ${isSidebarOpen ? styles.sidebarOpen : ''}`}>
+          <div className={styles.logo}>
+            <button className={styles.menuButton} onClick={toggleSidebar}>
+              {isSidebarOpen ? <X className={styles.icon} /> : <Menu className={styles.icon} />}
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              className={styles.logoLink}
+            >
+              <Scale className={styles.logoIcon} />
+              <span>NepaliLegalAidFinder</span>
+            </button>
+          </div>
           <nav className={styles.sidebarNav}>
             <button
               onClick={() => { setActiveTab("dashboard"); setIsSidebarOpen(false); }}
@@ -370,6 +429,19 @@ export default function LawyerDashboard() {
           </nav>
         </aside>
         <main className={styles.main}>
+          <div className={styles.topBar}>
+            <span className={styles.currentDate}>
+              {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-')}
+            </span>
+            <div className={styles.headerActions}>
+              <button onClick={toggleTheme} className={styles.themeButton} data-tooltip-id="theme-tooltip" data-tooltip-content="Toggle theme">
+                {theme === 'light' ? <Moon className={styles.icon} /> : <Sun className={styles.icon} />}
+              </button>
+              <button onClick={handleLogout} className={styles.logoutButton} data-tooltip-id="logout-tooltip" data-tooltip-content="Log out of your account">
+                Logout
+              </button>
+            </div>
+          </div>
           <div className={styles.dashboardContent}>
             {activeTab === "dashboard" && (
               <>
@@ -444,10 +516,10 @@ export default function LawyerDashboard() {
                               <td>{new Date(caseItem.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
                               <td>
                                 <button
-                                  onClick={() => handleCaseDetails(caseItem)}
+                                  onClick={() => setSelectedCase(caseItem)} // Updated to show summary dialog
                                   className={styles.ellipsisButton}
                                   data-tooltip-id="details-tooltip"
-                                  data-tooltip-content="View case details"
+                                  data-tooltip-content="View case summary"
                                 >
                                   <MoreVertical className={styles.ellipsisIcon} />
                                 </button>
@@ -926,6 +998,76 @@ export default function LawyerDashboard() {
                     <button type="submit" className={styles.actionButton} disabled={isLoading}>Save Settings</button>
                   </div>
                 </form>
+
+                <div className={styles.card} style={{ marginTop: '2rem' }}>
+                  <h2 className={styles.sectionTitle}>Change Password</h2>
+                  <form onSubmit={handlePasswordUpdate} className={styles.editForm}>
+                    <div className={styles.formGroup}>
+                      <label htmlFor="currentPassword">Current Password:</label>
+                      <input
+                        type="password"
+                        id="currentPassword"
+                        name="currentPassword"
+                        value={passwordData.currentPassword}
+                        onChange={handlePasswordChange}
+                        className={styles.formInput}
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label htmlFor="newPassword">New Password:</label>
+                      <input
+                        type="password"
+                        id="newPassword"
+                        name="newPassword"
+                        value={passwordData.newPassword}
+                        onChange={handlePasswordChange}
+                        className={styles.formInput}
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label htmlFor="confirmNewPassword">Confirm New Password:</label>
+                      <input
+                        type="password"
+                        id="confirmNewPassword"
+                        name="confirmNewPassword"
+                        value={passwordData.confirmNewPassword}
+                        onChange={handlePasswordChange}
+                        className={styles.formInput}
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                    {passwordError && (
+                      <p className={styles.errorMessage} style={{ color: '#ef4444', marginTop: '0.5rem' }}>
+                        {passwordError}
+                      </p>
+                    )}
+                    <div className={styles.formActions}>
+                      <button type="submit" className={styles.actionButton} disabled={isLoading}>
+                        Update Password
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPasswordData({
+                            currentPassword: "",
+                            newPassword: "",
+                            confirmNewPassword: ""
+                          })
+                          setPasswordError("")
+                        }}
+                        className={styles.cancelButton}
+                        disabled={isLoading}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </div>
               </div>
             )}
           </div>
