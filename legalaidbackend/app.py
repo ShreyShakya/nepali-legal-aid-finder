@@ -811,8 +811,9 @@ def get_case(case_id):
         lawyer_id = decoded['lawyer_id']
         conn = pymysql.connect(**db_config)
         with conn.cursor() as cursor:
+            # Fetch case details
             sql = """
-                SELECT c.*, l.name AS lawyer_name, cl.name AS client_name
+                SELECT c.*, l.name AS lawyer_name, cl.name AS client_name, cl.email AS client_contact_info
                 FROM cases c
                 JOIN lawyers l ON c.lawyer_id = l.id
                 JOIN clients cl ON c.client_id = cl.id
@@ -824,8 +825,42 @@ def get_case(case_id):
             if not case_data:
                 return jsonify({'error': 'Case not found or unauthorized'}), 403
 
+            # Fetch timeline events
+            cursor.execute(
+                "SELECT id, progress_event, event_date, created_at FROM case_timeline WHERE case_id = %s ORDER BY event_date ASC",
+                (case_id,)
+            )
+            timeline = cursor.fetchall()
+
+            # Fetch documents
+            cursor.execute(
+                "SELECT id, file_path, uploaded_at FROM court_files WHERE case_id = %s",
+                (case_id,)
+            )
+            documents = cursor.fetchall()
+
+            # Fetch evidence
+            cursor.execute(
+                "SELECT id, file_path, description, reviewed, uploaded_at FROM evidence_files WHERE case_id = %s",
+                (case_id,)
+            )
+            evidence = cursor.fetchall()
+
+            # Fetch messages
+            cursor.execute(
+                "SELECT id, sender, message, created_at FROM case_messages WHERE case_id = %s ORDER BY created_at ASC",
+                (case_id,)
+            )
+            messages = cursor.fetchall()
+
         conn.close()
-        return jsonify({'case': case_data}), 200
+        return jsonify({
+            'case': case_data,
+            'timeline': timeline,
+            'documents': documents,
+            'evidence': evidence,
+            'messages': messages
+        }), 200
 
     except Exception as e:
         print(f"Error: {str(e)}")
@@ -842,59 +877,31 @@ def update_case(case_id):
 
     try:
         lawyer_id = decoded['lawyer_id']
-        data = request.form
-        evidence_files = request.files.getlist('evidence_files')
-        court_files = request.files.getlist('court_files')
+        data = request.json
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+
+        case_status = data.get('case_status', 'pending')
+        next_hearing_date = data.get('next_hearing_date') or None
 
         conn = pymysql.connect(**db_config)
         with conn.cursor() as cursor:
+            # Verify the case belongs to the lawyer
             cursor.execute("SELECT lawyer_id FROM cases WHERE id = %s", (case_id,))
             case = cursor.fetchone()
             if not case or case['lawyer_id'] != lawyer_id:
                 return jsonify({'error': 'Case not found or unauthorized'}), 403
 
-            sql = """
-                UPDATE cases
-                SET next_hearing_date = %s, case_progress_notes = %s, status = %s,
-                    verdict_summary = %s, case_discussion_notes = %s, client_contact_info = %s,
-                    is_pro_bono = %s
-                WHERE id = %s
-            """
-            cursor.execute(sql, (
-                data.get('next_hearing_date') or None,
-                data.get('case_progress_notes', ''),
-                data.get('case_status', 'pending'),
-                data.get('verdict_summary', ''),
-                data.get('case_discussion_notes', ''),
-                data.get('client_contact_info', ''),
-                1 if data.get('is_pro_bono', 'false') == 'true' else 0,
-                case_id
-            ))
-
-            for file in evidence_files:
-                if file and allowed_file(file.filename):
-                    filename = secure_filename(file.filename)
-                    file_path = os.path.join(EVIDENCE_FOLDER, filename)
-                    file.save(file_path)
-                    cursor.execute(
-                        "INSERT INTO evidence_files (case_id, file_path) VALUES (%s, %s)",
-                        (case_id, filename)
-                    )
-
-            for file in court_files:
-                if file and allowed_file(file.filename):
-                    filename = secure_filename(file.filename)
-                    file_path = os.path.join(COURT_FILES_FOLDER, filename)
-                    file.save(file_path)
-                    cursor.execute(
-                        "INSERT INTO court_files (case_id, file_path) VALUES (%s, %s)",
-                        (case_id, filename)
-                    )
-
+            # Update case status and next hearing date
+            cursor.execute(
+                "UPDATE cases SET status = %s, next_hearing_date = %s WHERE id = %s",
+                (case_status, next_hearing_date, case_id)
+            )
             conn.commit()
 
+            # Fetch updated case
             cursor.execute("""
-                SELECT c.*, l.name AS lawyer_name, cl.name AS client_name
+                SELECT c.*, l.name AS lawyer_name, cl.name AS client_name, cl.email AS client_contact_info
                 FROM cases c
                 JOIN lawyers l ON c.lawyer_id = l.id
                 JOIN clients cl ON c.client_id = cl.id
@@ -904,6 +911,303 @@ def update_case(case_id):
 
         conn.close()
         return jsonify({'case': updated_case, 'message': 'Case updated successfully'}), 200
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/case/<int:case_id>/timeline', methods=['POST'])
+def add_timeline_event(case_id):
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
+
+    try:
+        lawyer_id = decoded['lawyer_id']
+        data = request.json
+        if not data or 'progress_event' not in data or 'event_date' not in data:
+            return jsonify({'error': 'Progress event and event date are required'}), 400
+
+        progress_event = data['progress_event']
+        event_date = data['event_date']
+
+        conn = pymysql.connect(**db_config)
+        with conn.cursor() as cursor:
+            # Verify the case belongs to the lawyer
+            cursor.execute("SELECT lawyer_id FROM cases WHERE id = %s", (case_id,))
+            case = cursor.fetchone()
+            if not case or case['lawyer_id'] != lawyer_id:
+                return jsonify({'error': 'Case not found or unauthorized'}), 403
+
+            # Insert timeline event
+            cursor.execute(
+                "INSERT INTO case_timeline (case_id, progress_event, event_date) VALUES (%s, %s, %s)",
+                (case_id, progress_event, event_date)
+            )
+            conn.commit()
+
+            # Fetch the newly added event
+            cursor.execute(
+                "SELECT id, progress_event, event_date, created_at FROM case_timeline WHERE id = LAST_INSERT_ID()"
+            )
+            new_event = cursor.fetchone()
+
+        conn.close()
+        return jsonify({'event': new_event, 'message': 'Timeline event added successfully'}), 201
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/case/<int:case_id>/documents', methods=['POST'])
+def upload_document(case_id):
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
+
+    try:
+        lawyer_id = decoded['lawyer_id']
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+
+        file = request.files['file']
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(COURT_FILES_FOLDER, filename)
+            file.save(file_path)
+
+            conn = pymysql.connect(**db_config)
+            with conn.cursor() as cursor:
+                # Verify the case belongs to the lawyer
+                cursor.execute("SELECT lawyer_id FROM cases WHERE id = %s", (case_id,))
+                case = cursor.fetchone()
+                if not case or case['lawyer_id'] != lawyer_id:
+                    return jsonify({'error': 'Case not found or unauthorized'}), 403
+
+                # Insert document
+                cursor.execute(
+                    "INSERT INTO court_files (case_id, file_path) VALUES (%s, %s)",
+                    (case_id, filename)
+                )
+                conn.commit()
+
+                # Fetch the newly added document
+                cursor.execute(
+                    "SELECT id, file_path, uploaded_at FROM court_files WHERE id = LAST_INSERT_ID()"
+                )
+                new_document = cursor.fetchone()
+
+            conn.close()
+            return jsonify({'document': new_document, 'message': 'Document uploaded successfully'}), 201
+        else:
+            return jsonify({'error': 'Invalid file type'}), 400
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/case/<int:case_id>/documents/<int:document_id>', methods=['DELETE'])
+def delete_document(case_id, document_id):
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
+
+    try:
+        lawyer_id = decoded['lawyer_id']
+        conn = pymysql.connect(**db_config)
+        with conn.cursor() as cursor:
+            # Verify the case belongs to the lawyer
+            cursor.execute("SELECT lawyer_id FROM cases WHERE id = %s", (case_id,))
+            case = cursor.fetchone()
+            if not case or case['lawyer_id'] != lawyer_id:
+                return jsonify({'error': 'Case not found or unauthorized'}), 403
+
+            # Verify the document exists
+            cursor.execute("SELECT file_path FROM court_files WHERE id = %s AND case_id = %s", (document_id, case_id))
+            document = cursor.fetchone()
+            if not document:
+                return jsonify({'error': 'Document not found'}), 404
+
+            # Delete the file from the filesystem
+            file_path = os.path.join(COURT_FILES_FOLDER, document['file_path'])
+            if os.path.exists(file_path):
+                os.remove(file_path)
+
+            # Delete the document from the database
+            cursor.execute("DELETE FROM court_files WHERE id = %s AND case_id = %s", (document_id, case_id))
+            conn.commit()
+
+        conn.close()
+        return jsonify({'message': 'Document deleted successfully'}), 200
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/case/<int:case_id>/evidence', methods=['POST'])
+def add_evidence(case_id):
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
+
+    try:
+        lawyer_id = decoded['lawyer_id']
+        description = request.form.get('description', '')
+        if not description:
+            return jsonify({'error': 'Description is required'}), 400
+
+        file = request.files.get('file')
+        file_path = None
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(EVIDENCE_FOLDER, filename)
+            file.save(file_path)
+            file_path = filename
+
+        conn = pymysql.connect(**db_config)
+        with conn.cursor() as cursor:
+            # Verify the case belongs to the lawyer
+            cursor.execute("SELECT lawyer_id FROM cases WHERE id = %s", (case_id,))
+            case = cursor.fetchone()
+            if not case or case['lawyer_id'] != lawyer_id:
+                return jsonify({'error': 'Case not found or unauthorized'}), 403
+
+            # Insert evidence
+            cursor.execute(
+                "INSERT INTO evidence_files (case_id, file_path, description, reviewed) VALUES (%s, %s, %s, %s)",
+                (case_id, file_path, description, False)
+            )
+            conn.commit()
+
+            # Fetch the newly added evidence
+            cursor.execute(
+                "SELECT id, file_path, description, reviewed, uploaded_at FROM evidence_files WHERE id = LAST_INSERT_ID()"
+            )
+            new_evidence = cursor.fetchone()
+
+        conn.close()
+        return jsonify({'evidence': new_evidence, 'message': 'Evidence added successfully'}), 201
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/case/<int:case_id>/evidence/<int:evidence_id>/review', methods=['PUT'])
+def mark_evidence_reviewed(case_id, evidence_id):
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
+
+    try:
+        lawyer_id = decoded['lawyer_id']
+        conn = pymysql.connect(**db_config)
+        with conn.cursor() as cursor:
+            # Verify the case belongs to the lawyer
+            cursor.execute("SELECT lawyer_id FROM cases WHERE id = %s", (case_id,))
+            case = cursor.fetchone()
+            if not case or case['lawyer_id'] != lawyer_id:
+                return jsonify({'error': 'Case not found or unauthorized'}), 403
+
+            # Verify the evidence exists
+            cursor.execute("SELECT id FROM evidence_files WHERE id = %s AND case_id = %s", (evidence_id, case_id))
+            evidence = cursor.fetchone()
+            if not evidence:
+                return jsonify({'error': 'Evidence not found'}), 404
+
+            # Mark as reviewed
+            cursor.execute(
+                "UPDATE evidence_files SET reviewed = TRUE WHERE id = %s AND case_id = %s",
+                (evidence_id, case_id)
+            )
+            conn.commit()
+
+            # Fetch the updated evidence
+            cursor.execute(
+                "SELECT id, file_path, description, reviewed, uploaded_at FROM evidence_files WHERE id = %s",
+                (evidence_id,)
+            )
+            updated_evidence = cursor.fetchone()
+
+        conn.close()
+        return jsonify({'evidence': updated_evidence, 'message': 'Evidence marked as reviewed'}), 200
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/case/<int:case_id>/notes', methods=['PUT'])
+def update_private_notes(case_id):
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
+
+    try:
+        lawyer_id = decoded['lawyer_id']
+        data = request.json
+        if not data or 'private_notes' not in data:
+            return jsonify({'error': 'Private notes are required'}), 400
+
+        private_notes = data['private_notes']
+
+        conn = pymysql.connect(**db_config)
+        with conn.cursor() as cursor:
+            # Verify the case belongs to the lawyer
+            cursor.execute("SELECT lawyer_id FROM cases WHERE id = %s", (case_id,))
+            case = cursor.fetchone()
+            if not case or case['lawyer_id'] != lawyer_id:
+                return jsonify({'error': 'Case not found or unauthorized'}), 403
+
+            # Update private notes
+            cursor.execute(
+                "UPDATE cases SET private_notes = %s WHERE id = %s",
+                (private_notes, case_id)
+            )
+            conn.commit()
+
+        conn.close()
+        return jsonify({'message': 'Private notes updated successfully'}), 200
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/case/<int:case_id>/messages', methods=['POST'])
+def send_message(case_id):
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
+
+    try:
+        lawyer_id = decoded['lawyer_id']
+        data = request.json
+        if not data or 'message' not in data:
+            return jsonify({'error': 'Message is required'}), 400
+
+        message = data['message']
+
+        conn = pymysql.connect(**db_config)
+        with conn.cursor() as cursor:
+            # Verify the case belongs to the lawyer
+            cursor.execute("SELECT lawyer_id FROM cases WHERE id = %s", (case_id,))
+            case = cursor.fetchone()
+            if not case or case['lawyer_id'] != lawyer_id:
+                return jsonify({'error': 'Case not found or unauthorized'}), 403
+
+            # Insert message
+            cursor.execute(
+                "INSERT INTO case_messages (case_id, sender, message) VALUES (%s, %s, %s)",
+                (case_id, 'lawyer', message)
+            )
+            conn.commit()
+
+            # Fetch the newly added message
+            cursor.execute(
+                "SELECT id, sender, message, created_at FROM case_messages WHERE id = LAST_INSERT_ID()"
+            )
+            new_message = cursor.fetchone()
+
+        conn.close()
+        return jsonify({'message': new_message, 'message': 'Message sent successfully'}), 201
 
     except Exception as e:
         print(f"Error: {str(e)}")

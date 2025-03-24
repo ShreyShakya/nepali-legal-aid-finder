@@ -315,7 +315,7 @@ export default function LandingPage() {
             <h2>Ready to Get Started?</h2>
             <p>Take the first step toward expert legal representation today.</p>
             <motion.a
-              href="/register"
+              href="/client-registration"
               className={styles.primaryButton}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
