@@ -1,93 +1,816 @@
-.dashboard {
-  padding: 2rem;
+/* ClientDashboard.module.css */
+
+/* Import a modern font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+.dashboardPage {
   min-height: 100vh;
   background: linear-gradient(135deg, #f5f7fa 0%, #e4e7eb 100%);
+  font-family: 'Inter', sans-serif;
+  display: flex;
+  flex-direction: column;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
-.header {
+.darkTheme {
+  background: linear-gradient(135deg, #1e2a3c 0%, #2c3e50 100%);
+  color: #e0e0e0;
+}
+
+/* Top Bar Styles (Replaces Header) */
+.topBar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  padding: 1rem 2rem;
+  background-color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.header h1 {
-  font-size: 2rem;
-  color: #2c3e50;
+.darkTheme .topBar {
+  background-color: #2c3e50;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.headerActions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.currentDate {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.darkTheme .currentDate {
+  color: #d1d5db;
+}
+
+.themeButton {
+  background: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 0.5rem;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.darkTheme .themeButton {
+  border-color: #4b5563;
+}
+
+.themeButton:hover {
+  background-color: #e5e7eb;
+  transform: scale(1.05);
+}
+
+.darkTheme .themeButton:hover {
+  background-color: #374151;
+}
+
+.themeButton .icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #4b5563;
+}
+
+.darkTheme .themeButton .icon {
+  color: #d1d5db;
 }
 
 .logoutButton {
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 1.5rem;
   font-size: 1rem;
-  background-color: #e74c3c;
-  color: #fff;
+  font-weight: 500;
+  background-color: #ef4444;
+  color: #ffffff;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
 .logoutButton:hover {
-  background-color: #c0392b;
+  background-color: #dc2626;
+  transform: scale(1.05);
 }
 
-.content {
-  background: #fff;
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+/* Sidebar Styles */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 250px;
+  height: 100%;
+  background-color: #ffffff;
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.03);
+  padding-top: 1rem;
+  z-index: 900;
+  transition: transform 0.3s ease;
 }
 
-.content h2 {
-  font-size: 1.5rem;
-  color: #2c3e50;
-  margin-bottom: 1rem;
+.darkTheme .sidebar {
+  background-color: #2c3e50;
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.2);
 }
 
-.content p {
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 1rem 1rem;
+}
+
+.logoLink {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.logoIcon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #000000; /* Icon color set to black in light mode */
+}
+
+.darkTheme .logoIcon {
+  color: #d1d5db; /* Lighter shade for dark mode to maintain contrast */
+}
+
+.logo span {
   font-size: 1rem;
-  color: #7f8c8d;
-  margin-bottom: 1rem;
+  font-weight: 700;
+  color: #1E90FF; /* Text color set to blue as per screenshot */
+  white-space: nowrap;
 }
 
-.link {
-  color: #3498db;
+.darkTheme .logo span {
+  color: #e0e0e0; /* Keep the dark mode color for text */
+}
+
+.menuButton {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+}
+
+.menuButton .icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #4b5563;
+}
+
+.darkTheme .menuButton .icon {
+  color: #d1d5db;
+}
+
+.sidebarNav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #4b5563;
   text-decoration: none;
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.darkTheme .navLink {
+  color: #d1d5db;
+}
+
+.navLink:hover,
+.navLink.activeNavLink {
+  background-color: #e5e7eb;
+  color: #2563eb;
+}
+
+.darkTheme .navLink:hover,
+.darkTheme .navLink.activeNavLink {
+  background-color: #374151;
+  color: #60a5fa;
+}
+
+.navIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* Notification Styles */
+.notificationContainer {
+  position: fixed;
+  top: 1rem;
+  right: 2rem;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.notification {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  max-width: 350px;
+}
+
+.successNotification {
+  background-color: #10b981;
+  color: #ffffff;
+}
+
+.errorNotification {
+  background-color: #ef4444;
+  color: #ffffff;
+}
+
+.notificationIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* Loader Styles */
+.loaderOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1200;
+}
+
+.loader {
+  border: 4px solid #e5e7eb;
+  border-top: 4px solid #2563eb;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Layout and Main Content */
+.layout {
+  display: flex;
+  flex: 1;
+}
+
+.main {
+  flex: 1;
+  padding: 1rem 1.5rem;
+  margin-left: 250px;
+  transition: margin-left 0.3s ease;
+}
+
+.dashboardContent {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Card Styles */
+.card {
+  background-color: #ffffff;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  margin-bottom: 1.5rem;
+  transition: background-color 0.3s ease;
+}
+
+.darkTheme .card {
+  background-color: #374151;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.sectionTitle {
+  font-size: 1.5rem;
+  color: #1f2937;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.darkTheme .sectionTitle {
+  color: #f3f4f6;
+}
+
+/* Table Wrapper */
+.tableWrapper {
+  overflow-x: auto;
+}
+
+/* Case Table */
+.caseTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+}
+
+.caseTable th,
+.caseTable td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.9rem;
+}
+
+.darkTheme .caseTable th,
+.darkTheme .caseTable td {
+  border-bottom: 1px solid #4b5563;
+}
+
+.caseTable th {
+  background-color: #f9fafb;
+  color: #6b7280;
+  font-weight: 500;
+  font-size: 0.85rem;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.darkTheme .caseTable th {
+  background-color: #4b5563;
+  color: #d1d5db;
+}
+
+.caseTable tbody tr {
+  transition: background-color 0.3s ease;
+}
+
+.caseTable tbody tr:hover {
+  background-color: #e6f0fa;
+}
+
+.darkTheme .caseTable tbody tr:hover {
+  background-color: #2d3748;
+}
+
+.caseTable td {
+  color: #4b5563;
+  font-size: 0.9rem;
+}
+
+.darkTheme .caseTable td {
+  color: #d1d5db;
+}
+
+/* Case Info */
+.caseInfo {
+  display: flex;
+  align-items: center;
+}
+
+.caseDetails {
+  display: flex;
+  flex-direction: column;
+}
+
+.caseTitle {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.darkTheme .caseTitle {
+  color: #f3f4f6;
+}
+
+.caseDescription {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.darkTheme .caseDescription {
+  color: #9ca3af;
+}
+
+/* Appointment Table */
+.appointmentTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+}
+
+.appointmentTable th,
+.appointmentTable td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.9rem;
+}
+
+.darkTheme .appointmentTable th,
+.darkTheme .appointmentTable td {
+  border-bottom: 1px solid #4b5563;
+}
+
+.appointmentTable th {
+  background-color: #f9fafb;
+  color: #6b7280;
+  font-weight: 500;
+  font-size: 0.85rem;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.darkTheme .appointmentTable th {
+  background-color: #4b5563;
+  color: #d1d5db;
+}
+
+.appointmentTable tbody tr {
+  transition: background-color 0.3s ease;
+}
+
+.appointmentTable tbody tr:hover {
+  background-color: #e6f0fa;
+}
+
+.darkTheme .appointmentTable tbody tr:hover {
+  background-color: #2d3748;
+}
+
+.appointmentTable td {
+  color: #4b5563;
+  font-size: 0.9rem;
+}
+
+.darkTheme .appointmentTable td {
+  color: #d1d5db;
+}
+
+/* Lawyer Name Styling (to match caseTitle) */
+.appointmentTable td:first-child {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.darkTheme .appointmentTable td:first-child {
+  color: #f3f4f6;
+}
+
+/* Ellipsis Button */
+.ellipsisButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.ellipsisIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #6b7280;
+}
+
+.darkTheme .ellipsisIcon {
+  color: #d1d5db;
+}
+
+.ellipsisButton:hover .ellipsisIcon {
+  color: #2563eb;
+}
+
+.darkTheme .ellipsisButton:hover .ellipsisIcon {
+  color: #60a5fa;
+}
+
+/* Summarized Sections on Dashboard */
+#recent-cases .caseTable th,
+#recent-cases .caseTable td {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+#upcoming-appointments .appointmentTable th,
+#upcoming-appointments .appointmentTable td {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+/* Placeholder Content */
+.placeholderContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  text-align: center;
+}
+
+.emptyMessage {
+  font-size: 1rem;
+  color: #6b7280;
   font-weight: 500;
 }
 
-.link:hover {
-  text-decoration: underline;
+.darkTheme .emptyMessage {
+  color: #9ca3af;
 }
 
-.appointmentList {
+/* Profile Card */
+.profileCard {
+  background-color: #ffffff;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  margin-bottom: 1.5rem;
+  transition: background-color 0.3s ease;
+}
+
+.darkTheme .profileCard {
+  background-color: #374151;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.profileHeader {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.profileInfo h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.darkTheme .profileInfo h3 {
+  color: #f3f4f6;
+}
+
+.profileSubtitle {
+  font-size: 1rem;
+  color: #6b7280;
+}
+
+.darkTheme .profileSubtitle {
+  color: #9ca3af;
+}
+
+.profileDetails {
+  margin-bottom: 1.5rem;
+}
+
+.profileItem {
+  font-size: 1rem;
+  color: #4b5563;
+  margin-bottom: 0.75rem;
+  line-height: 1.6;
+}
+
+.darkTheme .profileItem {
+  color: #d1d5db;
+}
+
+.profileItem strong {
+  color: #1f2937;
+  font-weight: 600;
+  margin-right: 0.5rem;
+}
+
+.darkTheme .profileItem strong {
+  color: #f3f4f6;
+}
+
+.profilePictureWrapper {
+  display: flex;
+  align-items: center;
   gap: 1rem;
 }
 
-.appointmentCard {
-  background: #f8fafc;
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+.profilePicture {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
 
-.appointmentCard h3 {
+/* Error Message */
+.errorMessage {
+  color: #ef4444;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+/* Cancel Button */
+.cancelButton {
+  padding: 0.5rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  background-color: #6b7280;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.cancelButton:hover {
+  background-color: #4b5563;
+  transform: scale(1.05);
+}
+
+.cancelButton:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Action Button */
+.actionButton {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background-color: #91969e;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.actionButton:hover {
+  background-color: #2563eb;
+  transform: scale(1.05);
+}
+
+/* Dialog Styles for Appointment Details */
+.dialogOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1300;
+}
+
+.dialogBox {
+  background-color: #ffffff;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  max-width: 500px;
+  width: 90%;
+  text-align: center;
+}
+
+.darkTheme .dialogBox {
+  background-color: #374151;
+}
+
+.dialogBox h3 {
   font-size: 1.25rem;
   font-weight: 600;
-  margin-bottom: 0.5rem;
-  color: #2c3e50;
-}
-
-.appointmentCard p {
-  font-size: 1rem;
-  color: #7f8c8d;
-  margin-bottom: 0.5rem;
-}
-
-.error {
-  color: #e74c3c;
-  font-size: 1rem;
+  color: #1f2937;
   margin-bottom: 1rem;
+}
+
+.darkTheme .dialogBox h3 {
+  color: #f3f4f6;
+}
+
+.appointmentDialogContent {
+  text-align: left;
+  margin-bottom: 1.5rem;
+}
+
+.appointmentDialogContent p {
+  font-size: 1rem;
+  color: #4b5563;
+  margin-bottom: 0.75rem;
+}
+
+.darkTheme .appointmentDialogContent p {
+  color: #d1d5db;
+}
+
+.appointmentDialogContent p strong {
+  color: #1f2937;
+  font-weight: 600;
+  margin-right: 0.5rem;
+}
+
+.darkTheme .appointmentDialogContent p strong {
+  color: #f3f4f6;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+
+  .sidebarOpen {
+    transform: translateX(0);
+  }
+
+  .main {
+    margin-left: 0;
+  }
+
+  .menuButton {
+    display: block;
+  }
+
+  .topBar {
+    padding: 1rem;
+  }
+
+  .caseTable th,
+  .caseTable td,
+  .appointmentTable th,
+  .appointmentTable td {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  .sectionTitle {
+    font-size: 1.25rem;
+  }
+
+  .actionButton {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .topBar {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .headerActions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .logoutButton {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .profileHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .profilePicture {
+    width: 60px;
+    height: 60px;
+  }
+
+  .dialogBox {
+    padding: 1rem;
+  }
+
+  .dialogBox h3 {
+    font-size: 1rem;
+  }
+
+  .appointmentDialogContent p {
+    font-size: 0.9rem;
+  }
 }
