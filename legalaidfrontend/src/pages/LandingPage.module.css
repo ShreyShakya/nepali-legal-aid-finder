@@ -193,10 +193,10 @@ button {
 .hero {
   padding: 10rem 0 6rem;
   background-color: #f8fafc;
-  background-image: url('/images/abc.jpg');
+  background-image: url('/images/bg.jpg');
   background-position: center;
+  background-size: cover;
   background-repeat: no-repeat;
-  filter: opacity(1);
   position: relative;
 }
 
@@ -216,7 +216,7 @@ button {
 
 .hero p {
   font-size: 1.2rem;
-  color: gray;
+  color: white;
   margin-bottom: 2.5rem;
   max-width: 600px;
   margin-left: auto;

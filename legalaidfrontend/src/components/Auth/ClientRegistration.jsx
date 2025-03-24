@@ -64,14 +64,6 @@ export default function ClientRegistration() {
       animate="visible"
       variants={fadeIn}
     >
-      <header className={styles.header}>
-        <div className={styles.headerContainer}>
-          <div className={styles.logo}>
-            <Scale className={styles.logoIcon} />
-            <span>NepaliLegalAidFinder</span>
-          </div>
-        </div>
-      </header>
 
       <section className={styles.hero}>
         <div className={styles.heroContainer}>

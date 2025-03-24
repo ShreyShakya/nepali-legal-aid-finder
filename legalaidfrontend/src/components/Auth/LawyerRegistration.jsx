@@ -77,15 +77,6 @@ export default function LawyerRegistration() {
       animate="visible"
       variants={fadeIn}
     >
-      <header className={styles.header}>
-        <div className={styles.headerContainer}>
-          <div className={styles.logo}>
-            <Scale className={styles.logoIcon} />
-            <span>NepaliLegalAidFinder</span>
-          </div>
-        </div>
-      </header>
-
       <section className={styles.hero}>
         <div className={styles.heroContainer}>
           <motion.div className={styles.heroContent}>

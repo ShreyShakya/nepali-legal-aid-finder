@@ -7,43 +7,6 @@
     flex-direction: column;
   }
   
-  /* Header styles */
-  .header {
-    background-color: #fff;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    padding: 1rem 0;
-    position: fixed;
-    width: 100%;
-    top: 0;
-    z-index: 1000;
-  }
-  
-  .headerContainer {
-    max-width: 1200px;
-    margin: 0 auto;
-    display: flex;
-    align-items: center;
-    padding: 0 1rem;
-  }
-  
-  .logo {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  
-  .logoIcon {
-    width: 2rem;
-    height: 2rem;
-    color: #2c3e50;
-  }
-  
-  .logo span {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #2c3e50;
-  }
-  
   /* Hero section styles */
   .hero {
     padding: 6rem 1rem 2rem; /* Adjusted for fixed header */

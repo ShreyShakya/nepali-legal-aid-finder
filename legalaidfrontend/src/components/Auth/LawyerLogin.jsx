@@ -59,14 +59,6 @@ export default function LawyerLogin() {
       animate="visible"
       variants={fadeIn}
     >
-      <header className={styles.header}>
-        <div className={styles.headerContainer}>
-          <div className={styles.logo}>
-            <Scale className={styles.logoIcon} />
-            <span>NepaliLegalAidFinder</span>
-          </div>
-        </div>
-      </header>
 
       <section className={styles.loginSection}>
         <div className={styles.loginContainer}>

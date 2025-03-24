@@ -121,12 +121,8 @@ export default function BrowseLawyers() {
     setSearchParams({ service: serviceToSearch });
   };
 
+  // Updated function to allow all users to view profiles
   const handleViewProfile = (lawyerId) => {
-    const token = localStorage.getItem("clientToken");
-    if (!token) {
-      navigate("/client-login");
-      return;
-    }
     navigate(`/lawyer-profile/${lawyerId}`);
   };
 
