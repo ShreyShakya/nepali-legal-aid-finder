@@ -367,7 +367,7 @@ button {
 
 @media (max-width: 640px) {
   .featuresGrid {
-    grid-template-columns: 2fr;
+    grid-template-columns: 1fr;
   }
 }
 
