@@ -772,34 +772,3 @@ export default function CaseDetails() {
         </div>
       </main>
 
-      {/* Notifications */}
-      <div className={styles.notificationContainer}>
-        <AnimatePresence>
-          {notifications.map((notification) => (
-            <motion.div
-              key={notification.id}
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 50 }}
-              className={`${styles.notification} ${styles[notification.type]}`}
-            >
-              {notification.type === "success" ? (
-                <CheckCircle className={styles.notificationIcon} />
-              ) : (
-                <AlertCircle className={styles.notificationIcon} />
-              )}
-              <span>{notification.message}</span>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
-
-      {/* Loading Overlay */}
-      {isLoading && (
-        <div className={styles.loadingOverlay}>
-          <div className={styles.loader}></div>
-        </div>
-      )}
-    </div>
-  )
-}
