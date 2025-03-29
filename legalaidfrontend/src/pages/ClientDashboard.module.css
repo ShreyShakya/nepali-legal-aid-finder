@@ -140,7 +140,7 @@
 .logoIcon {
   width: 1.5rem;
   height: 1.5rem;
-  color: #000000; /* Icon color set to black in light mode */
+  color: #1E90FF; /* Icon color set to black in light mode */
 }
 
 .darkTheme .logoIcon {
