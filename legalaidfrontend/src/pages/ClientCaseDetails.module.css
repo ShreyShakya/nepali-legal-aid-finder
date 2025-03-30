@@ -1,0 +1,475 @@
+.caseDetailsPage {
+    min-height: 100vh;
+    background-color: #f5f5f5;
+    padding: 2rem;
+  }
+  
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+  
+  .header h1 {
+    font-size: 2rem;
+    font-weight: 600;
+    color: #333;
+  }
+  
+  .backButton {
+    padding: 0.5rem 1rem;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .backButton:hover {
+    background-color: #0056b3;
+  }
+  
+  .main {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+  
+  .contentGrid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+  }
+  
+  .mainColumn,
+  .sideColumn {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+  
+  .card {
+    background-color: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .card h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #333;
+  }
+  
+  .icon {
+    width: 24px;
+    height: 24px;
+    color: #007bff;
+  }
+  
+  .iconSmall {
+    width: 16px;
+    height: 16px;
+    color: #666;
+  }
+  
+  .caseInfo {
+    padding: 1rem;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+  }
+  
+  .infoGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .infoGrid p {
+    margin: 0.5rem 0;
+    font-size: 0.9rem;
+    color: #555;
+  }
+  
+  .infoGrid p strong {
+    color: #333;
+  }
+  
+  .statusSection {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+  }
+  
+  .statusInfo {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+  
+  .statusBadge {
+    padding: 0.3rem 0.8rem;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-transform: capitalize;
+  }
+  
+  .statusBadge.pending {
+    background-color: #ffecd1;
+    color: #ff8c00;
+  }
+  
+  .statusBadge.accepted {
+    background-color: #d1e7dd;
+    color: #0f5132;
+  }
+  
+  .statusBadge.rejected {
+    background-color: #f8d7da;
+    color: #842029;
+  }
+  
+  .statusBadge.completed {
+    background-color: #d4edda;
+    color: #155724;
+  }
+  
+  .hearingDate {
+    font-size: 0.9rem;
+    color: #555;
+  }
+  
+  .hearingDate strong {
+    color: #333;
+  }
+  
+  /* Timeline styles */
+  .timelineContainer {
+    position: relative;
+    padding-left: 2rem;
+  }
+  
+  .timelineItem {
+    position: relative;
+    margin-bottom: 1.5rem;
+  }
+  
+  .timelineDot {
+    position: absolute;
+    left: 0;
+    top: 5px;
+    width: 12px;
+    height: 12px;
+    background-color: #007bff;
+    border-radius: 50%;
+  }
+  
+  .timelineContainer::before {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: #e0e0e0;
+  }
+  
+  .timelineHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+  
+  .timelineDate {
+    font-size: 0.9rem;
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  
+  .timelineEvent {
+    font-size: 1rem;
+    color: #333;
+  }
+  
+  .emptyState {
+    font-style: italic;
+    color: #888;
+    text-align: center;
+    padding: 1rem;
+  }
+  
+  /* Document styles */
+  .documentList h3 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    color: #333;
+  }
+  
+  .documentGrid {
+    display: grid;
+    gap: 1rem;
+  }
+  
+  .documentCard {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.8rem;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+  }
+  
+  .documentCard:hover {
+    background-color: #f0f0f0;
+  }
+  
+  .documentIcon {
+    flex-shrink: 0;
+  }
+  
+  .documentInfo {
+    flex-grow: 1;
+  }
+  
+  .documentName {
+    font-size: 1rem;
+    color: #333;
+    margin: 0;
+  }
+  
+  .documentDate {
+    font-size: 0.8rem;
+    color: #666;
+    margin: 0;
+  }
+  
+  .documentActions {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  .iconButton {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #007bff;
+    transition: color 0.3s;
+  }
+  
+  .iconButton:hover {
+    color: #0056b3;
+  }
+  
+  /* Evidence styles */
+  .evidenceList h3 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    color: #333;
+  }
+  
+  .evidenceItem {
+    padding: 0.8rem;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+    margin-bottom: 0.8rem;
+  }
+  
+  .evidenceHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+  
+  .evidenceStatus {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  
+  .evidenceStatus.reviewed {
+    background-color: #d4edda;
+    color: #155724;
+  }
+  
+  .evidenceStatus.pending {
+    background-color: #ffecd1;
+    color: #ff8c00;
+  }
+  
+  .downloadLink {
+    font-size: 0.9rem;
+    color: #007bff;
+    text-decoration: none;
+  }
+  
+  .downloadLink:hover {
+    text-decoration: underline;
+  }
+  
+  .evidenceDescription {
+    font-size: 0.9rem;
+    color: #555;
+    margin: 0;
+  }
+  
+  /* Messages styles */
+  .messagesSection {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .messageList {
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+  }
+  
+  .message {
+    padding: 0.8rem;
+    border-radius: 5px;
+    margin-bottom: 0.5rem;
+  }
+  
+  .sentMessage {
+    background-color: #007bff;
+    color: white;
+    margin-left: 20%;
+    margin-right: 5%;
+  }
+  
+  .receivedMessage {
+    background-color: #e9ecef;
+    color: #333;
+    margin-right: 20%;
+    margin-left: 5%;
+  }
+  
+  .message p {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+  
+  .messageTimestamp {
+    display: block;
+    font-size: 0.75rem;
+    opacity: 0.7;
+    margin-top: 0.3rem;
+    text-align: right;
+  }
+  
+  .messageInput {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+  
+  .formInput {
+    flex-grow: 1;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 0.9rem;
+  }
+  
+  .sendButton {
+    padding: 0.5rem;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  
+  .sendButton:hover {
+    background-color: #0056b3;
+  }
+  
+  /* Notification styles */
+  .notificationContainer {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    z-index: 1000;
+  }
+  
+  .notification {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.8rem 1rem;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-size: 0.9rem;
+  }
+  
+  .notification.success {
+    background-color: #d4edda;
+    color: #155724;
+  }
+  
+  .notification.error {
+    background-color: #f8d7da;
+    color: #842029;
+  }
+  
+  .notificationIcon {
+    width: 20px;
+    height: 20px;
+  }
+  
+  /* Loading overlay */
+  .loadingOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  .loader {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #007bff;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
