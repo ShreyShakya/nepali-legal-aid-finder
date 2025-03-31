@@ -16,11 +16,13 @@ CORS(app, resources={r"/api/*": {"origins": "http://localhost:5173"}})
 UPLOAD_FOLDER = 'uploads'
 EVIDENCE_FOLDER = 'evidence'
 COURT_FILES_FOLDER = 'court_files'
+DOCUMENT_TEMPLATES_FOLDER = 'document_templates'  # Added for document templates
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(EVIDENCE_FOLDER, exist_ok=True)
 os.makedirs(COURT_FILES_FOLDER, exist_ok=True)
+os.makedirs(DOCUMENT_TEMPLATES_FOLDER, exist_ok=True)  # Create document_templates folder
 
 db_config = {
     'host': 'localhost',
@@ -69,6 +71,7 @@ def validate_token():
     except jwt.InvalidTokenError:
         return None, jsonify({'error': 'Invalid token'}), 401
 
+# Existing routes (unchanged)
 @app.route('/api/register-lawyer', methods=['POST'])
 def register_lawyer():
     try:
@@ -1279,8 +1282,6 @@ def client_cases():
                        c.filing_date, c.jurisdiction, c.plaintiff_name, c.defendant_name,
                        l.name AS lawyer_name
                 FROM cases c
-
-
                 JOIN lawyers l ON c.lawyer_id = l.id
                 WHERE c.client_id = %s
             """
@@ -1400,7 +1401,6 @@ def send_client_message(case_id):
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-# New endpoint for client profile (GET and PUT)
 @app.route('/api/client-profile', methods=['GET', 'OPTIONS'])
 def client_profile():
     if request.method == "OPTIONS":
@@ -1504,7 +1504,6 @@ def update_client_profile():
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-# New endpoint for client password change
 @app.route('/api/client/change-password', methods=['PUT', 'OPTIONS'])
 def change_client_password():
     if request.method == "OPTIONS":
@@ -1552,6 +1551,47 @@ def change_client_password():
         conn.close()
         return jsonify({'message': 'Password updated successfully'}), 200
 
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+# New endpoint to list document templates
+@app.route('/api/document-templates', methods=['GET', 'OPTIONS'])
+def get_document_templates():
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
+
+    try:
+        # List all files in the document_templates directory
+        templates = []
+        for filename in os.listdir(DOCUMENT_TEMPLATES_FOLDER):
+            file_path = os.path.join(DOCUMENT_TEMPLATES_FOLDER, filename)
+            if os.path.isfile(file_path):
+                templates.append({
+                    'filename': filename,
+                    'download_url': f"/document-templates/{filename}"
+                })
+        return jsonify({'templates': templates}), 200
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+# New endpoint to download a document template
+@app.route('/document-templates/<filename>')
+def download_template(filename):
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
+
+    try:
+        return send_from_directory(DOCUMENT_TEMPLATES_FOLDER, filename, as_attachment=True)
+    except FileNotFoundError:
+        return jsonify({'error': 'File not found'}), 404
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500

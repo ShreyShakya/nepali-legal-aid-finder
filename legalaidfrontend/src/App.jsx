@@ -3,7 +3,6 @@ import LandingPage from './pages/LandingPage'; // Updated path for LandingPage
 import CaseTrackingPage from './pages/CaseTrackingPage';
 import LawyersPage from './pages/LawyersPage';
 import Dashboard from './pages/Dashboard'; // Import the Dashboard component
-import DocumentTemplates from './pages/DocumentTemplates'; 
 import FAQ from './pages/FAQ';
 import AboutUs from './pages/AboutUs';
 import LawFirmProfile from './pages/LawFirmProfile';
@@ -17,6 +16,7 @@ import BrowseLawyers from './pages/BrowseLawyers';
 import LawyerProfile from './components/Auth/LawyerProfile';
 import CaseDetails from './pages/CaseDetails';
 import ClientCaseDetails from './pages/ClientCaseDetails'; // Import the new ClientCaseDetails component
+import DocumentTemplatesPage from './pages/DocumentTemplatesPage';
 
 function App() {
     return (
@@ -33,9 +33,6 @@ function App() {
 
                 {/* Dashboard (Protected Route) */}
                 <Route path="/dashboard" element={<Dashboard />} />
-
-                {/* Document Templates */}
-                <Route path="/templates" element={<DocumentTemplates />} /> 
 
                 {/* FAQ */}
                 <Route path="/faq" element={<FAQ />} /> 
@@ -68,6 +65,8 @@ function App() {
 
                 {/* Add the new route for ClientCaseDetails */}
                 <Route path="/client-case/:caseId" element={<ClientCaseDetails />} />
+
+                <Route path="/document-templates" element={<DocumentTemplatesPage />} />
             </Routes>
         </Router>
     );
