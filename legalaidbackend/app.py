@@ -1573,7 +1573,7 @@ def get_document_templates():
             if os.path.isfile(file_path):
                 templates.append({
                     'filename': filename,
-                    'download_url': f"/document-templates/{filename}"
+                    'download_url': f"/api/document-templates/{filename}"
                 })
         return jsonify({'templates': templates}), 200
 
@@ -1582,7 +1582,7 @@ def get_document_templates():
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 # New endpoint to download a document template
-@app.route('/document-templates/<filename>')
+@app.route('/api/document-templates/<filename>')
 def download_template(filename):
     decoded, error_response, status = validate_token()
     if error_response:
