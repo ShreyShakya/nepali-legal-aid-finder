@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FileText, Download, Scale } from "lucide-react";
-import styles from "./LandingPage.module.css"; // Reuse styles from LandingPage for consistency
+import styles from "./LandingPage.module.css";
 import axios from "axios";
 
 const fadeIn = {
@@ -18,15 +18,22 @@ export default function DocumentTemplatesPage() {
   const [templates, setTemplates] = useState([]);
   const [error, setError] = useState(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      window.location.href = "/client-login";
+      return;
+    }
     setIsVisible(true);
     fetchTemplates();
   }, []);
 
   const fetchTemplates = async () => {
+    setLoading(true);
     try {
-      const token = localStorage.getItem("token"); // Assuming the token is stored in localStorage
+      const token = localStorage.getItem("token");
       const response = await axios.get("http://127.0.0.1:5000/api/document-templates", {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -36,20 +43,26 @@ export default function DocumentTemplatesPage() {
     } catch (err) {
       setError("Failed to load document templates. Please try again later.");
       console.error("Error fetching templates:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleDownload = async (downloadUrl, filename) => {
     try {
       const token = localStorage.getItem("token");
+      if (!token) {
+        setError("Please log in to download templates.");
+        window.location.href = "/client-login";
+        return;
+      }
       const response = await axios.get(`http://127.0.0.1:5000${downloadUrl}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-        responseType: "blob", // Important for file downloads
+        responseType: "blob",
       });
 
-      // Create a URL for the blob and trigger the download
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
@@ -59,14 +72,17 @@ export default function DocumentTemplatesPage() {
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      setError("Failed to download the template. Please try again.");
+      setError(
+        err.response?.status === 404
+          ? "Template file not found."
+          : "Failed to download the template. Please try again."
+      );
       console.error("Error downloading template:", err);
     }
   };
 
   return (
     <div className={styles.landingPage}>
-      {/* Header (Reused from LandingPage) */}
       <header className={styles.header}>
         <div className={styles.container}>
           <div className={styles.logo}>
@@ -94,7 +110,6 @@ export default function DocumentTemplatesPage() {
         </div>
       </header>
 
-      {/* Document Templates Section */}
       <motion.section
         className={styles.features}
         initial="hidden"
@@ -112,19 +127,19 @@ export default function DocumentTemplatesPage() {
             </motion.p>
           </div>
 
-          {error && (
-            <motion.div
-              className={styles.errorMessage}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5 }}
-            >
-              {error}
-            </motion.div>
-          )}
-
           <div className={styles.featuresGrid}>
-            {templates.length > 0 ? (
+            {loading ? (
+              <motion.p variants={slideUp}>Loading templates...</motion.p>
+            ) : error ? (
+              <motion.div
+                className={styles.errorMessage}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
+              >
+                {error}
+              </motion.div>
+            ) : templates.length > 0 ? (
               templates.map((template, index) => (
                 <motion.div
                   key={index}
@@ -153,7 +168,6 @@ export default function DocumentTemplatesPage() {
         </div>
       </motion.section>
 
-      {/* Footer (Reused from LandingPage) */}
       <footer className={styles.footer}>
         <div className={styles.container}>
           <div className={styles.footerContent}>
@@ -168,7 +182,7 @@ export default function DocumentTemplatesPage() {
               <a href="#contact">Contact</a>
             </div>
           </div>
-          <p>&copy; 2025 NepaliLegalAidFinder. All rights reserved.</p>
+          <p>© 2025 NepaliLegalAidFinder. All rights reserved.</p>
         </div>
       </footer>
     </div>
