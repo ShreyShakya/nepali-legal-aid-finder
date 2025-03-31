@@ -623,6 +623,100 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
 
+.uploadButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.uploadButton:hover {
+  background-color: #1d4ed8;
+  transform: scale(1.05);
+}
+
+.fileInput {
+  display: none;
+}
+
+/* Edit Form for Profile and Settings */
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.formGroup label {
+  font-size: 1rem;
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.darkTheme .formGroup label {
+  color: #f3f4f6;
+}
+
+.formInput,
+.formTextarea {
+  padding: 0.75rem;
+  font-size: 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+
+.formTextarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.darkTheme .formInput,
+.darkTheme .formTextarea {
+  border-color: #4b5563;
+  background-color: #4b5563;
+  color: #d1d5db;
+}
+
+.formInput:focus,
+.formTextarea:focus {
+  border-color: #2563eb;
+  outline: none;
+}
+
+.formInput:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+}
+
+.darkTheme .formInput:disabled {
+  background-color: #374151;
+}
+
+.formActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
 /* Error Message */
 .errorMessage {
   color: #ef4444;
@@ -800,6 +894,11 @@
   .profilePicture {
     width: 60px;
     height: 60px;
+  }
+
+  .formInput,
+  .formTextarea {
+    font-size: 0.9rem;
   }
 
   .dialogBox {

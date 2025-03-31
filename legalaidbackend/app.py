@@ -439,6 +439,10 @@ def register_client():
         email = data.get('email')
         password = data.get('password')
         phone = data.get('phone')
+        address = data.get('address', '')
+        bio = data.get('bio', '')
+        email_notifications = data.get('email_notifications', 1)
+        preferred_contact = data.get('preferred_contact', 'Email')
 
         if not all([name, email, password]):
             return jsonify({'error': 'Name, email, and password are required'}), 400
@@ -446,13 +450,24 @@ def register_client():
         hashed_bytes = hash_password(password)
         hashed_password = base64.b64encode(hashed_bytes).decode('utf-8')
 
+        profile_picture = None
+        if 'profile_picture' in request.files:
+            file = request.files['profile_picture']
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(file_path)
+                profile_picture = filename
+
         conn = pymysql.connect(**db_config)
         with conn.cursor() as cursor:
             sql = """
-                INSERT INTO clients (name, email, password, phone)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO clients (name, email, password, phone, address, bio, email_notifications, 
+                                    preferred_contact, profile_picture)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
-            cursor.execute(sql, (name, email, hashed_password, phone))
+            cursor.execute(sql, (name, email, hashed_password, phone, address, bio, email_notifications, 
+                                preferred_contact, profile_picture))
             conn.commit()
         conn.close()
         return jsonify({'message': 'Client registered successfully'}), 201
@@ -478,7 +493,11 @@ def login_client():
 
         conn = pymysql.connect(**db_config)
         with conn.cursor() as cursor:
-            sql = "SELECT * FROM clients WHERE email = %s"
+            sql = """
+                SELECT id, name, email, password, phone, address, bio, email_notifications, 
+                       preferred_contact, profile_picture
+                FROM clients WHERE email = %s
+            """
             cursor.execute(sql, (email,))
             client = cursor.fetchone()
 
@@ -498,6 +517,10 @@ def login_client():
             token = jwt.encode(token_payload, SECRET_KEY, algorithm='HS256')
 
             client_response = client.copy()
+            if client['profile_picture']:
+                client_response['profile_picture'] = f"/uploads/{client['profile_picture']}"
+            # Remove password from response
+            del client_response['password']
             return jsonify({
                 'message': 'Login successful',
                 'token': token,
@@ -1238,7 +1261,6 @@ def lawyer_clients():
         print(f"Error fetching clients: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-# New endpoint to fetch all cases for a client
 @app.route('/api/client-cases', methods=['GET', 'OPTIONS'])
 def client_cases():
     if request.method == "OPTIONS":
@@ -1257,6 +1279,8 @@ def client_cases():
                        c.filing_date, c.jurisdiction, c.plaintiff_name, c.defendant_name,
                        l.name AS lawyer_name
                 FROM cases c
+
+
                 JOIN lawyers l ON c.lawyer_id = l.id
                 WHERE c.client_id = %s
             """
@@ -1270,7 +1294,6 @@ def client_cases():
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-# New endpoint to fetch specific case details for a client
 @app.route('/api/client-case/<int:case_id>', methods=['GET'])
 def get_client_case(case_id):
     decoded, error_response, status = validate_token()
@@ -1335,7 +1358,6 @@ def get_client_case(case_id):
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-# New endpoint for clients to send messages
 @app.route('/api/client-case/<int:case_id>/messages', methods=['POST'])
 def send_client_message(case_id):
     decoded, error_response, status = validate_token()
@@ -1373,6 +1395,162 @@ def send_client_message(case_id):
 
         conn.close()
         return jsonify({'message': new_message, 'message': 'Message sent successfully'}), 201
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+# New endpoint for client profile (GET and PUT)
+@app.route('/api/client-profile', methods=['GET', 'OPTIONS'])
+def client_profile():
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
+
+    try:
+        client_id = decoded['client_id']
+        conn = pymysql.connect(**db_config)
+        with conn.cursor() as cursor:
+            sql = """
+                SELECT id, name, email, phone, address, bio, email_notifications, 
+                       preferred_contact, profile_picture
+                FROM clients WHERE id = %s
+            """
+            cursor.execute(sql, (client_id,))
+            client = cursor.fetchone()
+
+        conn.close()
+
+        if not client:
+            return jsonify({'error': 'Client not found'}), 404
+
+        client_response = client.copy()
+        if client['profile_picture']:
+            client_response['profile_picture'] = f"/uploads/{client['profile_picture']}"
+
+        return jsonify({'client': client_response}), 200
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/client-profile', methods=['PUT', 'OPTIONS'])
+def update_client_profile():
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
+
+    try:
+        client_id = decoded['client_id']
+        data = request.form
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+
+        profile_picture = None
+        if 'profile_picture' in request.files:
+            file = request.files['profile_picture']
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(file_path)
+                profile_picture = filename
+
+        conn = pymysql.connect(**db_config)
+        with conn.cursor() as cursor:
+            if not profile_picture:
+                cursor.execute("SELECT profile_picture FROM clients WHERE id = %s", (client_id,))
+                current = cursor.fetchone()
+                profile_picture = current['profile_picture']
+
+            sql = """
+                UPDATE clients 
+                SET phone = %s, address = %s, bio = %s, email_notifications = %s, 
+                    preferred_contact = %s, profile_picture = %s
+                WHERE id = %s
+            """
+            cursor.execute(sql, (
+                data.get('phone', ''),
+                data.get('address', ''),
+                data.get('bio', ''),
+                data.get('email_notifications', 1),
+                data.get('preferred_contact', 'Email'),
+                profile_picture,
+                client_id
+            ))
+            conn.commit()
+
+            cursor.execute("""
+                SELECT id, name, email, phone, address, bio, email_notifications, 
+                       preferred_contact, profile_picture
+                FROM clients WHERE id = %s
+            """, (client_id,))
+            client = cursor.fetchone()
+
+        conn.close()
+
+        client_response = client.copy()
+        if client['profile_picture']:
+            client_response['profile_picture'] = f"/uploads/{client['profile_picture']}"
+
+        return jsonify({'client': client_response, 'message': 'Profile updated successfully'}), 200
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+# New endpoint for client password change
+@app.route('/api/client/change-password', methods=['PUT', 'OPTIONS'])
+def change_client_password():
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
+
+    try:
+        client_id = decoded['client_id']
+        data = request.json
+        if not data or 'current_password' not in data or 'new_password' not in data:
+            return jsonify({'error': 'Current password and new password are required'}), 400
+
+        current_password = data['current_password']
+        new_password = data['new_password']
+
+        if len(new_password) < 8:
+            return jsonify({'error': 'New password must be at least 8 characters long'}), 400
+
+        conn = pymysql.connect(**db_config)
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT password FROM clients WHERE id = %s", (client_id,))
+            client = cursor.fetchone()
+
+            if not client:
+                conn.close()
+                return jsonify({'error': 'Client not found'}), 404
+
+            stored_password = base64.b64decode(client['password'])
+            if not verify_password(stored_password, current_password):
+                conn.close()
+                return jsonify({'error': 'Current password is incorrect'}), 401
+
+            hashed_bytes = hash_password(new_password)
+            hashed_new_password = base64.b64encode(hashed_bytes).decode('utf-8')
+
+            cursor.execute(
+                "UPDATE clients SET password = %s WHERE id = %s",
+                (hashed_new_password, client_id)
+            )
+            conn.commit()
+
+        conn.close()
+        return jsonify({'message': 'Password updated successfully'}), 200
 
     except Exception as e:
         print(f"Error: {str(e)}")

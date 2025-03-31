@@ -19,6 +19,16 @@ export default function ClientDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [notifications, setNotifications] = useState([]);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [formData, setFormData] = useState({});
+  const [settingsFormData, setSettingsFormData] = useState({});
+  const [profilePictureFile, setProfilePictureFile] = useState(null);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmNewPassword: ""
+  });
+  const [passwordError, setPasswordError] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -45,7 +55,13 @@ export default function ClientDashboard() {
       return;
     }
 
-    setClient(JSON.parse(clientData));
+    const parsedClient = JSON.parse(clientData);
+    setClient(parsedClient);
+    setFormData(parsedClient);
+    setSettingsFormData({
+      email_notifications: parsedClient.email_notifications || false,
+      preferred_contact: parsedClient.preferred_contact || "Email"
+    });
     fetchData(token);
   }, [navigate]);
 
@@ -88,6 +104,132 @@ export default function ClientDashboard() {
     setSelectedAppointment(appointment);
   };
 
+  const handleProfileChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData({ ...formData, [name]: type === 'checkbox' ? checked : value });
+  };
+
+  const handleSettingsChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setSettingsFormData({ ...settingsFormData, [name]: type === 'checkbox' ? checked : value });
+  };
+
+  const handleProfilePictureChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProfilePictureFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setFormData({ ...formData, profile_picture: reader.result });
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleProfileSave = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem('clientToken');
+    setLoading(true);
+    try {
+      const formDataToSend = new FormData();
+      for (const key in formData) {
+        if (key !== 'profile_picture') formDataToSend.append(key, formData[key]);
+      }
+      if (profilePictureFile) formDataToSend.append('profile_picture', profilePictureFile);
+
+      const response = await axios.put('http://127.0.0.1:5000/api/client-profile', formDataToSend, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      setClient(response.data.client);
+      localStorage.setItem('client', JSON.stringify(response.data.client));
+      setIsEditingProfile(false);
+      setProfilePictureFile(null);
+      addNotification(response.data.message || "Profile updated successfully", "success");
+    } catch (err) {
+      addNotification(err.response?.data?.error || "Failed to update profile", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSettingsSave = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem('clientToken');
+    setLoading(true);
+    try {
+      const response = await axios.put('http://127.0.0.1:5000/api/client-profile', settingsFormData, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+        }
+      });
+      setClient(response.data.client);
+      localStorage.setItem('client', JSON.stringify(response.data.client));
+      addNotification(response.data.message || "Settings updated successfully", "success");
+    } catch (err) {
+      addNotification(err.response?.data?.error || "Failed to update settings", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordData({ ...passwordData, [name]: value });
+    setPasswordError("");
+  };
+
+  const handlePasswordUpdate = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem('clientToken');
+    
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmNewPassword) {
+      setPasswordError("All fields are required");
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmNewPassword) {
+      setPasswordError("New password and confirmation do not match");
+      return;
+    }
+
+    if (passwordData.newPassword.length < 8) {
+      setPasswordError("New password must be at least 8 characters long");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await axios.put(
+        'http://127.0.0.1:5000/api/client/change-password',
+        {
+          current_password: passwordData.currentPassword,
+          new_password: passwordData.newPassword
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmNewPassword: ""
+      });
+      setPasswordError("");
+      addNotification(response.data.message || "Password updated successfully", "success");
+
+      localStorage.removeItem('clientToken');
+      localStorage.removeItem('client');
+      navigate('/client-login');
+    } catch (err) {
+      setPasswordError(err.response?.data?.error || "Failed to update password");
+      addNotification(err.response?.data?.error || "Failed to update password", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const upcomingAppointments = appointments
     .filter(appt => new Date(appt.appointment_date) >= new Date() && appt.status !== 'cancelled')
     .sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date))
@@ -108,6 +250,7 @@ export default function ClientDashboard() {
       <Tooltip id="theme-tooltip" />
       <Tooltip id="logout-tooltip" />
       <Tooltip id="details-tooltip" />
+      <Tooltip id="edit-tooltip" />
 
       <div className={styles.layout}>
         <aside className={`${styles.sidebar} ${isSidebarOpen ? styles.sidebarOpen : ''}`}>
@@ -147,6 +290,12 @@ export default function ClientDashboard() {
               className={`${styles.navLink} ${activeTab === "profile" ? styles.activeNavLink : ''}`}
             >
               <User className={styles.navIcon} /> Profile
+            </button>
+            <button
+              onClick={() => { setActiveTab("settings"); setIsSidebarOpen(false); }}
+              className={`${styles.navLink} ${activeTab === "settings" ? styles.activeNavLink : ''}`}
+            >
+              <Settings className={styles.navIcon} /> Settings
             </button>
           </nav>
         </aside>
@@ -392,22 +541,181 @@ export default function ClientDashboard() {
 
             {activeTab === "profile" && (
               <div className={styles.profileCard} id="profile">
-                <div className={styles.profileHeader}>
-                  <div className={styles.profilePictureWrapper}>
-                    <img
-                      src="https://via.placeholder.com/100"
-                      alt="Profile"
-                      className={styles.profilePicture}
+                {isEditingProfile ? (
+                  <form onSubmit={handleProfileSave} className={styles.editForm}>
+                    <div className={styles.formGroup}>
+                      <label>Profile Picture:</label>
+                      <div className={styles.profilePictureWrapper}>
+                        <img
+                          src={formData.profile_picture || "https://via.placeholder.com/100"}
+                          alt="Profile"
+                          className={styles.profilePicture}
+                        />
+                        <label htmlFor="profilePictureUpload" className={styles.uploadButton}>
+                          Upload
+                          <input
+                            id="profilePictureUpload"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleProfilePictureChange}
+                            className={styles.fileInput}
+                          />
+                        </label>
+                      </div>
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Email:</label>
+                      <input type="email" name="email" value={formData.email} className={styles.formInput} disabled />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Phone:</label>
+                      <input type="text" name="phone" value={formData.phone || ""} onChange={handleProfileChange} className={styles.formInput} />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Address:</label>
+                      <input type="text" name="address" value={formData.address || ""} onChange={handleProfileChange} className={styles.formInput} />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Bio:</label>
+                      <textarea name="bio" value={formData.bio || ""} onChange={handleProfileChange} className={styles.formTextarea} />
+                    </div>
+                    <div className={styles.formActions}>
+                      <button type="submit" className={styles.actionButton} disabled={loading}>Save</button>
+                      <button type="button" onClick={() => setIsEditingProfile(false)} className={styles.cancelButton} disabled={loading}>Cancel</button>
+                    </div>
+                  </form>
+                ) : (
+                  <>
+                    <div className={styles.profileHeader}>
+                      <div className={styles.profilePictureWrapper}>
+                        <img
+                          src={client.profile_picture ? `http://127.0.0.1:5000${client.profile_picture}` : "https://via.placeholder.com/100"}
+                          alt="Profile"
+                          className={styles.profilePicture}
+                        />
+                      </div>
+                      <div className={styles.profileInfo}>
+                        <h3>{client.name}</h3>
+                        <p className={styles.profileSubtitle}>Client</p>
+                      </div>
+                    </div>
+                    <div className={styles.profileDetails}>
+                      <p className={styles.profileItem}><strong>Email:</strong> {client.email}</p>
+                      <p className={styles.profileItem}><strong>Phone:</strong> {client.phone || "Not provided"}</p>
+                      <p className={styles.profileItem}><strong>Address:</strong> {client.address || "Not provided"}</p>
+                      <p className={styles.profileItem}><strong>Bio:</strong> {client.bio || "Not provided"}</p>
+                    </div>
+                    <button 
+                      onClick={() => setIsEditingProfile(true)} 
+                      className={styles.actionButton} 
+                      data-tooltip-id="edit-tooltip" 
+                      data-tooltip-content="Edit your profile details"
+                    >
+                      Edit Profile
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+
+            {activeTab === "settings" && (
+              <div className={styles.card} id="settings">
+                <h2 className={styles.sectionTitle}>Account Settings</h2>
+                <form onSubmit={handleSettingsSave} className={styles.editForm}>
+                  <div className={styles.formGroup}>
+                    <label>Email Notifications:</label>
+                    <input
+                      type="checkbox"
+                      name="email_notifications"
+                      checked={settingsFormData.email_notifications}
+                      onChange={handleSettingsChange}
                     />
                   </div>
-                  <div className={styles.profileInfo}>
-                    <h3>{client.name}</h3>
-                    <p className={styles.profileSubtitle}>Client</p>
+                  <div className={styles.formGroup}>
+                    <label>Preferred Contact Method:</label>
+                    <select
+                      name="preferred_contact"
+                      value={settingsFormData.preferred_contact}
+                      onChange={handleSettingsChange}
+                      className={styles.formInput}
+                    >
+                      <option value="Email">Email</option>
+                      <option value="Phone">Phone</option>
+                    </select>
                   </div>
-                </div>
-                <div className={styles.profileDetails}>
-                  <p className={styles.profileItem}><strong>Email:</strong> {client.email}</p>
-                  <p className={styles.profileItem}><strong>Phone:</strong> {client.phone || "Not provided"}</p>
+                  <div className={styles.formActions}>
+                    <button type="submit" className={styles.actionButton} disabled={loading}>Save Settings</button>
+                  </div>
+                </form>
+
+                <div className={styles.card} style={{ marginTop: '2rem' }}>
+                  <h2 className={styles.sectionTitle}>Change Password</h2>
+                  <form onSubmit={handlePasswordUpdate} className={styles.editForm}>
+                    <div className={styles.formGroup}>
+                      <label htmlFor="currentPassword">Current Password:</label>
+                      <input
+                        type="password"
+                        id="currentPassword"
+                        name="currentPassword"
+                        value={passwordData.currentPassword}
+                        onChange={handlePasswordChange}
+                        className={styles.formInput}
+                        required
+                        disabled={loading}
+                      />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label htmlFor="newPassword">New Password:</label>
+                      <input
+                        type="password"
+                        id="newPassword"
+                        name="newPassword"
+                        value={passwordData.newPassword}
+                        onChange={handlePasswordChange}
+                        className={styles.formInput}
+                        required
+                        disabled={loading}
+                      />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label htmlFor="confirmNewPassword">Confirm New Password:</label>
+                      <input
+                        type="password"
+                        id="confirmNewPassword"
+                        name="confirmNewPassword"
+                        value={passwordData.confirmNewPassword}
+                        onChange={handlePasswordChange}
+                        className={styles.formInput}
+                        required
+                        disabled={loading}
+                      />
+                    </div>
+                    {passwordError && (
+                      <p className={styles.errorMessage} style={{ color: '#ef4444', marginTop: '0.5rem' }}>
+                        {passwordError}
+                      </p>
+                    )}
+                    <div className={styles.formActions}>
+                      <button type="submit" className={styles.actionButton} disabled={loading}>
+                        Update Password
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPasswordData({
+                            currentPassword: "",
+                            newPassword: "",
+                            confirmNewPassword: ""
+                          });
+                          setPasswordError("");
+                        }}
+                        className={styles.cancelButton}
+                        disabled={loading}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
                 </div>
               </div>
             )}
