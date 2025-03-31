@@ -561,6 +561,10 @@
   cursor: pointer;
 }
 
+.sendButton .iconSmall {
+  color: white; /* Override the default iconSmall color */
+}
+
 .sendButton:hover {
   background-color: #2c5282;
 }

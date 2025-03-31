@@ -59,7 +59,7 @@ export default function ClientDashboard() {
       });
       setAppointments(appointmentsResponse.data.appointments || []);
 
-      // Fetch cases (assuming an endpoint exists; placeholder for now)
+      // Fetch cases
       try {
         const casesResponse = await axios.get('http://127.0.0.1:5000/api/client-cases', {
           headers: { Authorization: `Bearer ${token}` },
@@ -252,6 +252,7 @@ export default function ClientDashboard() {
                             <th>Case No</th>
                             <th>Status</th>
                             <th>Created At</th>
+                            <th></th>
                           </tr>
                         </thead>
                         <tbody>
@@ -268,6 +269,16 @@ export default function ClientDashboard() {
                               <td>{caseItem.id}</td>
                               <td>{caseItem.status}</td>
                               <td>{new Date(caseItem.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                              <td>
+                                <button
+                                  onClick={() => navigate(`/client-case/${caseItem.id}`)}
+                                  className={styles.ellipsisButton}
+                                  data-tooltip-id="details-tooltip"
+                                  data-tooltip-content="View case details"
+                                >
+                                  <MoreVertical className={styles.ellipsisIcon} />
+                                </button>
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -341,6 +352,7 @@ export default function ClientDashboard() {
                           <th>Case No</th>
                           <th>Status</th>
                           <th>Created At</th>
+                          <th></th>
                         </tr>
                       </thead>
                       <tbody>
@@ -357,13 +369,23 @@ export default function ClientDashboard() {
                             <td>{caseItem.id}</td>
                             <td>{caseItem.status}</td>
                             <td>{new Date(caseItem.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                            <td>
+                              <button
+                                onClick={() => navigate(`/client-case/${caseItem.id}`)}
+                                className={styles.ellipsisButton}
+                                data-tooltip-id="details-tooltip"
+                                data-tooltip-content="View case details"
+                              >
+                                <MoreVertical className={styles.ellipsisIcon} />
+                              </button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
                 ) : (
-                  <p className={styles.emptyMessage}>Feature coming soon: View and manage your legal cases here.</p>
+                  <p className={styles.emptyMessage}>No cases available.</p>
                 )}
               </div>
             )}

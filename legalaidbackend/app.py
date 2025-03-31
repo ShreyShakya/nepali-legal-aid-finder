@@ -296,7 +296,6 @@ def update_lawyer_profile():
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-# New endpoint for changing password
 @app.route('/api/lawyer/change-password', methods=['PUT', 'OPTIONS'])
 def change_password():
     if request.method == "OPTIONS":
@@ -315,13 +314,11 @@ def change_password():
         current_password = data['current_password']
         new_password = data['new_password']
 
-        # Basic validation for new password
         if len(new_password) < 8:
             return jsonify({'error': 'New password must be at least 8 characters long'}), 400
 
         conn = pymysql.connect(**db_config)
         with conn.cursor() as cursor:
-            # Fetch the current hashed password
             cursor.execute("SELECT password FROM lawyers WHERE id = %s", (lawyer_id,))
             lawyer = cursor.fetchone()
 
@@ -329,17 +326,14 @@ def change_password():
                 conn.close()
                 return jsonify({'error': 'Lawyer not found'}), 404
 
-            # Verify the current password
             stored_password = base64.b64decode(lawyer['password'])
             if not verify_password(stored_password, current_password):
                 conn.close()
                 return jsonify({'error': 'Current password is incorrect'}), 401
 
-            # Hash the new password
             hashed_bytes = hash_password(new_password)
             hashed_new_password = base64.b64encode(hashed_bytes).decode('utf-8')
 
-            # Update the password in the database
             cursor.execute(
                 "UPDATE lawyers SET password = %s WHERE id = %s",
                 (hashed_new_password, lawyer_id)
@@ -1242,6 +1236,146 @@ def lawyer_clients():
 
     except Exception as e:
         print(f"Error fetching clients: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+# New endpoint to fetch all cases for a client
+@app.route('/api/client-cases', methods=['GET', 'OPTIONS'])
+def client_cases():
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
+
+    try:
+        client_id = decoded['client_id']
+        conn = pymysql.connect(**db_config)
+        with conn.cursor() as cursor:
+            sql = """
+                SELECT c.id, c.title, c.case_type, c.description, c.status, c.created_at, c.priority,
+                       c.filing_date, c.jurisdiction, c.plaintiff_name, c.defendant_name,
+                       l.name AS lawyer_name
+                FROM cases c
+                JOIN lawyers l ON c.lawyer_id = l.id
+                WHERE c.client_id = %s
+            """
+            cursor.execute(sql, (client_id,))
+            cases = cursor.fetchall()
+
+        conn.close()
+        return jsonify({'cases': cases}), 200
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+# New endpoint to fetch specific case details for a client
+@app.route('/api/client-case/<int:case_id>', methods=['GET'])
+def get_client_case(case_id):
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
+
+    try:
+        client_id = decoded['client_id']
+        conn = pymysql.connect(**db_config)
+        with conn.cursor() as cursor:
+            # Fetch case details
+            sql = """
+                SELECT c.*, l.name AS lawyer_name, l.email AS lawyer_contact_info
+                FROM cases c
+                JOIN lawyers l ON c.lawyer_id = l.id
+                WHERE c.id = %s AND c.client_id = %s
+            """
+            cursor.execute(sql, (case_id, client_id))
+            case_data = cursor.fetchone()
+
+            if not case_data:
+                return jsonify({'error': 'Case not found or unauthorized'}), 403
+
+            # Fetch timeline events
+            cursor.execute(
+                "SELECT id, progress_event, event_date, created_at FROM case_timeline WHERE case_id = %s ORDER BY event_date ASC",
+                (case_id,)
+            )
+            timeline = cursor.fetchall()
+
+            # Fetch documents
+            cursor.execute(
+                "SELECT id, file_path, uploaded_at FROM court_files WHERE case_id = %s",
+                (case_id,)
+            )
+            documents = cursor.fetchall()
+
+            # Fetch evidence (only reviewed evidence for clients)
+            cursor.execute(
+                "SELECT id, file_path, description, reviewed, uploaded_at FROM evidence_files WHERE case_id = %s AND reviewed = TRUE",
+                (case_id,)
+            )
+            evidence = cursor.fetchall()
+
+            # Fetch messages
+            cursor.execute(
+                "SELECT id, sender, message, created_at FROM case_messages WHERE case_id = %s ORDER BY created_at ASC",
+                (case_id,)
+            )
+            messages = cursor.fetchall()
+
+        conn.close()
+        return jsonify({
+            'case': case_data,
+            'timeline': timeline,
+            'documents': documents,
+            'evidence': evidence,
+            'messages': messages
+        }), 200
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+# New endpoint for clients to send messages
+@app.route('/api/client-case/<int:case_id>/messages', methods=['POST'])
+def send_client_message(case_id):
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
+
+    try:
+        client_id = decoded['client_id']
+        data = request.json
+        if not data or 'message' not in data:
+            return jsonify({'error': 'Message is required'}), 400
+
+        message = data['message']
+
+        conn = pymysql.connect(**db_config)
+        with conn.cursor() as cursor:
+            # Verify the case belongs to the client
+            cursor.execute("SELECT client_id FROM cases WHERE id = %s", (case_id,))
+            case = cursor.fetchone()
+            if not case or case['client_id'] != client_id:
+                return jsonify({'error': 'Case not found or unauthorized'}), 403
+
+            # Insert message
+            cursor.execute(
+                "INSERT INTO case_messages (case_id, sender, message) VALUES (%s, %s, %s)",
+                (case_id, 'client', message)
+            )
+            conn.commit()
+
+            # Fetch the newly added message
+            cursor.execute(
+                "SELECT id, sender, message, created_at FROM case_messages WHERE id = LAST_INSERT_ID()"
+            )
+            new_message = cursor.fetchone()
+
+        conn.close()
+        return jsonify({'message': new_message, 'message': 'Message sent successfully'}), 201
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 if __name__ == '__main__':
