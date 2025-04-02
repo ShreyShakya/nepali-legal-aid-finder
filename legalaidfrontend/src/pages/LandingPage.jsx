@@ -121,9 +121,6 @@ export default function LandingPage() {
           <nav className={`${styles.mainNav} ${mobileMenuOpen ? styles.open : ""}`}>
             <ul>
               <li>
-                <a href="/browse-lawyers">Browse Lawyers</a>
-              </li>
-              <li>
                 <a href="#features">Features</a>
               </li>
               <li>
@@ -131,6 +128,9 @@ export default function LandingPage() {
               </li>
               <li>
                 <a href="#contact">Contact</a>
+              </li>
+              <li>
+                <a href="/document-templates">Document Templates</a>
               </li>
             </ul>
           </nav>
