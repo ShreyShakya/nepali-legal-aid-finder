@@ -1,117 +1,160 @@
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { FileText, Download, Scale } from "lucide-react";
-import styles from "./LandingPage.module.css";
-import axios from "axios";
+"use client"
+
+import { useState, useEffect } from "react"
+import { motion } from "framer-motion"
+import { FileText, Download, Scale, ChevronRight } from "lucide-react"
+import axios from "axios"
+import styles from "./DocumentTemplatesPage.module.css"
 
 const fadeIn = {
   hidden: { opacity: 0 },
   visible: { opacity: 1 },
-};
+}
 
 const slideUp = {
   hidden: { y: 30, opacity: 0 },
   visible: { y: 0, opacity: 1 },
-};
+}
 
 export default function DocumentTemplatesPage() {
-  const [templates, setTemplates] = useState([]);
-  const [error, setError] = useState(null);
-  const [isVisible, setIsVisible] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [templates, setTemplates] = useState([])
+  const [error, setError] = useState(null)
+  const [isVisible, setIsVisible] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [lawyerDropdownOpen, setLawyerDropdownOpen] = useState(false)
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token")
     if (!token) {
-      window.location.href = "/client-login";
-      return;
+      window.location.href = "/client-login"
+      return
     }
-    setIsVisible(true);
-    fetchTemplates();
-  }, []);
+    setIsVisible(true)
+    fetchTemplates()
+  }, [])
 
   const fetchTemplates = async () => {
-    setLoading(true);
+    setLoading(true)
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token")
       const response = await axios.get("http://127.0.0.1:5000/api/document-templates", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      });
-      setTemplates(response.data.templates);
+      })
+      setTemplates(response.data.templates)
     } catch (err) {
-      setError("Failed to load document templates. Please try again later.");
-      console.error("Error fetching templates:", err);
+      setError("Failed to load document templates. Please try again later.")
+      console.error("Error fetching templates:", err)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleDownload = async (downloadUrl, filename) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token")
       if (!token) {
-        setError("Please log in to download templates.");
-        window.location.href = "/client-login";
-        return;
+        setError("Please log in to download templates.")
+        window.location.href = "/client-login"
+        return
       }
       const response = await axios.get(`http://127.0.0.1:5000${downloadUrl}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
         responseType: "blob",
-      });
+      })
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", filename);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement("a")
+      link.href = url
+      link.setAttribute("download", filename)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
     } catch (err) {
       setError(
         err.response?.status === 404
           ? "Template file not found."
-          : "Failed to download the template. Please try again."
-      );
-      console.error("Error downloading template:", err);
+          : "Failed to download the template. Please try again.",
+      )
+      console.error("Error downloading template:", err)
     }
-  };
+  }
 
   return (
-    <div className={styles.landingPage}>
+    <div className={styles.pageContainer}>
+      {/* Header */}
       <header className={styles.header}>
         <div className={styles.container}>
           <div className={styles.logo}>
             <Scale className={styles.logoIcon} />
             <span>NepaliLegalAidFinder</span>
           </div>
-          <nav className={styles.mainNav}>
+
+          <div
+            className={`${styles.mobileMenuButton} ${mobileMenuOpen ? styles.active : ""}`}
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+
+          <nav className={`${styles.mainNav} ${mobileMenuOpen ? styles.open : ""}`}>
             <ul>
               <li>
-                <a href="/browse-lawyers">Browse Lawyers</a>
+                <a href="#features">Features</a>
               </li>
               <li>
-                <a href="/document-templates">Document Templates</a>
+                <a href="#attorneys">Attorneys</a>
               </li>
               <li>
                 <a href="#contact">Contact</a>
               </li>
+              <li>
+                <a href="/document-templates">Document Templates</a>
+              </li>
             </ul>
           </nav>
+
           <div className={styles.headerButtonGroup}>
             <a href="/client-login" className={styles.ctaButton}>
               Get Started
             </a>
+
+            <div className={styles.dropdownContainer}>
+              <button
+                className={styles.dropdownButton}
+                onClick={() => setLawyerDropdownOpen(!lawyerDropdownOpen)}
+                onBlur={() => setTimeout(() => setLawyerDropdownOpen(false), 100)}
+              >
+                For Lawyers
+                <ChevronRight
+                  className={`${styles.dropdownIcon} ${lawyerDropdownOpen ? styles.dropdownIconOpen : ""}`}
+                />
+              </button>
+              {lawyerDropdownOpen && (
+                <ul className={styles.dropdownMenu}>
+                  <li>
+                    <a href="/lawyer-login">Login</a>
+                  </li>
+                  <li>
+                    <a href="/register-lawyer">Register</a>
+                  </li>
+                </ul>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
+      {/* Document Templates Section */}
       <motion.section
-        className={styles.features}
+        className={styles.templatesSection}
         initial="hidden"
         animate={isVisible ? "visible" : "hidden"}
         variants={fadeIn}
@@ -123,13 +166,17 @@ export default function DocumentTemplatesPage() {
             </motion.span>
             <motion.h2 variants={slideUp}>Document Templates</motion.h2>
             <motion.p variants={slideUp}>
-              Access a variety of legal document templates to assist with your case preparation. Download and customize them as needed.
+              Access a variety of legal document templates to assist with your case preparation. Download and customize
+              them as needed.
             </motion.p>
           </div>
 
-          <div className={styles.featuresGrid}>
+          <div className={styles.templatesGrid}>
             {loading ? (
-              <motion.p variants={slideUp}>Loading templates...</motion.p>
+              <motion.div className={styles.loadingContainer} variants={slideUp}>
+                <div className={styles.spinner}></div>
+                <p>Loading templates...</p>
+              </motion.div>
             ) : error ? (
               <motion.div
                 className={styles.errorMessage}
@@ -143,15 +190,17 @@ export default function DocumentTemplatesPage() {
               templates.map((template, index) => (
                 <motion.div
                   key={index}
-                  className={styles.featureCard}
+                  className={styles.templateCard}
                   variants={slideUp}
                   transition={{ delay: index * 0.1 }}
                 >
-                  <FileText className={styles.featureIcon} />
+                  <div className={styles.templateIconWrapper}>
+                    <FileText className={styles.templateIcon} />
+                  </div>
                   <h3>{template.filename}</h3>
                   <p>Download this template to get started with your legal documentation.</p>
                   <button
-                    className={styles.ctaButton}
+                    className={styles.downloadButton}
                     onClick={() => handleDownload(template.download_url, template.filename)}
                   >
                     <Download className={styles.buttonIcon} />
@@ -160,7 +209,7 @@ export default function DocumentTemplatesPage() {
                 </motion.div>
               ))
             ) : (
-              <motion.p variants={slideUp}>
+              <motion.p className={styles.emptyState} variants={slideUp}>
                 No templates available at the moment.
               </motion.p>
             )}
@@ -168,6 +217,7 @@ export default function DocumentTemplatesPage() {
         </div>
       </motion.section>
 
+      {/* Footer */}
       <footer className={styles.footer}>
         <div className={styles.container}>
           <div className={styles.footerContent}>
@@ -182,9 +232,12 @@ export default function DocumentTemplatesPage() {
               <a href="#contact">Contact</a>
             </div>
           </div>
-          <p>© 2025 NepaliLegalAidFinder. All rights reserved.</p>
+          <div className={styles.footerBottom}>
+            <p>© {new Date().getFullYear()} NepaliLegalAidFinder. All rights reserved.</p>
+          </div>
         </div>
       </footer>
     </div>
-  );
+  )
 }
+
