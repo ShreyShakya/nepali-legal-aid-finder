@@ -25,9 +25,9 @@ export default function LawyerProfile() {
   const [showModal, setShowModal] = useState(false);
   const [appointmentDate, setAppointmentDate] = useState(new Date());
   const [bookedTimes, setBookedTimes] = useState([]);
+  const [isTimeSlotAvailable, setIsTimeSlotAvailable] = useState(true);
   const navigate = useNavigate();
 
-  // Fetch lawyer details and booked times on component mount
   useEffect(() => {
     const fetchLawyer = async () => {
       setLoading(true);
@@ -36,7 +36,6 @@ export default function LawyerProfile() {
         const response = await axios.get(`http://127.0.0.1:5000/api/lawyer/${id}`);
         const fetchedLawyer = response.data.lawyer;
 
-        // Convert working hours to Date objects for comparison
         if (fetchedLawyer.working_hours_start && fetchedLawyer.working_hours_end) {
           const [startHours, startMinutes] = fetchedLawyer.working_hours_start.split(':').map(Number);
           const [endHours, endMinutes] = fetchedLawyer.working_hours_end.split(':').map(Number);
@@ -47,7 +46,7 @@ export default function LawyerProfile() {
         }
 
         setLawyer(fetchedLawyer);
-        fetchBookedTimes(id); // Fetch booked times for this lawyer
+        fetchBookedTimes(id);
       } catch (err) {
         setError(err.response?.data?.error || "Failed to fetch lawyer details.");
       } finally {
@@ -58,32 +57,37 @@ export default function LawyerProfile() {
     fetchLawyer();
   }, [id]);
 
-  // Fetch booked times for the lawyer
   const fetchBookedTimes = async (lawyerId) => {
     try {
       const response = await axios.get(`http://127.0.0.1:5000/api/lawyer-appointments/${lawyerId}`);
       const appointments = response.data.appointments || [];
       const times = appointments.map((appt) => new Date(appt.appointment_date));
       setBookedTimes(times);
+      checkTimeSlotAvailability(appointmentDate, times);
     } catch (err) {
       console.error("Failed to fetch booked times:", err);
     }
   };
 
-  // Handle booking an appointment
+  const checkTimeSlotAvailability = (selectedTime, bookedTimesArray) => {
+    const isBooked = bookedTimesArray.some((booked) => {
+      const diff = Math.abs(new Date(booked) - new Date(selectedTime)) / (1000 * 60);
+      return diff < 30;
+    });
+    setIsTimeSlotAvailable(!isBooked);
+  };
+
   const handleBookAppointment = () => {
     const token = localStorage.getItem('clientToken');
     if (!token) {
-      // Redirect to registration page if the user is not logged in
       navigate('/client-registration');
       return;
     }
-    setShowModal(true); // Open the modal for logged-in users
+    setShowModal(true);
   };
 
-  // Filter available times based on lawyer's working hours and booked times
   const filterTime = (time) => {
-    if (!lawyer.workingHoursStart || !lawyer.workingHoursEnd) return true;
+    if (!lawyer?.workingHoursStart || !lawyer?.workingHoursEnd) return true;
 
     const selectedTime = new Date(time);
     const hours = selectedTime.getHours();
@@ -97,17 +101,25 @@ export default function LawyerProfile() {
       (hours > startHours || (hours === startHours && minutes >= startMinutes)) &&
       (hours < endHours || (hours === endHours && minutes <= endMinutes));
 
-    // Check if the time is already booked (within a 30-minute window)
     const isBooked = bookedTimes.some((booked) => {
-      const diff = Math.abs(new Date(booked) - selectedTime) / (1000 * 60); // Difference in minutes
-      return diff < 30; // Consider 30-minute slots
+      const diff = Math.abs(new Date(booked) - selectedTime) / (1000 * 60);
+      return diff < 30;
     });
 
     return isWithinWorkingHours && !isBooked;
   };
 
-  // Handle appointment submission
+  const handleDateChange = (date) => {
+    setAppointmentDate(date);
+    checkTimeSlotAvailability(date, bookedTimes);
+  };
+
   const handleSubmitAppointment = async () => {
+    if (!isTimeSlotAvailable) {
+      alert("This time slot is already booked. Please select another time.");
+      return;
+    }
+
     const token = localStorage.getItem('clientToken');
     try {
       await axios.post(
@@ -124,21 +136,21 @@ export default function LawyerProfile() {
       );
       alert("Appointment booked successfully!");
       setShowModal(false);
-      fetchBookedTimes(id); // Refresh booked times after booking
+      fetchBookedTimes(id);
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to book appointment.");
+      // Display the backend error message
+      const errorMessage = err.response?.data?.error || "Failed to book appointment.";
+      alert(errorMessage);
     }
   };
 
-  // Handle navigation back to Browse Lawyers
   const handleBack = () => {
     navigate('/browse-lawyers');
   };
 
-  // Handle image loading errors by falling back to the placeholder
   const handleImageError = (e) => {
-    e.target.style.display = 'none'; // Hide the broken image
-    e.target.nextSibling.style.display = 'flex'; // Show the placeholder
+    e.target.style.display = 'none';
+    e.target.nextSibling.style.display = 'flex';
   };
 
   if (loading) return <div>Loading...</div>;
@@ -152,7 +164,6 @@ export default function LawyerProfile() {
       animate="visible"
       variants={fadeIn}
     >
-      {/* Header */}
       <header className={styles.header}>
         <div className={styles.container}>
           <div className={styles.logo}>
@@ -170,7 +181,6 @@ export default function LawyerProfile() {
         </div>
       </header>
 
-      {/* Lawyer Profile Section */}
       <section className={styles.profileSection}>
         <div className={styles.container}>
           <motion.div className={styles.profileContent} variants={slideUp}>
@@ -183,14 +193,14 @@ export default function LawyerProfile() {
                 {lawyer.profile_picture ? (
                   <>
                     <img
-                      src={`http://127.0.0.1:5000${lawyer.profile_picture}`} // Prepend the base URL
+                      src={`http://127.0.0.1:5000${lawyer.profile_picture}`}
                       alt={lawyer.name}
                       className={styles.profilePicture}
-                      onError={handleImageError} // Handle image loading errors
+                      onError={handleImageError}
                     />
                     <div
                       className={styles.placeholderPicture}
-                      style={{ display: 'none' }} // Hidden by default, shown on error
+                      style={{ display: 'none' }}
                     >
                       No Image
                     </div>
@@ -241,7 +251,6 @@ export default function LawyerProfile() {
         </div>
       </section>
 
-      {/* Appointment Booking Modal */}
       {showModal && (
         <div className={styles.modalOverlay}>
           <motion.div
@@ -255,7 +264,7 @@ export default function LawyerProfile() {
               <label>Select Date and Time:</label>
               <DatePicker
                 selected={appointmentDate}
-                onChange={(date) => setAppointmentDate(date)}
+                onChange={handleDateChange}
                 showTimeSelect
                 timeFormat="HH:mm"
                 timeIntervals={15}
@@ -267,6 +276,11 @@ export default function LawyerProfile() {
               <p className={styles.note}>
                 Note: Appointments must be within working hours ({lawyer.working_hours_start} - {lawyer.working_hours_end}).
               </p>
+              {!isTimeSlotAvailable && (
+                <p className={styles.errorMessage}>
+                  This time slot is already booked. Please select another time.
+                </p>
+              )}
             </div>
             <div className={styles.modalActions}>
               <button
@@ -278,6 +292,7 @@ export default function LawyerProfile() {
               <button
                 onClick={handleSubmitAppointment}
                 className={styles.submitButton}
+                disabled={!isTimeSlotAvailable}
               >
                 Confirm Appointment
               </button>

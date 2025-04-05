@@ -282,6 +282,19 @@
   .submitButton:hover {
     background-color: #2563eb;
   }
+
+.errorMessage {
+  color: #e74c3c;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  line-height: 1.4;
+}
+
+/* style the disabled submit button */
+.submitButton:disabled {
+  background-color: #a3bffa;
+  cursor: not-allowed;
+}
   
   /* Responsive Styles */
   @media (max-width: 768px) {
