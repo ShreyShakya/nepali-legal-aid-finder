@@ -1,6 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import LandingPage from './pages/LandingPage'; // Updated path for LandingPage
-import LawyersPage from './pages/LawyersPage';
 import LawyerDashboard from './pages/LawyerDashboard';
 import LawyerRegistration from './components/Auth/LawyerRegistration';
 import LawyerLogin from './components/Auth/LawyerLogin';
@@ -19,9 +18,6 @@ function App() {
             <Routes>
                 {/* Landing Page */}
                 <Route path="/" element={<LandingPage />} />
-
-                {/* Lawyers Page */}
-                <Route path="/lawyers" element={<LawyersPage />} />
 
                 {/* Lawyer Dashboard */}
                 <Route path="/lawyerdashboard" element={<LawyerDashboard />} />
