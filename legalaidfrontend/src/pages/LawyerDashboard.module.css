@@ -1642,6 +1642,263 @@
   }
 }
 
+/* Chat Button */
+.chatButton {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 60px;
+  height: 60px;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  z-index: 1000;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.chatButton:hover {
+  background-color: #2563eb;
+  transform: scale(1.1);
+}
+
+.darkTheme .chatButton {
+  background-color: #60a5fa;
+}
+
+.darkTheme .chatButton:hover {
+  background-color: #3b82f6;
+}
+
+.chatIcon {
+  width: 24px;
+  height: 24px;
+}
+
+/* Chat Modal */
+.chatModal {
+  position: fixed;
+  bottom: 6rem;
+  right: 2rem;
+  width: 350px;
+  height: 450px;
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+
+.darkTheme .chatModal {
+  background-color: #1e293b;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.chatHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.darkTheme .chatHeader {
+  border-bottom-color: #334155;
+}
+
+.chatHeader h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.darkTheme .chatHeader h3 {
+  color: #f8fafc;
+}
+
+.chatBody {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.chatEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+}
+
+.chatEmptyIcon {
+  width: 2rem;
+  height: 2rem;
+  color: #cbd5e1;
+  margin-bottom: 0.5rem;
+}
+
+.darkTheme .chatEmptyIcon {
+  color: #475569;
+}
+
+.chatEmpty p {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.darkTheme .chatEmpty p {
+  color: #94a3b8;
+}
+
+.chatMessage {
+  display: flex;
+  flex-direction: column;
+  max-width: 80%;
+}
+
+.chatMessageSent {
+  align-self: flex-end;
+}
+
+.chatMessageReceived {
+  align-self: flex-start;
+}
+
+.messageBubble {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  background-color: #eff6ff;
+  color: #1e293b;
+}
+
+.darkTheme .messageBubble {
+  background-color: #334155;
+  color: #f8fafc;
+}
+
+.chatMessageSent .messageBubble {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.darkTheme .chatMessageSent .messageBubble {
+  background-color: #60a5fa;
+}
+
+.messageBubble p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.messageTimestamp {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 0.25rem;
+  text-align: right;
+}
+
+.darkTheme .messageTimestamp {
+  color: #94a3b8;
+}
+
+.chatMessageReceived .messageTimestamp {
+  text-align: left;
+}
+
+.chatInputForm {
+  display: flex;
+  padding: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.darkTheme .chatInputForm {
+  border-top-color: #334155;
+}
+
+.chatInput {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  color: #1e293b;
+  background-color: #f8fafc;
+  margin-right: 0.5rem;
+}
+
+.darkTheme .chatInput {
+  border-color: #334155;
+  background-color: #1e293b;
+  color: #f8fafc;
+}
+
+.chatInput:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.darkTheme .chatInput:focus {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.sendButton {
+  padding: 0.5rem 1rem;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.sendButton:hover {
+  background-color: #2563eb;
+}
+
+.darkTheme .sendButton {
+  background-color: #60a5fa;
+}
+
+.darkTheme .sendButton:hover {
+  background-color: #3b82f6;
+}
+
+/* Responsive Design for Chat */
+@media (max-width: 480px) {
+  .chatModal {
+    width: 90%;
+    right: 5%;
+    bottom: 5rem;
+    height: 400px;
+  }
+
+  .chatButton {
+    bottom: 1.5rem;
+    right: 1.5rem;
+    width: 50px;
+    height: 50px;
+  }
+
+  .chatIcon {
+    width: 20px;
+    height: 20px;
+  }
+}
+
 @media (max-width: 480px) {
   .cardHeader {
     flex-direction: column;

@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, useEffect } from "react"
 import {
   Scale,
@@ -18,6 +16,7 @@ import {
   BarChart2,
   ChevronRight,
   Briefcase,
+  MessageCircle, // Add MessageCircle icon for the chat button
 } from "lucide-react"
 import axios from "axios"
 import { useNavigate } from "react-router-dom"
@@ -61,6 +60,9 @@ export default function LawyerDashboard() {
     confirmNewPassword: "",
   })
   const [passwordError, setPasswordError] = useState("")
+  const [isChatOpen, setIsChatOpen] = useState(false) // New state for chat modal
+  const [chatMessages, setChatMessages] = useState([]) // Placeholder for chat messages
+  const [newMessage, setNewMessage] = useState("") // State for new message input
 
   const navigate = useNavigate()
 
@@ -71,6 +73,7 @@ export default function LawyerDashboard() {
 
   const toggleTheme = () => setTheme(theme === "light" ? "dark" : "light")
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
+  const toggleChat = () => setIsChatOpen(!isChatOpen) // Function to toggle chat modal
 
   const addNotification = (message, type = "success") => {
     const id = Date.now()
@@ -370,6 +373,23 @@ export default function LawyerDashboard() {
     }
   }
 
+  // Handle sending a new message (placeholder for now)
+  const handleSendMessage = (e) => {
+    e.preventDefault()
+    if (!newMessage.trim()) return
+
+    const message = {
+      id: Date.now(),
+      text: newMessage,
+      sender: "lawyer", // For now, assume the lawyer is sending the message
+      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    }
+
+    setChatMessages([...chatMessages, message])
+    setNewMessage("")
+    // In a real app, you'd send this message to the backend and update the chat
+  }
+
   const totalCases = cases.length
   const pendingCases = cases.filter((c) => c.status === "pending").length
   const highPriorityCases = cases.filter((c) => c.priority === "High").length
@@ -400,6 +420,7 @@ export default function LawyerDashboard() {
       <Tooltip id="edit-tooltip" />
       <Tooltip id="details-tooltip" />
       <Tooltip id="create-case-tooltip" />
+      <Tooltip id="chat-tooltip" /> {/* Tooltip for chat button */}
 
       <div className={styles.layout}>
         {/* Sidebar */}
@@ -1600,6 +1621,70 @@ export default function LawyerDashboard() {
         )}
       </AnimatePresence>
 
+      {/* Chat Button */}
+      <button
+        onClick={toggleChat}
+        className={styles.chatButton}
+        data-tooltip-id="chat-tooltip"
+        data-tooltip-content="Open chat"
+      >
+        <MessageCircle className={styles.chatIcon} />
+      </button>
+
+      {/* Chat Modal */}
+      <AnimatePresence>
+        {isChatOpen && (
+          <motion.div
+            className={styles.chatModal}
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className={styles.chatHeader}>
+              <h3>Chat</h3>
+              <button onClick={toggleChat} className={styles.closeButton}>
+                <X className={styles.closeIcon} />
+              </button>
+            </div>
+            <div className={styles.chatBody}>
+              {chatMessages.length > 0 ? (
+                chatMessages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`${styles.chatMessage} ${
+                      message.sender === "lawyer" ? styles.chatMessageSent : styles.chatMessageReceived
+                    }`}
+                  >
+                    <div className={styles.messageBubble}>
+                      <p>{message.text}</p>
+                      <span className={styles.messageTimestamp}>{message.timestamp}</span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className={styles.chatEmpty}>
+                  <MessageCircle className={styles.chatEmptyIcon} />
+                  <p>No messages yet. Start a conversation!</p>
+                </div>
+              )}
+            </div>
+            <form onSubmit={handleSendMessage} className={styles.chatInputForm}>
+              <input
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Type a message..."
+                className={styles.chatInput}
+              />
+              <button type="submit" className={styles.sendButton}>
+                Send
+              </button>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Notifications */}
       <div className={styles.notificationContainer}>
         <AnimatePresence>
@@ -1630,4 +1715,3 @@ export default function LawyerDashboard() {
     </div>
   )
 }
-
