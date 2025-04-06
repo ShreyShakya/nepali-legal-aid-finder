@@ -407,9 +407,6 @@ export default function ClientDashboard() {
                       Browse Lawyers
                     </button>
                   </div>
-                  <div className={styles.welcomeImage}>
-                    <img src="https://via.placeholder.com/300x200" alt="Welcome" />
-                  </div>
                 </div>
 
                 <div className={styles.card}>
