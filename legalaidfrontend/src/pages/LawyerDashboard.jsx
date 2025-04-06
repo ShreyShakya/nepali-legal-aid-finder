@@ -1,11 +1,28 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Scale, Sun, Moon, FileText, Clock, Calendar, User, Settings, AlertCircle, CheckCircle, Menu, X, MoreVertical, BarChart2 } from "lucide-react"
+import {
+  Scale,
+  Sun,
+  Moon,
+  FileText,
+  Clock,
+  Calendar,
+  User,
+  Settings,
+  AlertCircle,
+  CheckCircle,
+  Menu,
+  X,
+  MoreVertical,
+  BarChart2,
+  ChevronRight,
+  Briefcase,
+} from "lucide-react"
 import axios from "axios"
 import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
-import { Tooltip } from 'react-tooltip'
+import { Tooltip } from "react-tooltip"
 import styles from "./LawyerDashboard.module.css"
 
 export default function LawyerDashboard() {
@@ -19,7 +36,7 @@ export default function LawyerDashboard() {
   const [settingsFormData, setSettingsFormData] = useState({})
   const [profilePictureFile, setProfilePictureFile] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light')
+  const [theme, setTheme] = useState(localStorage.getItem("theme") || "light")
   const [dialog, setDialog] = useState({ isOpen: false, message: "", onConfirm: null })
   const [selectedCase, setSelectedCase] = useState(null)
   const [selectedAppointment, setSelectedAppointment] = useState(null)
@@ -31,31 +48,31 @@ export default function LawyerDashboard() {
     title: "",
     case_type: "Civil",
     status: "pending",
-    filing_date: new Date().toISOString().split('T')[0],
+    filing_date: new Date().toISOString().split("T")[0],
     jurisdiction: "District Court",
     description: "",
     plaintiff_name: "",
     defendant_name: "",
-    priority: "Medium"
+    priority: "Medium",
   })
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
     newPassword: "",
-    confirmNewPassword: ""
+    confirmNewPassword: "",
   })
   const [passwordError, setPasswordError] = useState("")
 
   const navigate = useNavigate()
 
   useEffect(() => {
-    document.body.className = theme === 'dark' ? styles.darkTheme : ''
-    localStorage.setItem('theme', theme)
+    document.body.className = theme === "dark" ? styles.darkTheme : ""
+    localStorage.setItem("theme", theme)
   }, [theme])
 
-  const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light')
+  const toggleTheme = () => setTheme(theme === "light" ? "dark" : "light")
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
 
-  const addNotification = (message, type = 'success') => {
+  const addNotification = (message, type = "success") => {
     const id = Date.now()
     setNotifications((prev) => [...prev, { id, message, type }])
     setTimeout(() => setNotifications((prev) => prev.filter((n) => n.id !== id)), 3000)
@@ -63,34 +80,34 @@ export default function LawyerDashboard() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem("token")
       if (!token) {
         addNotification("Please log in to access the dashboard", "error")
-        navigate('/lawyer-login')
+        navigate("/lawyer-login")
         return
       }
 
       setIsLoading(true)
       try {
-        const profileResponse = await axios.get('http://127.0.0.1:5000/api/lawyer-profile', {
-          headers: { Authorization: `Bearer ${token}` }
+        const profileResponse = await axios.get("http://127.0.0.1:5000/api/lawyer-profile", {
+          headers: { Authorization: `Bearer ${token}` },
         })
         setLawyer(profileResponse.data.lawyer)
         setFormData(profileResponse.data.lawyer)
         setSettingsFormData({
           email_notifications: profileResponse.data.lawyer.email_notifications,
-          preferred_contact: profileResponse.data.lawyer.preferred_contact
+          preferred_contact: profileResponse.data.lawyer.preferred_contact,
         })
 
-        const casesResponse = await axios.get('http://127.0.0.1:5000/api/lawyer-cases', {
-          headers: { Authorization: `Bearer ${token}` }
+        const casesResponse = await axios.get("http://127.0.0.1:5000/api/lawyer-cases", {
+          headers: { Authorization: `Bearer ${token}` },
         })
         setCases(casesResponse.data.cases)
 
         try {
           const appointmentsResponse = await axios.get(
             `http://127.0.0.1:5000/api/lawyer-appointments/${profileResponse.data.lawyer.id}`,
-            { headers: { Authorization: `Bearer ${token}` } }
+            { headers: { Authorization: `Bearer ${token}` } },
           )
           setAppointments(appointmentsResponse.data.appointments || [])
         } catch (apptErr) {
@@ -99,8 +116,8 @@ export default function LawyerDashboard() {
         }
 
         try {
-          const clientsResponse = await axios.get('http://127.0.0.1:5000/api/lawyer-clients', {
-            headers: { Authorization: `Bearer ${token}` }
+          const clientsResponse = await axios.get("http://127.0.0.1:5000/api/lawyer-clients", {
+            headers: { Authorization: `Bearer ${token}` },
           })
           setClients(clientsResponse.data.clients || [])
         } catch (clientErr) {
@@ -110,9 +127,9 @@ export default function LawyerDashboard() {
       } catch (err) {
         console.log("Error:", err.response?.data?.error || err.message)
         addNotification(err.response?.data?.error || "Failed to load data", "error")
-        localStorage.removeItem('token')
-        localStorage.removeItem('lawyer')
-        navigate('/lawyer-login')
+        localStorage.removeItem("token")
+        localStorage.removeItem("lawyer")
+        navigate("/lawyer-login")
       } finally {
         setIsLoading(false)
       }
@@ -125,22 +142,22 @@ export default function LawyerDashboard() {
       isOpen: true,
       message: "Are you sure you want to logout?",
       onConfirm: () => {
-        localStorage.removeItem('token')
-        localStorage.removeItem('lawyer')
+        localStorage.removeItem("token")
+        localStorage.removeItem("lawyer")
         addNotification("Logged out successfully", "success")
-        navigate('/lawyer-login')
-      }
+        navigate("/lawyer-login")
+      },
     })
   }
 
   const handleProfileChange = (e) => {
     const { name, value, type, checked } = e.target
-    setFormData({ ...formData, [name]: type === 'checkbox' ? checked : value })
+    setFormData({ ...formData, [name]: type === "checkbox" ? checked : value })
   }
 
   const handleSettingsChange = (e) => {
     const { name, value, type, checked } = e.target
-    setSettingsFormData({ ...settingsFormData, [name]: type === 'checkbox' ? checked : value })
+    setSettingsFormData({ ...settingsFormData, [name]: type === "checkbox" ? checked : value })
   }
 
   const handleProfilePictureChange = (e) => {
@@ -155,23 +172,23 @@ export default function LawyerDashboard() {
 
   const handleProfileSave = async (e) => {
     e.preventDefault()
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem("token")
     setIsLoading(true)
     try {
       const formDataToSend = new FormData()
       for (const key in formData) {
-        if (key !== 'profile_picture') formDataToSend.append(key, formData[key])
+        if (key !== "profile_picture") formDataToSend.append(key, formData[key])
       }
-      if (profilePictureFile) formDataToSend.append('profile_picture', profilePictureFile)
+      if (profilePictureFile) formDataToSend.append("profile_picture", profilePictureFile)
 
-      const response = await axios.put('http://127.0.0.1:5000/api/lawyer-profile', formDataToSend, {
-        headers: { 
+      const response = await axios.put("http://127.0.0.1:5000/api/lawyer-profile", formDataToSend, {
+        headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        }
+          "Content-Type": "multipart/form-data",
+        },
       })
       setLawyer(response.data.lawyer)
-      localStorage.setItem('lawyer', JSON.stringify(response.data.lawyer))
+      localStorage.setItem("lawyer", JSON.stringify(response.data.lawyer))
       setIsEditingProfile(false)
       setProfilePictureFile(null)
       addNotification(response.data.message || "Profile updated successfully", "success")
@@ -184,16 +201,16 @@ export default function LawyerDashboard() {
 
   const handleSettingsSave = async (e) => {
     e.preventDefault()
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem("token")
     setIsLoading(true)
     try {
-      const response = await axios.put('http://127.0.0.1:5000/api/lawyer-profile', settingsFormData, {
-        headers: { 
+      const response = await axios.put("http://127.0.0.1:5000/api/lawyer-profile", settingsFormData, {
+        headers: {
           Authorization: `Bearer ${token}`,
-        }
+        },
       })
       setLawyer(response.data.lawyer)
-      localStorage.setItem('lawyer', JSON.stringify(response.data.lawyer))
+      localStorage.setItem("lawyer", JSON.stringify(response.data.lawyer))
       addNotification(response.data.message || "Settings updated successfully", "success")
     } catch (err) {
       addNotification(err.response?.data?.error || "Failed to update settings", "error")
@@ -210,8 +227,8 @@ export default function LawyerDashboard() {
 
   const handlePasswordUpdate = async (e) => {
     e.preventDefault()
-    const token = localStorage.getItem('token')
-    
+    const token = localStorage.getItem("token")
+
     if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmNewPassword) {
       setPasswordError("All fields are required")
       return
@@ -230,20 +247,20 @@ export default function LawyerDashboard() {
     setIsLoading(true)
     try {
       const response = await axios.put(
-        'http://127.0.0.1:5000/api/lawyer/change-password',
+        "http://127.0.0.1:5000/api/lawyer/change-password",
         {
           current_password: passwordData.currentPassword,
-          new_password: passwordData.newPassword
+          new_password: passwordData.newPassword,
         },
         {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+          headers: { Authorization: `Bearer ${token}` },
+        },
       )
 
       setPasswordData({
         currentPassword: "",
         newPassword: "",
-        confirmNewPassword: ""
+        confirmNewPassword: "",
       })
       setPasswordError("")
       addNotification(response.data.message || "Password updated successfully", "success")
@@ -252,10 +269,10 @@ export default function LawyerDashboard() {
         isOpen: true,
         message: "Password changed successfully. You will be logged out. Please log in again with your new password.",
         onConfirm: () => {
-          localStorage.removeItem('token')
-          localStorage.removeItem('lawyer')
-          navigate('/lawyer-login')
-        }
+          localStorage.removeItem("token")
+          localStorage.removeItem("lawyer")
+          navigate("/lawyer-login")
+        },
       })
     } catch (err) {
       setPasswordError(err.response?.data?.error || "Failed to update password")
@@ -274,16 +291,16 @@ export default function LawyerDashboard() {
   }
 
   const handleStatusChange = async (caseId, newStatus) => {
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem("token")
     setIsLoading(true)
     try {
       const response = await axios.put(
         `http://127.0.0.1:5000/api/lawyer-case/${caseId}/update-status`,
         { status: newStatus },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       )
-      const casesResponse = await axios.get('http://127.0.0.1:5000/api/lawyer-cases', {
-        headers: { Authorization: `Bearer ${token}` }
+      const casesResponse = await axios.get("http://127.0.0.1:5000/api/lawyer-cases", {
+        headers: { Authorization: `Bearer ${token}` },
       })
       setCases(casesResponse.data.cases)
       addNotification(response.data.message || "Case status updated successfully", "success")
@@ -295,16 +312,16 @@ export default function LawyerDashboard() {
   }
 
   const handleUpdateAppointmentStatus = async (appointmentId, newStatus) => {
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem("token")
     setIsLoading(true)
     try {
       const response = await axios.put(
         `http://127.0.0.1:5000/api/update-appointment-status/${appointmentId}`,
         { status: newStatus },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       )
       const appointmentsResponse = await axios.get(`http://127.0.0.1:5000/api/lawyer-appointments/${lawyer.id}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       })
       setAppointments(appointmentsResponse.data.appointments || [])
       addNotification(response.data.message || `Appointment ${newStatus} successfully`, "success")
@@ -322,14 +339,14 @@ export default function LawyerDashboard() {
 
   const handleCreateCase = async (e) => {
     e.preventDefault()
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem("token")
     setIsLoading(true)
     try {
-      const response = await axios.post('http://127.0.0.1:5000/api/create-case', newCaseData, {
-        headers: { Authorization: `Bearer ${token}` }
+      const response = await axios.post("http://127.0.0.1:5000/api/create-case", newCaseData, {
+        headers: { Authorization: `Bearer ${token}` },
       })
-      const casesResponse = await axios.get('http://127.0.0.1:5000/api/lawyer-cases', {
-        headers: { Authorization: `Bearer ${token}` }
+      const casesResponse = await axios.get("http://127.0.0.1:5000/api/lawyer-cases", {
+        headers: { Authorization: `Bearer ${token}` },
       })
       setCases(casesResponse.data.cases)
       setIsCreatingCase(false)
@@ -338,12 +355,12 @@ export default function LawyerDashboard() {
         title: "",
         case_type: "Civil",
         status: "pending",
-        filing_date: new Date().toISOString().split('T')[0],
+        filing_date: new Date().toISOString().split("T")[0],
         jurisdiction: "District Court",
         description: "",
         plaintiff_name: "",
         defendant_name: "",
-        priority: "Medium"
+        priority: "Medium",
       })
       addNotification(response.data.message || "Case created successfully", "success")
     } catch (err) {
@@ -354,27 +371,30 @@ export default function LawyerDashboard() {
   }
 
   const totalCases = cases.length
-  const pendingCases = cases.filter(c => c.status === 'pending').length
-  const highPriorityCases = cases.filter(c => c.priority === 'High').length
-  const completedCases = cases.filter(c => c.status === 'completed').length
+  const pendingCases = cases.filter((c) => c.status === "pending").length
+  const highPriorityCases = cases.filter((c) => c.priority === "High").length
+  const completedCases = cases.filter((c) => c.status === "completed").length
 
   const recentCases = cases.slice(0, 3)
 
   const upcomingAppointments = appointments
-    .filter(appt => new Date(appt.appointment_date) >= new Date() && appt.status !== 'cancelled')
+    .filter((appt) => new Date(appt.appointment_date) >= new Date() && appt.status !== "cancelled")
     .sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date))
     .slice(0, 3)
 
   if (!lawyer) {
     return (
-      <div className={`${styles.dashboardPage} ${theme === 'dark' ? styles.darkTheme : ''}`}>
-        <div className={styles.loader}>Loading...</div>
+      <div className={`${styles.dashboardPage} ${theme === "dark" ? styles.darkTheme : ""}`}>
+        <div className={styles.loaderContainer}>
+          <div className={styles.loader}></div>
+          <p>Loading your dashboard...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className={`${styles.dashboardPage} ${theme === 'dark' ? styles.darkTheme : ''}`}>
+    <div className={`${styles.dashboardPage} ${theme === "dark" ? styles.darkTheme : ""}`}>
       <Tooltip id="theme-tooltip" />
       <Tooltip id="logout-tooltip" />
       <Tooltip id="edit-tooltip" />
@@ -382,113 +402,199 @@ export default function LawyerDashboard() {
       <Tooltip id="create-case-tooltip" />
 
       <div className={styles.layout}>
-        <aside className={`${styles.sidebar} ${isSidebarOpen ? styles.sidebarOpen : ''}`}>
-          <div className={styles.logo}>
+        {/* Sidebar */}
+        <aside className={`${styles.sidebar} ${isSidebarOpen ? styles.sidebarOpen : ""}`}>
+          <div className={styles.sidebarHeader}>
             <button className={styles.menuButton} onClick={toggleSidebar}>
               {isSidebarOpen ? <X className={styles.icon} /> : <Menu className={styles.icon} />}
             </button>
-            <button
-              onClick={() => navigate('/')}
-              className={styles.logoLink}
-            >
+            <button onClick={() => navigate("/")} className={styles.logoLink}>
               <Scale className={styles.logoIcon} />
               <span>NepaliLegalAidFinder</span>
             </button>
           </div>
+
+          <div className={styles.userInfo}>
+            <div className={styles.userAvatar}>
+              <img
+                src={
+                  lawyer.profile_picture
+                    ? `http://127.0.0.1:5000${lawyer.profile_picture}`
+                    : "https://via.placeholder.com/100"
+                }
+                alt={lawyer.name}
+              />
+            </div>
+            <div className={styles.userName}>{lawyer.name || "Lawyer Name"}</div>
+            <div className={styles.userStatus}>
+              <span
+                className={`${styles.statusIndicator} ${lawyer.availability_status === "Available" ? styles.statusAvailable : styles.statusBusy}`}
+              ></span>
+              {lawyer.availability_status || "Available"}
+            </div>
+          </div>
+
           <nav className={styles.sidebarNav}>
             <button
-              onClick={() => { setActiveTab("dashboard"); setIsSidebarOpen(false); }}
-              className={`${styles.navLink} ${activeTab === "dashboard" ? styles.activeNavLink : ''}`}
+              onClick={() => {
+                setActiveTab("dashboard")
+                setIsSidebarOpen(false)
+              }}
+              className={`${styles.navLink} ${activeTab === "dashboard" ? styles.activeNavLink : ""}`}
             >
-              <BarChart2 className={styles.navIcon} /> Dashboard
+              <BarChart2 className={styles.navIcon} />
+              <span>Dashboard</span>
+              {activeTab === "dashboard" && <ChevronRight className={styles.activeIcon} />}
             </button>
             <button
-              onClick={() => { setActiveTab("cases"); setIsSidebarOpen(false); }}
-              className={`${styles.navLink} ${activeTab === "cases" ? styles.activeNavLink : ''}`}
+              onClick={() => {
+                setActiveTab("cases")
+                setIsSidebarOpen(false)
+              }}
+              className={`${styles.navLink} ${activeTab === "cases" ? styles.activeNavLink : ""}`}
             >
-              <FileText className={styles.navIcon} /> Cases
+              <Briefcase className={styles.navIcon} />
+              <span>Cases</span>
+              {activeTab === "cases" && <ChevronRight className={styles.activeIcon} />}
             </button>
             <button
-              onClick={() => { setActiveTab("appointments"); setIsSidebarOpen(false); }}
-              className={`${styles.navLink} ${activeTab === "appointments" ? styles.activeNavLink : ''}`}
+              onClick={() => {
+                setActiveTab("appointments")
+                setIsSidebarOpen(false)
+              }}
+              className={`${styles.navLink} ${activeTab === "appointments" ? styles.activeNavLink : ""}`}
             >
-              <Clock className={styles.navIcon} /> Appointments
+              <Clock className={styles.navIcon} />
+              <span>Appointments</span>
+              {activeTab === "appointments" && <ChevronRight className={styles.activeIcon} />}
             </button>
             <button
-              onClick={() => { setActiveTab("profile"); setIsSidebarOpen(false); }}
-              className={`${styles.navLink} ${activeTab === "profile" ? styles.activeNavLink : ''}`}
+              onClick={() => {
+                setActiveTab("profile")
+                setIsSidebarOpen(false)
+              }}
+              className={`${styles.navLink} ${activeTab === "profile" ? styles.activeNavLink : ""}`}
             >
-              <User className={styles.navIcon} /> Profile
+              <User className={styles.navIcon} />
+              <span>Profile</span>
+              {activeTab === "profile" && <ChevronRight className={styles.activeIcon} />}
             </button>
             <button
-              onClick={() => { setActiveTab("settings"); setIsSidebarOpen(false); }}
-              className={`${styles.navLink} ${activeTab === "settings" ? styles.activeNavLink : ''}`}
+              onClick={() => {
+                setActiveTab("settings")
+                setIsSidebarOpen(false)
+              }}
+              className={`${styles.navLink} ${activeTab === "settings" ? styles.activeNavLink : ""}`}
             >
-              <Settings className={styles.navIcon} /> Settings
+              <Settings className={styles.navIcon} />
+              <span>Settings</span>
+              {activeTab === "settings" && <ChevronRight className={styles.activeIcon} />}
             </button>
           </nav>
+
+          <div className={styles.sidebarFooter}>
+            <button onClick={handleLogout} className={styles.logoutButtonSidebar}>
+              Logout
+            </button>
+          </div>
         </aside>
+
+        {/* Main Content */}
         <main className={styles.main}>
           <div className={styles.topBar}>
-            <span className={styles.currentDate}>
-              {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-')}
-            </span>
+            <div className={styles.pageTitle}>
+              {activeTab === "dashboard" && "Dashboard"}
+              {activeTab === "cases" && "Case Management"}
+              {activeTab === "appointments" && "Appointments"}
+              {activeTab === "profile" && "Profile"}
+              {activeTab === "settings" && "Settings"}
+            </div>
             <div className={styles.headerActions}>
-              <button onClick={toggleTheme} className={styles.themeButton} data-tooltip-id="theme-tooltip" data-tooltip-content="Toggle theme">
-                {theme === 'light' ? <Moon className={styles.icon} /> : <Sun className={styles.icon} />}
+              <span className={styles.currentDate}>
+                {new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+              </span>
+              <button
+                onClick={toggleTheme}
+                className={styles.themeButton}
+                data-tooltip-id="theme-tooltip"
+                data-tooltip-content="Toggle theme"
+              >
+                {theme === "light" ? <Moon className={styles.icon} /> : <Sun className={styles.icon} />}
               </button>
-              <button onClick={handleLogout} className={styles.logoutButton} data-tooltip-id="logout-tooltip" data-tooltip-content="Log out of your account">
+              <button
+                onClick={handleLogout}
+                className={styles.logoutButton}
+                data-tooltip-id="logout-tooltip"
+                data-tooltip-content="Log out of your account"
+              >
                 Logout
               </button>
             </div>
           </div>
+
           <div className={styles.dashboardContent}>
+            {/* Dashboard Tab */}
             {activeTab === "dashboard" && (
-              <>
-                <div className={styles.statsContainer}>
-                  <div className={`${styles.statCard} ${styles.totalCases}`}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-                      <FileText className={styles.statIcon} />
-                      <h3>{totalCases}</h3>
-                    </div>
-                    <p>Total Cases</p>
-                  </div>
-                  <div className={`${styles.statCard} ${styles.pendingCases}`}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-                      <Clock className={styles.statIcon} />
-                      <h3>{pendingCases}</h3>
-                    </div>
-                    <p>Pending Cases</p>
-                  </div>
-                  <div className={`${styles.statCard} ${styles.highPriorityCases}`}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-                      <AlertCircle className={styles.statIcon} />
-                      <h3>{highPriorityCases}</h3>
-                    </div>
-                    <p>High-Priority Cases</p>
-                  </div>
-                  <div className={`${styles.statCard} ${styles.completedCases}`}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-                      <CheckCircle className={styles.statIcon} />
-                      <h3>{completedCases}</h3>
-                    </div>
-                    <p>Completed Cases</p>
+              <div className={styles.dashboardGrid}>
+                <div className={styles.welcomeCard}>
+                  <div className={styles.welcomeContent}>
+                    <h2>Welcome back, {lawyer.name}</h2>
+                    <p>Manage your legal practice efficiently with NepaliLegalAidFinder.</p>
                   </div>
                 </div>
 
-                <div className={styles.card} id="recent-cases">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h2 className={styles.sectionTitle}>Recent Cases</h2>
-                    <button
-                      onClick={() => setActiveTab("cases")}
-                      className={styles.actionButton}
-                    >
-                      View All Cases
+                <div className={styles.statsContainer}>
+                  <div className={styles.statCard}>
+                    <div className={styles.statIconWrapper}>
+                      <Briefcase className={styles.statIcon} />
+                    </div>
+                    <div className={styles.statInfo}>
+                      <h3>{totalCases}</h3>
+                      <p>Total Cases</p>
+                    </div>
+                  </div>
+
+                  <div className={styles.statCard}>
+                    <div className={styles.statIconWrapper}>
+                      <Clock className={styles.statIcon} />
+                    </div>
+                    <div className={styles.statInfo}>
+                      <h3>{pendingCases}</h3>
+                      <p>Pending Cases</p>
+                    </div>
+                  </div>
+
+                  <div className={styles.statCard}>
+                    <div className={styles.statIconWrapper}>
+                      <AlertCircle className={styles.statIcon} />
+                    </div>
+                    <div className={styles.statInfo}>
+                      <h3>{highPriorityCases}</h3>
+                      <p>High-Priority</p>
+                    </div>
+                  </div>
+
+                  <div className={styles.statCard}>
+                    <div className={styles.statIconWrapper}>
+                      <CheckCircle className={styles.statIcon} />
+                    </div>
+                    <div className={styles.statInfo}>
+                      <h3>{completedCases}</h3>
+                      <p>Completed</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={styles.card}>
+                  <div className={styles.cardHeader}>
+                    <h2 className={styles.cardTitle}>Recent Cases</h2>
+                    <button onClick={() => setActiveTab("cases")} className={styles.viewAllButton}>
+                      View All
                     </button>
                   </div>
                   {recentCases.length > 0 ? (
                     <div className={styles.tableWrapper}>
-                      <table className={styles.caseTable}>
+                      <table className={styles.dataTable}>
                         <thead>
                           <tr>
                             <th>Case Info</th>
@@ -502,26 +608,42 @@ export default function LawyerDashboard() {
                         <tbody>
                           {recentCases.map((caseItem) => (
                             <tr key={caseItem.id}>
-                              <td>
+                              <td className={styles.primaryCell}>
                                 <div className={styles.caseInfo}>
-                                  <div className={styles.caseDetails}>
-                                    <span className={styles.caseTitle}>{caseItem.title}</span>
-                                    <span className={styles.caseDescription}>{caseItem.description || "No description"}</span>
+                                  <div className={styles.caseTitle}>{caseItem.title}</div>
+                                  <div className={styles.caseDescription}>
+                                    {caseItem.description || "No description"}
                                   </div>
                                 </div>
                               </td>
-                              <td>{caseItem.id}</td>
-                              <td>{caseItem.priority}</td>
-                              <td>{caseItem.status}</td>
-                              <td>{new Date(caseItem.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                              <td>#{caseItem.id}</td>
+                              <td>
+                                <span className={`${styles.priorityBadge} ${styles[`priority${caseItem.priority}`]}`}>
+                                  {caseItem.priority}
+                                </span>
+                              </td>
+                              <td>
+                                <span
+                                  className={`${styles.statusBadge} ${styles[`status${caseItem.status.charAt(0).toUpperCase() + caseItem.status.slice(1)}`]}`}
+                                >
+                                  {caseItem.status}
+                                </span>
+                              </td>
+                              <td>
+                                {new Date(caseItem.created_at).toLocaleDateString("en-GB", {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                })}
+                              </td>
                               <td>
                                 <button
-                                  onClick={() => setSelectedCase(caseItem)} // Updated to show summary dialog
-                                  className={styles.ellipsisButton}
+                                  onClick={() => setSelectedCase(caseItem)}
+                                  className={styles.iconButton}
                                   data-tooltip-id="details-tooltip"
                                   data-tooltip-content="View case summary"
                                 >
-                                  <MoreVertical className={styles.ellipsisIcon} />
+                                  <MoreVertical className={styles.buttonIcon} />
                                 </button>
                               </td>
                             </tr>
@@ -530,23 +652,32 @@ export default function LawyerDashboard() {
                       </table>
                     </div>
                   ) : (
-                    <p className={styles.emptyMessage}>No cases assigned yet.</p>
+                    <div className={styles.emptyState}>
+                      <FileText className={styles.emptyStateIcon} />
+                      <p>No cases assigned yet.</p>
+                      <button
+                        onClick={() => {
+                          setActiveTab("cases")
+                          setIsCreatingCase(true)
+                        }}
+                        className={styles.secondaryButton}
+                      >
+                        Create Your First Case
+                      </button>
+                    </div>
                   )}
                 </div>
 
-                <div className={styles.card} id="upcoming-appointments">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h2 className={styles.sectionTitle}>Upcoming Appointments</h2>
-                    <button
-                      onClick={() => setActiveTab("appointments")}
-                      className={styles.actionButton}
-                    >
-                      View All Appointments
+                <div className={styles.card}>
+                  <div className={styles.cardHeader}>
+                    <h2 className={styles.cardTitle}>Upcoming Appointments</h2>
+                    <button onClick={() => setActiveTab("appointments")} className={styles.viewAllButton}>
+                      View All
                     </button>
                   </div>
                   {upcomingAppointments.length > 0 ? (
                     <div className={styles.tableWrapper}>
-                      <table className={styles.appointmentTable}>
+                      <table className={styles.dataTable}>
                         <thead>
                           <tr>
                             <th>Client Name</th>
@@ -559,18 +690,38 @@ export default function LawyerDashboard() {
                         <tbody>
                           {upcomingAppointments.map((appt) => (
                             <tr key={appt.id}>
-                              <td>{appt.client_name}</td>
-                              <td>{new Date(appt.appointment_date).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
-                              <td>{appt.status}</td>
-                              <td>{new Date(appt.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                              <td className={styles.primaryCell}>{appt.client_name}</td>
+                              <td>
+                                {new Date(appt.appointment_date).toLocaleString("en-GB", {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </td>
+                              <td>
+                                <span
+                                  className={`${styles.statusBadge} ${styles[`status${appt.status.charAt(0).toUpperCase() + appt.status.slice(1)}`]}`}
+                                >
+                                  {appt.status}
+                                </span>
+                              </td>
+                              <td>
+                                {new Date(appt.created_at).toLocaleDateString("en-GB", {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                })}
+                              </td>
                               <td>
                                 <button
                                   onClick={() => handleAppointmentDetails(appt)}
-                                  className={styles.ellipsisButton}
+                                  className={styles.iconButton}
                                   data-tooltip-id="details-tooltip"
                                   data-tooltip-content="View appointment details"
                                 >
-                                  <MoreVertical className={styles.ellipsisIcon} />
+                                  <MoreVertical className={styles.buttonIcon} />
                                 </button>
                               </td>
                             </tr>
@@ -579,19 +730,23 @@ export default function LawyerDashboard() {
                       </table>
                     </div>
                   ) : (
-                    <p className={styles.emptyMessage}>No upcoming appointments.</p>
+                    <div className={styles.emptyState}>
+                      <Clock className={styles.emptyStateIcon} />
+                      <p>No upcoming appointments.</p>
+                    </div>
                   )}
                 </div>
-              </>
+              </div>
             )}
 
+            {/* Cases Tab */}
             {activeTab === "cases" && (
-              <div className={styles.card} id="cases">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <h2 className={styles.sectionTitle}>Case List</h2>
+              <div className={styles.card}>
+                <div className={styles.cardHeader}>
+                  <h2 className={styles.cardTitle}>Case Management</h2>
                   <button
                     onClick={() => setIsCreatingCase(true)}
-                    className={styles.actionButton}
+                    className={styles.primaryButton}
                     data-tooltip-id="create-case-tooltip"
                     data-tooltip-content="Create a new case"
                   >
@@ -600,135 +755,159 @@ export default function LawyerDashboard() {
                 </div>
                 {isCreatingCase ? (
                   <form onSubmit={handleCreateCase} className={styles.createCaseForm}>
-                    <h3>Case Basic Details</h3>
-                    <div className={styles.formGroup}>
-                      <label>Case Title:</label>
-                      <input
-                        type="text"
-                        name="title"
-                        value={newCaseData.title}
-                        onChange={handleNewCaseChange}
-                        className={styles.formInput}
-                        required
-                      />
-                    </div>
-                    <div className={styles.formGroup}>
-                      <label>Case Type:</label>
-                      <select
-                        name="case_type"
-                        value={newCaseData.case_type}
-                        onChange={handleNewCaseChange}
-                        className={styles.formInput}
-                        required
-                      >
-                        <option value="Civil">Civil</option>
-                        <option value="Criminal">Criminal</option>
-                        <option value="Family">Family</option>
-                        <option value="Property">Property</option>
-                        <option value="Labor">Labor</option>
-                      </select>
-                    </div>
-                    <div className={styles.formGroup}>
-                      <label>Case Status:</label>
-                      <input
-                        type="text"
-                        name="status"
-                        value={newCaseData.status}
-                        className={styles.formInput}
-                        disabled
-                      />
-                    </div>
-                    <div className={styles.formGroup}>
-                      <label>Filing Date:</label>
-                      <input
-                        type="date"
-                        name="filing_date"
-                        value={newCaseData.filing_date}
-                        className={styles.formInput}
-                        disabled
-                      />
-                    </div>
-                    <div className={styles.formGroup}>
-                      <label>Jurisdiction:</label>
-                      <select
-                        name="jurisdiction"
-                        value={newCaseData.jurisdiction}
-                        onChange={handleNewCaseChange}
-                        className={styles.formInput}
-                        required
-                      >
-                        <option value="District Court">District Court</option>
-                        <option value="High Court">High Court</option>
-                        <option value="Supreme Court">Supreme Court</option>
-                      </select>
-                    </div>
-                    <div className={styles.formGroup}>
-                      <label>Case Description:</label>
-                      <textarea
-                        name="description"
-                        value={newCaseData.description}
-                        onChange={handleNewCaseChange}
-                        className={styles.formTextarea}
-                        required
-                      />
+                    <div className={styles.formSection}>
+                      <h3 className={styles.formSectionTitle}>Case Basic Details</h3>
+                      <div className={styles.formGrid}>
+                        <div className={styles.formGroup}>
+                          <label>Case Title</label>
+                          <input
+                            type="text"
+                            name="title"
+                            value={newCaseData.title}
+                            onChange={handleNewCaseChange}
+                            className={styles.formInput}
+                            required
+                          />
+                        </div>
+                        <div className={styles.formGroup}>
+                          <label>Case Type</label>
+                          <select
+                            name="case_type"
+                            value={newCaseData.case_type}
+                            onChange={handleNewCaseChange}
+                            className={styles.formSelect}
+                            required
+                          >
+                            <option value="Civil">Civil</option>
+                            <option value="Criminal">Criminal</option>
+                            <option value="Family">Family</option>
+                            <option value="Property">Property</option>
+                            <option value="Labor">Labor</option>
+                          </select>
+                        </div>
+                        <div className={styles.formGroup}>
+                          <label>Case Status</label>
+                          <input
+                            type="text"
+                            name="status"
+                            value={newCaseData.status}
+                            className={styles.formInput}
+                            disabled
+                          />
+                        </div>
+                        <div className={styles.formGroup}>
+                          <label>Filing Date</label>
+                          <input
+                            type="date"
+                            name="filing_date"
+                            value={newCaseData.filing_date}
+                            className={styles.formInput}
+                            disabled
+                          />
+                        </div>
+                        <div className={styles.formGroup}>
+                          <label>Jurisdiction</label>
+                          <select
+                            name="jurisdiction"
+                            value={newCaseData.jurisdiction}
+                            onChange={handleNewCaseChange}
+                            className={styles.formSelect}
+                            required
+                          >
+                            <option value="District Court">District Court</option>
+                            <option value="High Court">High Court</option>
+                            <option value="Supreme Court">Supreme Court</option>
+                          </select>
+                        </div>
+                        <div className={styles.formGroup + " " + styles.fullWidth}>
+                          <label>Case Description</label>
+                          <textarea
+                            name="description"
+                            value={newCaseData.description}
+                            onChange={handleNewCaseChange}
+                            className={styles.formTextarea}
+                            required
+                          />
+                        </div>
+                      </div>
                     </div>
 
-                    <h3>Parties Involved</h3>
-                    <div className={styles.formGroup}>
-                      <label>Client (Plaintiff):</label>
-                      <select
-                        name="client_id"
-                        value={newCaseData.client_id}
-                        onChange={handleNewCaseChange}
-                        className={styles.formInput}
-                        required
-                      >
-                        <option value="">Select a client</option>
-                        {clients.map((client) => (
-                          <option key={client.id} value={client.id}>
-                            {client.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className={styles.formGroup}>
-                      <label>Plaintiff Name(s):</label>
-                      <input
-                        type="text"
-                        name="plaintiff_name"
-                        value={newCaseData.plaintiff_name}
-                        onChange={handleNewCaseChange}
-                        className={styles.formInput}
-                        required
-                      />
-                    </div>
-                    <div className={styles.formGroup}>
-                      <label>Defendant Name(s):</label>
-                      <input
-                        type="text"
-                        name="defendant_name"
-                        value={newCaseData.defendant_name}
-                        onChange={handleNewCaseChange}
-                        className={styles.formInput}
-                        required
-                      />
-                    </div>
-                    <div className={styles.formGroup}>
-                      <label>Assigned Lawyer:</label>
-                      <input
-                        type="text"
-                        value={lawyer?.name || "Loading..."}
-                        className={styles.formInput}
-                        disabled
-                      />
+                    <div className={styles.formSection}>
+                      <h3 className={styles.formSectionTitle}>Parties Involved</h3>
+                      <div className={styles.formGrid}>
+                        <div className={styles.formGroup}>
+                          <label>Client (Plaintiff)</label>
+                          <select
+                            name="client_id"
+                            value={newCaseData.client_id}
+                            onChange={handleNewCaseChange}
+                            className={styles.formSelect}
+                            required
+                          >
+                            <option value="">Select a client</option>
+                            {clients.map((client) => (
+                              <option key={client.id} value={client.id}>
+                                {client.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className={styles.formGroup}>
+                          <label>Plaintiff Name(s)</label>
+                          <input
+                            type="text"
+                            name="plaintiff_name"
+                            value={newCaseData.plaintiff_name}
+                            onChange={handleNewCaseChange}
+                            className={styles.formInput}
+                            required
+                          />
+                        </div>
+                        <div className={styles.formGroup}>
+                          <label>Defendant Name(s)</label>
+                          <input
+                            type="text"
+                            name="defendant_name"
+                            value={newCaseData.defendant_name}
+                            onChange={handleNewCaseChange}
+                            className={styles.formInput}
+                            required
+                          />
+                        </div>
+                        <div className={styles.formGroup}>
+                          <label>Assigned Lawyer</label>
+                          <input
+                            type="text"
+                            value={lawyer?.name || "Loading..."}
+                            className={styles.formInput}
+                            disabled
+                          />
+                        </div>
+                        <div className={styles.formGroup}>
+                          <label>Priority</label>
+                          <select
+                            name="priority"
+                            value={newCaseData.priority}
+                            onChange={handleNewCaseChange}
+                            className={styles.formSelect}
+                            required
+                          >
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                          </select>
+                        </div>
+                      </div>
                     </div>
 
                     <div className={styles.formActions}>
-                      <button type="submit" className={styles.actionButton} disabled={isLoading}>Create</button>
+                      <button type="submit" className={styles.primaryButton} disabled={isLoading}>
+                        Create Case
+                      </button>
                       <button
                         type="button"
                         onClick={() => setIsCreatingCase(false)}
-                        className={styles.cancelButton}
+                        className={styles.secondaryButton}
                         disabled={isLoading}
                       >
                         Cancel
@@ -737,7 +916,7 @@ export default function LawyerDashboard() {
                   </form>
                 ) : cases.length > 0 ? (
                   <div className={styles.tableWrapper}>
-                    <table className={styles.caseTable}>
+                    <table className={styles.dataTable}>
                       <thead>
                         <tr>
                           <th>Case Info</th>
@@ -745,22 +924,24 @@ export default function LawyerDashboard() {
                           <th>Priority</th>
                           <th>Status</th>
                           <th>Created At</th>
-                          <th></th>
+                          <th>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {cases.map((caseItem) => (
                           <tr key={caseItem.id}>
-                            <td>
+                            <td className={styles.primaryCell}>
                               <div className={styles.caseInfo}>
-                                <div className={styles.caseDetails}>
-                                  <span className={styles.caseTitle}>{caseItem.title}</span>
-                                  <span className={styles.caseDescription}>{caseItem.description || "No description"}</span>
-                                </div>
+                                <div className={styles.caseTitle}>{caseItem.title}</div>
+                                <div className={styles.caseDescription}>{caseItem.description || "No description"}</div>
                               </div>
                             </td>
-                            <td>{caseItem.id}</td>
-                            <td>{caseItem.priority}</td>
+                            <td>#{caseItem.id}</td>
+                            <td>
+                              <span className={`${styles.priorityBadge} ${styles[`priority${caseItem.priority}`]}`}>
+                                {caseItem.priority}
+                              </span>
+                            </td>
                             <td>
                               <select
                                 value={caseItem.status}
@@ -774,15 +955,21 @@ export default function LawyerDashboard() {
                                 <option value="completed">Completed</option>
                               </select>
                             </td>
-                            <td>{new Date(caseItem.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                            <td>
+                              {new Date(caseItem.created_at).toLocaleDateString("en-GB", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              })}
+                            </td>
                             <td>
                               <button
                                 onClick={() => handleCaseDetails(caseItem)}
-                                className={styles.ellipsisButton}
+                                className={styles.iconButton}
                                 data-tooltip-id="details-tooltip"
                                 data-tooltip-content="View case details"
                               >
-                                <MoreVertical className={styles.ellipsisIcon} />
+                                <MoreVertical className={styles.buttonIcon} />
                               </button>
                             </td>
                           </tr>
@@ -791,18 +978,27 @@ export default function LawyerDashboard() {
                     </table>
                   </div>
                 ) : (
-                  <p className={styles.emptyMessage}>No cases assigned yet.</p>
+                  <div className={styles.emptyState}>
+                    <FileText className={styles.emptyStateIcon} />
+                    <p>No cases assigned yet.</p>
+                    <button onClick={() => setIsCreatingCase(true)} className={styles.secondaryButton}>
+                      Create Your First Case
+                    </button>
+                  </div>
                 )}
               </div>
             )}
 
+            {/* Appointments Tab */}
             {activeTab === "appointments" && (
-              <>
-                <div className={styles.card} id="appointments">
-                  <h2 className={styles.sectionTitle}>Appointments</h2>
+              <div className={styles.appointmentsContainer}>
+                <div className={styles.card}>
+                  <div className={styles.cardHeader}>
+                    <h2 className={styles.cardTitle}>Appointments</h2>
+                  </div>
                   {appointments.length > 0 ? (
                     <div className={styles.tableWrapper}>
-                      <table className={styles.appointmentTable}>
+                      <table className={styles.dataTable}>
                         <thead>
                           <tr>
                             <th>Client Name</th>
@@ -816,23 +1012,43 @@ export default function LawyerDashboard() {
                         <tbody>
                           {appointments.map((appt) => (
                             <tr key={appt.id}>
-                              <td>{appt.client_name}</td>
-                              <td>{new Date(appt.appointment_date).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
-                              <td>{appt.status}</td>
-                              <td>{new Date(appt.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                              <td className={styles.primaryCell}>{appt.client_name}</td>
                               <td>
-                                {appt.status === 'pending' && (
+                                {new Date(appt.appointment_date).toLocaleString("en-GB", {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </td>
+                              <td>
+                                <span
+                                  className={`${styles.statusBadge} ${styles[`status${appt.status.charAt(0).toUpperCase() + appt.status.slice(1)}`]}`}
+                                >
+                                  {appt.status}
+                                </span>
+                              </td>
+                              <td>
+                                {new Date(appt.created_at).toLocaleDateString("en-GB", {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                })}
+                              </td>
+                              <td>
+                                {appt.status === "pending" && (
                                   <div className={styles.appointmentActions}>
                                     <button
-                                      onClick={() => handleUpdateAppointmentStatus(appt.id, 'confirmed')}
+                                      onClick={() => handleUpdateAppointmentStatus(appt.id, "confirmed")}
                                       className={styles.confirmButton}
                                       disabled={isLoading}
                                     >
                                       Confirm
                                     </button>
                                     <button
-                                      onClick={() => handleUpdateAppointmentStatus(appt.id, 'cancelled')}
-                                      className={styles.cancelAppointmentButton}
+                                      onClick={() => handleUpdateAppointmentStatus(appt.id, "cancelled")}
+                                      className={styles.cancelButton}
                                       disabled={isLoading}
                                     >
                                       Cancel
@@ -843,11 +1059,11 @@ export default function LawyerDashboard() {
                               <td>
                                 <button
                                   onClick={() => handleAppointmentDetails(appt)}
-                                  className={styles.ellipsisButton}
+                                  className={styles.iconButton}
                                   data-tooltip-id="details-tooltip"
                                   data-tooltip-content="View appointment details"
                                 >
-                                  <MoreVertical className={styles.ellipsisIcon} />
+                                  <MoreVertical className={styles.buttonIcon} />
                                 </button>
                               </td>
                             </tr>
@@ -856,154 +1072,263 @@ export default function LawyerDashboard() {
                       </table>
                     </div>
                   ) : (
-                    <p className={styles.emptyMessage}>No appointments scheduled.</p>
+                    <div className={styles.emptyState}>
+                      <Clock className={styles.emptyStateIcon} />
+                      <p>No appointments scheduled.</p>
+                    </div>
                   )}
                 </div>
-                <div className={styles.card} id="calendar">
-                  <h2 className={styles.sectionTitle}>Calendar</h2>
-                  <div className={styles.placeholderContent}>
-                    <p className={styles.emptyMessage}>[Placeholder: Calendar to be implemented]</p>
-                    <button className={styles.actionButton}>Add Events to Calendar</button>
+
+                <div className={styles.card}>
+                  <div className={styles.cardHeader}>
+                    <h2 className={styles.cardTitle}>Calendar</h2>
+                  </div>
+                  <div className={styles.calendarPlaceholder}>
+                    <Calendar className={styles.calendarIcon} />
+                    <p>Calendar feature coming soon</p>
+                    <button className={styles.secondaryButton}>Add Events to Calendar</button>
                   </div>
                 </div>
-              </>
+              </div>
             )}
 
+            {/* Profile Tab */}
             {activeTab === "profile" && (
-              <div className={styles.profileCard} id="profile">
+              <div className={styles.profileCard}>
                 {isEditingProfile ? (
                   <form onSubmit={handleProfileSave} className={styles.editForm}>
-                    <div className={styles.formGroup}>
-                      <label>Profile Picture:</label>
-                      <div className={styles.profilePictureWrapper}>
-                        <img
-                          src={formData.profile_picture || "https://via.placeholder.com/100"}
-                          alt="Profile"
-                          className={styles.profilePicture}
+                    <div className={styles.formHeader}>
+                      <h2 className={styles.formTitle}>Edit Profile</h2>
+                    </div>
+
+                    <div className={styles.profilePictureSection}>
+                      <img
+                        src={formData.profile_picture || "https://via.placeholder.com/100"}
+                        alt="Profile"
+                        className={styles.profilePicture}
+                      />
+                      <label htmlFor="profilePictureUpload" className={styles.uploadButton}>
+                        Change Photo
+                        <input
+                          id="profilePictureUpload"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleProfilePictureChange}
+                          className={styles.fileInput}
                         />
-                        <label htmlFor="profilePictureUpload" className={styles.uploadButton}>
-                          Upload
-                          <input
-                            id="profilePictureUpload"
-                            type="file"
-                            accept="image/*"
-                            onChange={handleProfilePictureChange}
-                            className={styles.fileInput}
-                          />
-                        </label>
+                      </label>
+                    </div>
+
+                    <div className={styles.formGrid}>
+                      <div className={styles.formGroup}>
+                        <label>Email</label>
+                        <input type="email" name="email" value={formData.email} className={styles.formInput} disabled />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label>Specialization</label>
+                        <input
+                          type="text"
+                          name="specialization"
+                          value={formData.specialization || ""}
+                          onChange={handleProfileChange}
+                          className={styles.formInput}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label>Location</label>
+                        <input
+                          type="text"
+                          name="location"
+                          value={formData.location || ""}
+                          onChange={handleProfileChange}
+                          className={styles.formInput}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label>Availability Description</label>
+                        <input
+                          type="text"
+                          name="availability"
+                          value={formData.availability || ""}
+                          onChange={handleProfileChange}
+                          className={styles.formInput}
+                        />
+                      </div>
+                      <div className={styles.formGroup + " " + styles.fullWidth}>
+                        <label>Bio</label>
+                        <textarea
+                          name="bio"
+                          value={formData.bio || ""}
+                          onChange={handleProfileChange}
+                          className={styles.formTextarea}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label>Availability Status</label>
+                        <select
+                          name="availability_status"
+                          value={formData.availability_status}
+                          onChange={handleProfileChange}
+                          className={styles.formSelect}
+                        >
+                          <option value="Available">Available</option>
+                          <option value="Busy">Busy</option>
+                        </select>
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label>Working Hours Start</label>
+                        <input
+                          type="time"
+                          name="working_hours_start"
+                          value={formData.working_hours_start || "09:00"}
+                          onChange={handleProfileChange}
+                          className={styles.formInput}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label>Working Hours End</label>
+                        <input
+                          type="time"
+                          name="working_hours_end"
+                          value={formData.working_hours_end || "17:00"}
+                          onChange={handleProfileChange}
+                          className={styles.formInput}
+                        />
                       </div>
                     </div>
-                    <div className={styles.formGroup}>
-                      <label>Email:</label>
-                      <input type="email" name="email" value={formData.email} className={styles.formInput} disabled />
-                    </div>
-                    <div className={styles.formGroup}>
-                      <label>Specialization:</label>
-                      <input type="text" name="specialization" value={formData.specialization || ""} onChange={handleProfileChange} className={styles.formInput} />
-                    </div>
-                    <div className={styles.formGroup}>
-                      <label>Location:</label>
-                      <input type="text" name="location" value={formData.location || ""} onChange={handleProfileChange} className={styles.formInput} />
-                    </div>
-                    <div className={styles.formGroup}>
-                      <label>Availability Description:</label>
-                      <input type="text" name="availability" value={formData.availability || ""} onChange={handleProfileChange} className={styles.formInput} />
-                    </div>
-                    <div className={styles.formGroup}>
-                      <label>Bio:</label>
-                      <textarea name="bio" value={formData.bio || ""} onChange={handleProfileChange} className={styles.formTextarea} />
-                    </div>
-                    <div className={styles.formGroup}>
-                      <label>Availability Status:</label>
-                      <select name="availability_status" value={formData.availability_status} onChange={handleProfileChange} className={styles.formInput}>
-                        <option value="Available">Available</option>
-                        <option value="Busy">Busy</option>
-                      </select>
-                    </div>
-                    <div className={styles.formGroup}>
-                      <label>Working Hours Start:</label>
-                      <input type="time" name="working_hours_start" value={formData.working_hours_start || "09:00"} onChange={handleProfileChange} className={styles.formInput} />
-                    </div>
-                    <div className={styles.formGroup}>
-                      <label>Working Hours End:</label>
-                      <input type="time" name="working_hours_end" value={formData.working_hours_end || "17:00"} onChange={handleProfileChange} className={styles.formInput} />
-                    </div>
+
                     <div className={styles.formActions}>
-                      <button type="submit" className={styles.actionButton} disabled={isLoading}>Save</button>
-                      <button type="button" onClick={() => setIsEditingProfile(false)} className={styles.cancelButton} disabled={isLoading}>Cancel</button>
+                      <button type="submit" className={styles.primaryButton} disabled={isLoading}>
+                        Save Changes
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingProfile(false)}
+                        className={styles.secondaryButton}
+                        disabled={isLoading}
+                      >
+                        Cancel
+                      </button>
                     </div>
                   </form>
                 ) : (
-                  <>
+                  <div className={styles.profileView}>
                     <div className={styles.profileHeader}>
-                      <div className={styles.profilePictureWrapper}>
+                      <div className={styles.profileImageContainer}>
                         <img
-                          src={lawyer.profile_picture ? `http://127.0.0.1:5000${lawyer.profile_picture}` : "https://via.placeholder.com/100"}
+                          src={
+                            lawyer.profile_picture
+                              ? `http://127.0.0.1:5000${lawyer.profile_picture}`
+                              : "https://via.placeholder.com/100"
+                          }
                           alt="Profile"
-                          className={styles.profilePicture}
+                          className={styles.profileImage}
                         />
                       </div>
                       <div className={styles.profileInfo}>
-                        <h3>{lawyer.name || "Lawyer Name"}</h3>
-                        <p className={styles.profileSubtitle}>{lawyer.specialization || "Specialization N/A"}</p>
+                        <h2 className={styles.profileName}>{lawyer.name || "Lawyer Name"}</h2>
+                        <p className={styles.profileRole}>{lawyer.specialization || "Specialization N/A"}</p>
+                        <div className={styles.profileStatus}>
+                          <span
+                            className={`${styles.statusIndicator} ${lawyer.availability_status === "Available" ? styles.statusAvailable : styles.statusBusy}`}
+                          ></span>
+                          {lawyer.availability_status || "Available"}
+                        </div>
+                        <button
+                          onClick={() => setIsEditingProfile(true)}
+                          className={styles.editProfileButton}
+                          data-tooltip-id="edit-tooltip"
+                          data-tooltip-content="Edit your profile details"
+                        >
+                          Edit Profile
+                        </button>
                       </div>
                     </div>
-                    <div className={styles.profileDetails}>
-                      <p className={styles.profileItem}><strong>Email:</strong> {lawyer.email}</p>
-                      <p className={styles.profileItem}><strong>Location:</strong> {lawyer.location || "N/A"}</p>
-                      <p className={styles.profileItem}><strong>Availability:</strong> {lawyer.availability || "N/A"}</p>
-                      <p className={styles.profileItem}><strong>Bio:</strong> {lawyer.bio || "N/A"}</p>
-                      <p className={styles.profileItem}><strong>Status:</strong> {lawyer.availability_status}</p>
-                      <p className={styles.profileItem}><strong>Working Hours:</strong> {lawyer.working_hours_start} - {lawyer.working_hours_end}</p>
+
+                    <div className={styles.profileDetailsCard}>
+                      <h3 className={styles.detailsTitle}>Contact Information</h3>
+                      <div className={styles.detailsGrid}>
+                        <div className={styles.detailItem}>
+                          <div className={styles.detailLabel}>Email</div>
+                          <div className={styles.detailValue}>{lawyer.email}</div>
+                        </div>
+                        <div className={styles.detailItem}>
+                          <div className={styles.detailLabel}>Location</div>
+                          <div className={styles.detailValue}>{lawyer.location || "Not provided"}</div>
+                        </div>
+                        <div className={styles.detailItem}>
+                          <div className={styles.detailLabel}>Working Hours</div>
+                          <div className={styles.detailValue}>
+                            {lawyer.working_hours_start || "09:00"} - {lawyer.working_hours_end || "17:00"}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <button 
-                      onClick={() => setIsEditingProfile(true)} 
-                      className={styles.actionButton} 
-                      data-tooltip-id="edit-tooltip" 
-                      data-tooltip-content="Edit your profile details"
-                    >
-                      Edit Profile
-                    </button>
-                  </>
+
+                    <div className={styles.profileDetailsCard}>
+                      <h3 className={styles.detailsTitle}>About</h3>
+                      <p className={styles.bioText}>{lawyer.bio || "No bio information provided."}</p>
+                    </div>
+
+                    <div className={styles.profileDetailsCard}>
+                      <h3 className={styles.detailsTitle}>Availability</h3>
+                      <p className={styles.bioText}>{lawyer.availability || "No availability information provided."}</p>
+                    </div>
+                  </div>
                 )}
               </div>
             )}
 
+            {/* Settings Tab */}
             {activeTab === "settings" && (
-              <div className={styles.card} id="settings">
-                <h2 className={styles.sectionTitle}>Account Settings</h2>
-                <form onSubmit={handleSettingsSave} className={styles.editForm}>
-                  <div className={styles.formGroup}>
-                    <label>Email Notifications:</label>
-                    <input
-                      type="checkbox"
-                      name="email_notifications"
-                      checked={settingsFormData.email_notifications}
-                      onChange={handleSettingsChange}
-                    />
+              <div className={styles.settingsContainer}>
+                <div className={styles.card}>
+                  <div className={styles.cardHeader}>
+                    <h2 className={styles.cardTitle}>Notification Settings</h2>
                   </div>
-                  <div className={styles.formGroup}>
-                    <label>Preferred Contact Method:</label>
-                    <select
-                      name="preferred_contact"
-                      value={settingsFormData.preferred_contact}
-                      onChange={handleSettingsChange}
-                      className={styles.formInput}
-                    >
-                      <option value="Email">Email</option>
-                      <option value="Phone">Phone</option>
-                    </select>
-                  </div>
-                  <div className={styles.formActions}>
-                    <button type="submit" className={styles.actionButton} disabled={isLoading}>Save Settings</button>
-                  </div>
-                </form>
+                  <form onSubmit={handleSettingsSave} className={styles.settingsForm}>
+                    <div className={styles.settingsGroup}>
+                      <label className={styles.checkboxLabel}>
+                        <input
+                          type="checkbox"
+                          name="email_notifications"
+                          checked={settingsFormData.email_notifications}
+                          onChange={handleSettingsChange}
+                          className={styles.checkbox}
+                        />
+                        <span>Email Notifications</span>
+                      </label>
+                      <p className={styles.settingsDescription}>
+                        Receive email notifications about appointments, case updates, and more.
+                      </p>
+                    </div>
+                    <div className={styles.settingsGroup}>
+                      <label>Preferred Contact Method</label>
+                      <select
+                        name="preferred_contact"
+                        value={settingsFormData.preferred_contact}
+                        onChange={handleSettingsChange}
+                        className={styles.formSelect}
+                      >
+                        <option value="Email">Email</option>
+                        <option value="Phone">Phone</option>
+                      </select>
+                    </div>
+                    <div className={styles.formActions}>
+                      <button type="submit" className={styles.primaryButton} disabled={isLoading}>
+                        Save Settings
+                      </button>
+                    </div>
+                  </form>
+                </div>
 
-                <div className={styles.card} style={{ marginTop: '2rem' }}>
-                  <h2 className={styles.sectionTitle}>Change Password</h2>
-                  <form onSubmit={handlePasswordUpdate} className={styles.editForm}>
+                <div className={styles.card}>
+                  <div className={styles.cardHeader}>
+                    <h2 className={styles.cardTitle}>Change Password</h2>
+                  </div>
+                  <form onSubmit={handlePasswordUpdate} className={styles.passwordForm}>
                     <div className={styles.formGroup}>
-                      <label htmlFor="currentPassword">Current Password:</label>
+                      <label htmlFor="currentPassword">Current Password</label>
                       <input
                         type="password"
                         id="currentPassword"
@@ -1016,7 +1341,7 @@ export default function LawyerDashboard() {
                       />
                     </div>
                     <div className={styles.formGroup}>
-                      <label htmlFor="newPassword">New Password:</label>
+                      <label htmlFor="newPassword">New Password</label>
                       <input
                         type="password"
                         id="newPassword"
@@ -1029,7 +1354,7 @@ export default function LawyerDashboard() {
                       />
                     </div>
                     <div className={styles.formGroup}>
-                      <label htmlFor="confirmNewPassword">Confirm New Password:</label>
+                      <label htmlFor="confirmNewPassword">Confirm New Password</label>
                       <input
                         type="password"
                         id="confirmNewPassword"
@@ -1042,12 +1367,13 @@ export default function LawyerDashboard() {
                       />
                     </div>
                     {passwordError && (
-                      <p className={styles.errorMessage} style={{ color: '#ef4444', marginTop: '0.5rem' }}>
+                      <div className={styles.errorMessage}>
+                        <AlertCircle className={styles.errorIcon} />
                         {passwordError}
-                      </p>
+                      </div>
                     )}
                     <div className={styles.formActions}>
-                      <button type="submit" className={styles.actionButton} disabled={isLoading}>
+                      <button type="submit" className={styles.primaryButton} disabled={isLoading}>
                         Update Password
                       </button>
                       <button
@@ -1056,11 +1382,11 @@ export default function LawyerDashboard() {
                           setPasswordData({
                             currentPassword: "",
                             newPassword: "",
-                            confirmNewPassword: ""
+                            confirmNewPassword: "",
                           })
                           setPasswordError("")
                         }}
-                        className={styles.cancelButton}
+                        className={styles.secondaryButton}
                         disabled={isLoading}
                       >
                         Cancel
@@ -1074,97 +1400,219 @@ export default function LawyerDashboard() {
         </main>
       </div>
 
+      {/* Confirmation Dialog */}
       <AnimatePresence>
         {dialog.isOpen && (
           <motion.div
-            className={styles.dialogOverlay}
+            className={styles.modalOverlay}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className={styles.dialogBox}
+              className={styles.modalContent}
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
             >
-              <h3>{dialog.message}</h3>
-              <div className={styles.dialogActions}>
-                <button onClick={dialog.onConfirm} className={styles.actionButton}>Yes</button>
-                <button onClick={() => setDialog({ isOpen: false, message: "", onConfirm: null })} className={styles.cancelButton}>No</button>
+              <div className={styles.modalHeader}>
+                <h3>Confirmation</h3>
+              </div>
+              <div className={styles.modalBody}>
+                <p>{dialog.message}</p>
+              </div>
+              <div className={styles.modalFooter}>
+                <button onClick={dialog.onConfirm} className={styles.primaryButton}>
+                  Yes
+                </button>
+                <button
+                  onClick={() => setDialog({ isOpen: false, message: "", onConfirm: null })}
+                  className={styles.secondaryButton}
+                >
+                  No
+                </button>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
+      {/* Case Details Modal */}
       <AnimatePresence>
         {selectedCase && (
           <motion.div
-            className={styles.dialogOverlay}
+            className={styles.modalOverlay}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className={styles.dialogBox}
+              className={styles.modalContent}
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
             >
-              <h3>Case Details: {selectedCase.title}</h3>
-              <div className={styles.caseDialogContent}>
-                <p><strong>Case Number:</strong> {selectedCase.id}</p>
-                <p><strong>Description:</strong> {selectedCase.description || "No description"}</p>
-                <p><strong>Status:</strong> {selectedCase.status}</p>
-                <p><strong>Priority:</strong> {selectedCase.priority}</p>
-                <p><strong>Created At:</strong> {new Date(selectedCase.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+              <div className={styles.modalHeader}>
+                <h3>Case Details: {selectedCase.title}</h3>
+                <button onClick={() => setSelectedCase(null)} className={styles.closeButton}>
+                  <X className={styles.closeIcon} />
+                </button>
               </div>
-              <button onClick={() => setSelectedCase(null)} className={styles.cancelButton}>Close</button>
+              <div className={styles.modalBody}>
+                <div className={styles.caseDetail}>
+                  <div className={styles.detailLabel}>Case Number</div>
+                  <div className={styles.detailValue}>#{selectedCase.id}</div>
+                </div>
+                <div className={styles.caseDetail}>
+                  <div className={styles.detailLabel}>Description</div>
+                  <div className={styles.detailValue}>{selectedCase.description || "No description"}</div>
+                </div>
+                <div className={styles.caseDetail}>
+                  <div className={styles.detailLabel}>Status</div>
+                  <div className={styles.detailValue}>
+                    <span
+                      className={`${styles.statusBadge} ${styles[`status${selectedCase.status.charAt(0).toUpperCase() + selectedCase.status.slice(1)}`]}`}
+                    >
+                      {selectedCase.status}
+                    </span>
+                  </div>
+                </div>
+                <div className={styles.caseDetail}>
+                  <div className={styles.detailLabel}>Priority</div>
+                  <div className={styles.detailValue}>
+                    <span className={`${styles.priorityBadge} ${styles[`priority${selectedCase.priority}`]}`}>
+                      {selectedCase.priority}
+                    </span>
+                  </div>
+                </div>
+                <div className={styles.caseDetail}>
+                  <div className={styles.detailLabel}>Created At</div>
+                  <div className={styles.detailValue}>
+                    {new Date(selectedCase.created_at).toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </div>
+                </div>
+              </div>
+              <div className={styles.modalFooter}>
+                <button onClick={() => handleCaseDetails(selectedCase)} className={styles.primaryButton}>
+                  View Full Details
+                </button>
+                <button onClick={() => setSelectedCase(null)} className={styles.secondaryButton}>
+                  Close
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
+      {/* Appointment Details Modal */}
       <AnimatePresence>
         {selectedAppointment && (
           <motion.div
-            className={styles.dialogOverlay}
+            className={styles.modalOverlay}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className={styles.dialogBox}
+              className={styles.modalContent}
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
             >
-              <h3>Appointment Details</h3>
-              <div className={styles.appointmentDialogContent}>
-                <p><strong>Client Name:</strong> {selectedAppointment.client_name}</p>
-                <p><strong>Date & Time:</strong> {new Date(selectedAppointment.appointment_date).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
-                <p><strong>Status:</strong> {selectedAppointment.status}</p>
-                <p><strong>Booked On:</strong> {new Date(selectedAppointment.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+              <div className={styles.modalHeader}>
+                <h3>Appointment Details</h3>
+                <button onClick={() => setSelectedAppointment(null)} className={styles.closeButton}>
+                  <X className={styles.closeIcon} />
+                </button>
               </div>
-              <button onClick={() => setSelectedAppointment(null)} className={styles.cancelButton}>Close</button>
+              <div className={styles.modalBody}>
+                <div className={styles.appointmentDetail}>
+                  <div className={styles.detailLabel}>Client Name</div>
+                  <div className={styles.detailValue}>{selectedAppointment.client_name}</div>
+                </div>
+                <div className={styles.appointmentDetail}>
+                  <div className={styles.detailLabel}>Date & Time</div>
+                  <div className={styles.detailValue}>
+                    {new Date(selectedAppointment.appointment_date).toLocaleString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </div>
+                </div>
+                <div className={styles.appointmentDetail}>
+                  <div className={styles.detailLabel}>Status</div>
+                  <div className={styles.detailValue}>
+                    <span
+                      className={`${styles.statusBadge} ${styles[`status${selectedAppointment.status.charAt(0).toUpperCase() + selectedAppointment.status.slice(1)}`]}`}
+                    >
+                      {selectedAppointment.status}
+                    </span>
+                  </div>
+                </div>
+                <div className={styles.appointmentDetail}>
+                  <div className={styles.detailLabel}>Booked On</div>
+                  <div className={styles.detailValue}>
+                    {new Date(selectedAppointment.created_at).toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </div>
+                </div>
+              </div>
+              <div className={styles.modalFooter}>
+                {selectedAppointment.status === "pending" && (
+                  <div className={styles.modalActions}>
+                    <button
+                      onClick={() => {
+                        handleUpdateAppointmentStatus(selectedAppointment.id, "confirmed")
+                        setSelectedAppointment(null)
+                      }}
+                      className={styles.primaryButton}
+                    >
+                      Confirm
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleUpdateAppointmentStatus(selectedAppointment.id, "cancelled")
+                        setSelectedAppointment(null)
+                      }}
+                      className={styles.dangerButton}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+                <button onClick={() => setSelectedAppointment(null)} className={styles.secondaryButton}>
+                  Close
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
+      {/* Notifications */}
       <div className={styles.notificationContainer}>
         <AnimatePresence>
           {notifications.map((notification) => (
             <motion.div
               key={notification.id}
-              className={`${styles.notification} ${notification.type === 'error' ? styles.errorNotification : styles.successNotification}`}
+              className={`${styles.notification} ${notification.type === "error" ? styles.errorNotification : styles.successNotification}`}
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 50 }}
               transition={{ duration: 0.3 }}
             >
-              {notification.type === 'success' ? (
+              {notification.type === "success" ? (
                 <CheckCircle className={styles.notificationIcon} />
               ) : (
                 <AlertCircle className={styles.notificationIcon} />
@@ -1175,9 +1623,11 @@ export default function LawyerDashboard() {
         </AnimatePresence>
       </div>
 
-      <div className={styles.loaderOverlay} style={{ display: isLoading ? 'flex' : 'none' }}>
+      {/* Loading Overlay */}
+      <div className={styles.loaderOverlay} style={{ display: isLoading ? "flex" : "none" }}>
         <div className={styles.loader}></div>
       </div>
     </div>
   )
 }
+

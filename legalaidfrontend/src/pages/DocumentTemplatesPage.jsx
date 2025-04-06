@@ -90,11 +90,12 @@ export default function DocumentTemplatesPage() {
       {/* Header */}
       <header className={styles.header}>
         <div className={styles.container}>
+          <a href="/">
           <div className={styles.logo}>
             <Scale className={styles.logoIcon} />
             <span>NepaliLegalAidFinder</span>
           </div>
-
+          </a>
           <div
             className={`${styles.mobileMenuButton} ${mobileMenuOpen ? styles.active : ""}`}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}

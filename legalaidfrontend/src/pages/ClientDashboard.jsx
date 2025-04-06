@@ -1,351 +1,444 @@
 "use client"
 
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import { motion, AnimatePresence } from "framer-motion";
-import { Scale, Sun, Moon, FileText, Clock, User, Settings, AlertCircle, CheckCircle, Menu, X, MoreVertical } from "lucide-react";
-import { Tooltip } from 'react-tooltip';
-import styles from "./ClientDashboard.module.css";
+import { useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom"
+import axios from "axios"
+import { motion, AnimatePresence } from "framer-motion"
+import {
+  Scale,
+  Sun,
+  Moon,
+  FileText,
+  Clock,
+  User,
+  Settings,
+  AlertCircle,
+  CheckCircle,
+  Menu,
+  X,
+  MoreVertical,
+  ChevronRight,
+} from "lucide-react"
+import { Tooltip } from "react-tooltip"
+import styles from "./ClientDashboard.module.css"
 
 export default function ClientDashboard() {
-  const [client, setClient] = useState(null);
-  const [appointments, setAppointments] = useState([]);
-  const [cases, setCases] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("dashboard");
-  const [notifications, setNotifications] = useState([]);
-  const [selectedAppointment, setSelectedAppointment] = useState(null);
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [formData, setFormData] = useState({});
-  const [settingsFormData, setSettingsFormData] = useState({});
-  const [profilePictureFile, setProfilePictureFile] = useState(null);
+  const [client, setClient] = useState(null)
+  const [appointments, setAppointments] = useState([])
+  const [cases, setCases] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  const [theme, setTheme] = useState(localStorage.getItem("theme") || "light")
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState("dashboard")
+  const [notifications, setNotifications] = useState([])
+  const [selectedAppointment, setSelectedAppointment] = useState(null)
+  const [isEditingProfile, setIsEditingProfile] = useState(false)
+  const [formData, setFormData] = useState({})
+  const [settingsFormData, setSettingsFormData] = useState({})
+  const [profilePictureFile, setProfilePictureFile] = useState(null)
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
     newPassword: "",
-    confirmNewPassword: ""
-  });
-  const [passwordError, setPasswordError] = useState("");
-  const navigate = useNavigate();
+    confirmNewPassword: "",
+  })
+  const [passwordError, setPasswordError] = useState("")
+  const navigate = useNavigate()
 
   useEffect(() => {
-    document.body.className = theme === 'dark' ? styles.darkTheme : '';
-    localStorage.setItem('theme', theme);
-  }, [theme]);
+    document.body.className = theme === "dark" ? styles.darkTheme : ""
+    localStorage.setItem("theme", theme)
+  }, [theme])
 
-  const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light');
-  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+  const toggleTheme = () => setTheme(theme === "light" ? "dark" : "light")
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
 
-  const addNotification = (message, type = 'success') => {
-    const id = Date.now();
-    setNotifications((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => setNotifications((prev) => prev.filter((n) => n.id !== id)), 3000);
-  };
+  const addNotification = (message, type = "success") => {
+    const id = Date.now()
+    setNotifications((prev) => [...prev, { id, message, type }])
+    setTimeout(() => setNotifications((prev) => prev.filter((n) => n.id !== id)), 3000)
+  }
 
   useEffect(() => {
-    const token = localStorage.getItem('clientToken');
-    const clientData = localStorage.getItem('client');
+    const token = localStorage.getItem("clientToken")
+    const clientData = localStorage.getItem("client")
 
     if (!token || !clientData) {
-      addNotification("Please log in to access the dashboard", "error");
-      navigate('/client-login');
-      return;
+      addNotification("Please log in to access the dashboard", "error")
+      navigate("/client-login")
+      return
     }
 
-    const parsedClient = JSON.parse(clientData);
-    setClient(parsedClient);
-    setFormData(parsedClient);
+    const parsedClient = JSON.parse(clientData)
+    setClient(parsedClient)
+    setFormData(parsedClient)
     setSettingsFormData({
       email_notifications: parsedClient.email_notifications || false,
-      preferred_contact: parsedClient.preferred_contact || "Email"
-    });
-    fetchData(token);
-  }, [navigate]);
+      preferred_contact: parsedClient.preferred_contact || "Email",
+    })
+    fetchData(token)
+  }, [navigate])
 
   const fetchData = async (token) => {
-    setLoading(true);
-    setError("");
+    setLoading(true)
+    setError("")
     try {
       // Fetch appointments
-      const appointmentsResponse = await axios.get('http://127.0.0.1:5000/api/client-appointments', {
+      const appointmentsResponse = await axios.get("http://127.0.0.1:5000/api/client-appointments", {
         headers: { Authorization: `Bearer ${token}` },
-      });
-      setAppointments(appointmentsResponse.data.appointments || []);
+      })
+      setAppointments(appointmentsResponse.data.appointments || [])
 
       // Fetch cases
       try {
-        const casesResponse = await axios.get('http://127.0.0.1:5000/api/client-cases', {
+        const casesResponse = await axios.get("http://127.0.0.1:5000/api/client-cases", {
           headers: { Authorization: `Bearer ${token}` },
-        });
-        setCases(casesResponse.data.cases || []);
+        })
+        setCases(casesResponse.data.cases || [])
       } catch (caseErr) {
-        addNotification("Failed to load cases. This feature may not be available yet.", "error");
-        setCases([]);
+        addNotification("Failed to load cases. This feature may not be available yet.", "error")
+        setCases([])
       }
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to fetch data.");
-      addNotification(err.response?.data?.error || "Failed to fetch data", "error");
+      setError(err.response?.data?.error || "Failed to fetch data.")
+      addNotification(err.response?.data?.error || "Failed to fetch data", "error")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleLogout = () => {
-    localStorage.removeItem('clientToken');
-    localStorage.removeItem('client');
-    addNotification("Logged out successfully", "success");
-    navigate('/client-login');
-  };
+    localStorage.removeItem("clientToken")
+    localStorage.removeItem("client")
+    addNotification("Logged out successfully", "success")
+    navigate("/client-login")
+  }
 
   const handleAppointmentDetails = (appointment) => {
-    setSelectedAppointment(appointment);
-  };
+    setSelectedAppointment(appointment)
+  }
 
   const handleProfileChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData({ ...formData, [name]: type === 'checkbox' ? checked : value });
-  };
+    const { name, value, type, checked } = e.target
+    setFormData({ ...formData, [name]: type === "checkbox" ? checked : value })
+  }
 
   const handleSettingsChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setSettingsFormData({ ...settingsFormData, [name]: type === 'checkbox' ? checked : value });
-  };
+    const { name, value, type, checked } = e.target
+    setSettingsFormData({ ...settingsFormData, [name]: type === "checkbox" ? checked : value })
+  }
 
   const handleProfilePictureChange = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files[0]
     if (file) {
-      setProfilePictureFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setFormData({ ...formData, profile_picture: reader.result });
-      reader.readAsDataURL(file);
+      setProfilePictureFile(file)
+      const reader = new FileReader()
+      reader.onloadend = () => setFormData({ ...formData, profile_picture: reader.result })
+      reader.readAsDataURL(file)
     }
-  };
+  }
 
   const handleProfileSave = async (e) => {
-    e.preventDefault();
-    const token = localStorage.getItem('clientToken');
-    setLoading(true);
+    e.preventDefault()
+    const token = localStorage.getItem("clientToken")
+    setLoading(true)
     try {
-      const formDataToSend = new FormData();
+      const formDataToSend = new FormData()
       for (const key in formData) {
-        if (key !== 'profile_picture') formDataToSend.append(key, formData[key]);
+        if (key !== "profile_picture") formDataToSend.append(key, formData[key])
       }
-      if (profilePictureFile) formDataToSend.append('profile_picture', profilePictureFile);
+      if (profilePictureFile) formDataToSend.append("profile_picture", profilePictureFile)
 
-      const response = await axios.put('http://127.0.0.1:5000/api/client-profile', formDataToSend, {
-        headers: { 
+      const response = await axios.put("http://127.0.0.1:5000/api/client-profile", formDataToSend, {
+        headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      setClient(response.data.client);
-      localStorage.setItem('client', JSON.stringify(response.data.client));
-      setIsEditingProfile(false);
-      setProfilePictureFile(null);
-      addNotification(response.data.message || "Profile updated successfully", "success");
+          "Content-Type": "multipart/form-data",
+        },
+      })
+      setClient(response.data.client)
+      localStorage.setItem("client", JSON.stringify(response.data.client))
+      setIsEditingProfile(false)
+      setProfilePictureFile(null)
+      addNotification(response.data.message || "Profile updated successfully", "success")
     } catch (err) {
-      addNotification(err.response?.data?.error || "Failed to update profile", "error");
+      addNotification(err.response?.data?.error || "Failed to update profile", "error")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleSettingsSave = async (e) => {
-    e.preventDefault();
-    const token = localStorage.getItem('clientToken');
-    setLoading(true);
+    e.preventDefault()
+    const token = localStorage.getItem("clientToken")
+    setLoading(true)
     try {
-      const response = await axios.put('http://127.0.0.1:5000/api/client-profile', settingsFormData, {
-        headers: { 
+      const response = await axios.put("http://127.0.0.1:5000/api/client-profile", settingsFormData, {
+        headers: {
           Authorization: `Bearer ${token}`,
-        }
-      });
-      setClient(response.data.client);
-      localStorage.setItem('client', JSON.stringify(response.data.client));
-      addNotification(response.data.message || "Settings updated successfully", "success");
+        },
+      })
+      setClient(response.data.client)
+      localStorage.setItem("client", JSON.stringify(response.data.client))
+      addNotification(response.data.message || "Settings updated successfully", "success")
     } catch (err) {
-      addNotification(err.response?.data?.error || "Failed to update settings", "error");
+      addNotification(err.response?.data?.error || "Failed to update settings", "error")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handlePasswordChange = (e) => {
-    const { name, value } = e.target;
-    setPasswordData({ ...passwordData, [name]: value });
-    setPasswordError("");
-  };
+    const { name, value } = e.target
+    setPasswordData({ ...passwordData, [name]: value })
+    setPasswordError("")
+  }
 
   const handlePasswordUpdate = async (e) => {
-    e.preventDefault();
-    const token = localStorage.getItem('clientToken');
-    
+    e.preventDefault()
+    const token = localStorage.getItem("clientToken")
+
     if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmNewPassword) {
-      setPasswordError("All fields are required");
-      return;
+      setPasswordError("All fields are required")
+      return
     }
 
     if (passwordData.newPassword !== passwordData.confirmNewPassword) {
-      setPasswordError("New password and confirmation do not match");
-      return;
+      setPasswordError("New password and confirmation do not match")
+      return
     }
 
     if (passwordData.newPassword.length < 8) {
-      setPasswordError("New password must be at least 8 characters long");
-      return;
+      setPasswordError("New password must be at least 8 characters long")
+      return
     }
 
-    setLoading(true);
+    setLoading(true)
     try {
       const response = await axios.put(
-        'http://127.0.0.1:5000/api/client/change-password',
+        "http://127.0.0.1:5000/api/client/change-password",
         {
           current_password: passwordData.currentPassword,
-          new_password: passwordData.newPassword
+          new_password: passwordData.newPassword,
         },
         {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      )
 
       setPasswordData({
         currentPassword: "",
         newPassword: "",
-        confirmNewPassword: ""
-      });
-      setPasswordError("");
-      addNotification(response.data.message || "Password updated successfully", "success");
+        confirmNewPassword: "",
+      })
+      setPasswordError("")
+      addNotification(response.data.message || "Password updated successfully", "success")
 
-      localStorage.removeItem('clientToken');
-      localStorage.removeItem('client');
-      navigate('/client-login');
+      localStorage.removeItem("clientToken")
+      localStorage.removeItem("client")
+      navigate("/client-login")
     } catch (err) {
-      setPasswordError(err.response?.data?.error || "Failed to update password");
-      addNotification(err.response?.data?.error || "Failed to update password", "error");
+      setPasswordError(err.response?.data?.error || "Failed to update password")
+      addNotification(err.response?.data?.error || "Failed to update password", "error")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const upcomingAppointments = appointments
-    .filter(appt => new Date(appt.appointment_date) >= new Date() && appt.status !== 'cancelled')
+    .filter((appt) => new Date(appt.appointment_date) >= new Date() && appt.status !== "cancelled")
     .sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date))
-    .slice(0, 3);
+    .slice(0, 3)
 
-  const recentCases = cases.slice(0, 3);
+  const recentCases = cases.slice(0, 3)
 
   if (!client) {
     return (
-      <div className={`${styles.dashboardPage} ${theme === 'dark' ? styles.darkTheme : ''}`}>
-        <div className={styles.loader}>Loading...</div>
+      <div className={`${styles.dashboardPage} ${theme === "dark" ? styles.darkTheme : ""}`}>
+        <div className={styles.loaderContainer}>
+          <div className={styles.loader}></div>
+          <p>Loading your dashboard...</p>
+        </div>
       </div>
-    );
+    )
   }
 
   return (
-    <div className={`${styles.dashboardPage} ${theme === 'dark' ? styles.darkTheme : ''}`}>
+    <div className={`${styles.dashboardPage} ${theme === "dark" ? styles.darkTheme : ""}`}>
       <Tooltip id="theme-tooltip" />
       <Tooltip id="logout-tooltip" />
       <Tooltip id="details-tooltip" />
       <Tooltip id="edit-tooltip" />
 
       <div className={styles.layout}>
-        <aside className={`${styles.sidebar} ${isSidebarOpen ? styles.sidebarOpen : ''}`}>
-          <div className={styles.logo}>
+        {/* Sidebar */}
+        <aside className={`${styles.sidebar} ${isSidebarOpen ? styles.sidebarOpen : ""}`}>
+          <div className={styles.sidebarHeader}>
             <button className={styles.menuButton} onClick={toggleSidebar}>
               {isSidebarOpen ? <X className={styles.icon} /> : <Menu className={styles.icon} />}
             </button>
-            <button
-              onClick={() => navigate('/')}
-              className={styles.logoLink}
-            >
+            <button onClick={() => navigate("/")} className={styles.logoLink}>
               <Scale className={styles.logoIcon} />
               <span>NepaliLegalAidFinder</span>
             </button>
           </div>
+
+          <div className={styles.userInfo}>
+            <div className={styles.userAvatar}>
+              <img
+                src={
+                  client.profile_picture
+                    ? `http://127.0.0.1:5000${client.profile_picture}`
+                    : "https://via.placeholder.com/100"
+                }
+                alt={client.name}
+              />
+            </div>
+            <div className={styles.userName}>{client.name}</div>
+            <div className={styles.userRole}>Client</div>
+          </div>
+
           <nav className={styles.sidebarNav}>
             <button
-              onClick={() => { setActiveTab("dashboard"); setIsSidebarOpen(false); }}
-              className={`${styles.navLink} ${activeTab === "dashboard" ? styles.activeNavLink : ''}`}
+              onClick={() => {
+                setActiveTab("dashboard")
+                setIsSidebarOpen(false)
+              }}
+              className={`${styles.navLink} ${activeTab === "dashboard" ? styles.activeNavLink : ""}`}
             >
-              <FileText className={styles.navIcon} /> Dashboard
+              <FileText className={styles.navIcon} />
+              <span>Dashboard</span>
+              {activeTab === "dashboard" && <ChevronRight className={styles.activeIcon} />}
             </button>
             <button
-              onClick={() => { setActiveTab("appointments"); setIsSidebarOpen(false); }}
-              className={`${styles.navLink} ${activeTab === "appointments" ? styles.activeNavLink : ''}`}
+              onClick={() => {
+                setActiveTab("appointments")
+                setIsSidebarOpen(false)
+              }}
+              className={`${styles.navLink} ${activeTab === "appointments" ? styles.activeNavLink : ""}`}
             >
-              <Clock className={styles.navIcon} /> Appointments
+              <Clock className={styles.navIcon} />
+              <span>Appointments</span>
+              {activeTab === "appointments" && <ChevronRight className={styles.activeIcon} />}
             </button>
             <button
-              onClick={() => { setActiveTab("cases"); setIsSidebarOpen(false); }}
-              className={`${styles.navLink} ${activeTab === "cases" ? styles.activeNavLink : ''}`}
+              onClick={() => {
+                setActiveTab("cases")
+                setIsSidebarOpen(false)
+              }}
+              className={`${styles.navLink} ${activeTab === "cases" ? styles.activeNavLink : ""}`}
             >
-              <FileText className={styles.navIcon} /> Cases
+              <FileText className={styles.navIcon} />
+              <span>Cases</span>
+              {activeTab === "cases" && <ChevronRight className={styles.activeIcon} />}
             </button>
             <button
-              onClick={() => { setActiveTab("profile"); setIsSidebarOpen(false); }}
-              className={`${styles.navLink} ${activeTab === "profile" ? styles.activeNavLink : ''}`}
+              onClick={() => {
+                setActiveTab("profile")
+                setIsSidebarOpen(false)
+              }}
+              className={`${styles.navLink} ${activeTab === "profile" ? styles.activeNavLink : ""}`}
             >
-              <User className={styles.navIcon} /> Profile
+              <User className={styles.navIcon} />
+              <span>Profile</span>
+              {activeTab === "profile" && <ChevronRight className={styles.activeIcon} />}
             </button>
             <button
-              onClick={() => { setActiveTab("settings"); setIsSidebarOpen(false); }}
-              className={`${styles.navLink} ${activeTab === "settings" ? styles.activeNavLink : ''}`}
+              onClick={() => {
+                setActiveTab("settings")
+                setIsSidebarOpen(false)
+              }}
+              className={`${styles.navLink} ${activeTab === "settings" ? styles.activeNavLink : ""}`}
             >
-              <Settings className={styles.navIcon} /> Settings
+              <Settings className={styles.navIcon} />
+              <span>Settings</span>
+              {activeTab === "settings" && <ChevronRight className={styles.activeIcon} />}
             </button>
           </nav>
+
+          <div className={styles.sidebarFooter}>
+            <button onClick={handleLogout} className={styles.logoutButtonSidebar}>
+              Logout
+            </button>
+          </div>
         </aside>
+
+        {/* Main Content */}
         <main className={styles.main}>
           <div className={styles.topBar}>
-            <span className={styles.currentDate}>
-              {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-')}
-            </span>
+            <div className={styles.pageTitle}>
+              {activeTab === "dashboard" && "Dashboard"}
+              {activeTab === "appointments" && "Appointments"}
+              {activeTab === "cases" && "Cases"}
+              {activeTab === "profile" && "Profile"}
+              {activeTab === "settings" && "Settings"}
+            </div>
             <div className={styles.headerActions}>
-              <button onClick={toggleTheme} className={styles.themeButton} data-tooltip-id="theme-tooltip" data-tooltip-content="Toggle theme">
-                {theme === 'light' ? <Moon className={styles.icon} /> : <Sun className={styles.icon} />}
+              <span className={styles.currentDate}>
+                {new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+              </span>
+              <button
+                onClick={toggleTheme}
+                className={styles.themeButton}
+                data-tooltip-id="theme-tooltip"
+                data-tooltip-content="Toggle theme"
+              >
+                {theme === "light" ? <Moon className={styles.icon} /> : <Sun className={styles.icon} />}
               </button>
-              <button onClick={handleLogout} className={styles.logoutButton} data-tooltip-id="logout-tooltip" data-tooltip-content="Log out of your account">
+              <button
+                onClick={handleLogout}
+                className={styles.logoutButton}
+                data-tooltip-id="logout-tooltip"
+                data-tooltip-content="Log out of your account"
+              >
                 Logout
               </button>
             </div>
           </div>
+
           <div className={styles.dashboardContent}>
+            {/* Dashboard Tab */}
             {activeTab === "dashboard" && (
-              <>
-                <div className={styles.card} id="welcome">
-                  <h2 className={styles.sectionTitle}>Welcome, {client.name}</h2>
-                  <p>Manage your legal needs efficiently with NepaliLegalAidFinder.</p>
-                  <button
-                    onClick={() => navigate('/browse-lawyers')}
-                    className={styles.actionButton}
-                  >
-                    Browse Lawyers
-                  </button>
+              <div className={styles.dashboardGrid}>
+                <div className={styles.welcomeCard}>
+                  <div className={styles.welcomeContent}>
+                    <h2>Welcome back, {client.name}</h2>
+                    <p>Manage your legal needs efficiently with NepaliLegalAidFinder.</p>
+                    <button onClick={() => navigate("/browse-lawyers")} className={styles.primaryButton}>
+                      Browse Lawyers
+                    </button>
+                  </div>
+                  <div className={styles.welcomeImage}>
+                    <img src="https://via.placeholder.com/300x200" alt="Welcome" />
+                  </div>
                 </div>
 
-                <div className={styles.card} id="upcoming-appointments">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h2 className={styles.sectionTitle}>Upcoming Appointments</h2>
-                    <button
-                      onClick={() => setActiveTab("appointments")}
-                      className={styles.actionButton}
-                    >
-                      View All Appointments
+                <div className={styles.card}>
+                  <div className={styles.cardHeader}>
+                    <h2 className={styles.cardTitle}>Upcoming Appointments</h2>
+                    <button onClick={() => setActiveTab("appointments")} className={styles.viewAllButton}>
+                      View All
                     </button>
                   </div>
                   {loading ? (
-                    <p className={styles.emptyMessage}>Loading appointments...</p>
+                    <div className={styles.loadingState}>
+                      <div className={styles.miniLoader}></div>
+                      <p>Loading appointments...</p>
+                    </div>
                   ) : error ? (
-                    <p className={styles.errorMessage}>{error}</p>
+                    <div className={styles.errorState}>
+                      <AlertCircle className={styles.errorIcon} />
+                      <p>{error}</p>
+                    </div>
                   ) : upcomingAppointments.length === 0 ? (
-                    <p className={styles.emptyMessage}>No upcoming appointments.</p>
+                    <div className={styles.emptyState}>
+                      <p>No upcoming appointments.</p>
+                      <button onClick={() => navigate("/browse-lawyers")} className={styles.secondaryButton}>
+                        Schedule an Appointment
+                      </button>
+                    </div>
                   ) : (
                     <div className={styles.tableWrapper}>
-                      <table className={styles.appointmentTable}>
+                      <table className={styles.dataTable}>
                         <thead>
                           <tr>
                             <th>Lawyer Name</th>
@@ -358,18 +451,38 @@ export default function ClientDashboard() {
                         <tbody>
                           {upcomingAppointments.map((appt) => (
                             <tr key={appt.id}>
-                              <td>{appt.lawyer_name}</td>
-                              <td>{new Date(appt.appointment_date).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
-                              <td>{appt.status}</td>
-                              <td>{new Date(appt.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                              <td className={styles.primaryCell}>{appt.lawyer_name}</td>
+                              <td>
+                                {new Date(appt.appointment_date).toLocaleString("en-GB", {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </td>
+                              <td>
+                                <span
+                                  className={`${styles.statusBadge} ${styles[`status${appt.status.charAt(0).toUpperCase() + appt.status.slice(1)}`]}`}
+                                >
+                                  {appt.status}
+                                </span>
+                              </td>
+                              <td>
+                                {new Date(appt.created_at).toLocaleDateString("en-GB", {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                })}
+                              </td>
                               <td>
                                 <button
                                   onClick={() => handleAppointmentDetails(appt)}
-                                  className={styles.ellipsisButton}
+                                  className={styles.iconButton}
                                   data-tooltip-id="details-tooltip"
                                   data-tooltip-content="View appointment details"
                                 >
-                                  <MoreVertical className={styles.ellipsisIcon} />
+                                  <MoreVertical className={styles.buttonIcon} />
                                 </button>
                               </td>
                             </tr>
@@ -380,21 +493,21 @@ export default function ClientDashboard() {
                   )}
                 </div>
 
-                <div className={styles.card} id="recent-cases">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h2 className={styles.sectionTitle}>Recent Cases</h2>
-                    <button
-                      onClick={() => setActiveTab("cases")}
-                      className={styles.actionButton}
-                    >
-                      View All Cases
+                <div className={styles.card}>
+                  <div className={styles.cardHeader}>
+                    <h2 className={styles.cardTitle}>Recent Cases</h2>
+                    <button onClick={() => setActiveTab("cases")} className={styles.viewAllButton}>
+                      View All
                     </button>
                   </div>
                   {loading ? (
-                    <p className={styles.emptyMessage}>Loading cases...</p>
+                    <div className={styles.loadingState}>
+                      <div className={styles.miniLoader}></div>
+                      <p>Loading cases...</p>
+                    </div>
                   ) : cases.length > 0 ? (
                     <div className={styles.tableWrapper}>
-                      <table className={styles.caseTable}>
+                      <table className={styles.dataTable}>
                         <thead>
                           <tr>
                             <th>Case Info</th>
@@ -407,25 +520,37 @@ export default function ClientDashboard() {
                         <tbody>
                           {recentCases.map((caseItem) => (
                             <tr key={caseItem.id}>
-                              <td>
+                              <td className={styles.primaryCell}>
                                 <div className={styles.caseInfo}>
-                                  <div className={styles.caseDetails}>
-                                    <span className={styles.caseTitle}>{caseItem.title}</span>
-                                    <span className={styles.caseDescription}>{caseItem.description || "No description"}</span>
+                                  <div className={styles.caseTitle}>{caseItem.title}</div>
+                                  <div className={styles.caseDescription}>
+                                    {caseItem.description || "No description"}
                                   </div>
                                 </div>
                               </td>
-                              <td>{caseItem.id}</td>
-                              <td>{caseItem.status}</td>
-                              <td>{new Date(caseItem.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                              <td>#{caseItem.id}</td>
+                              <td>
+                                <span
+                                  className={`${styles.statusBadge} ${styles[`status${caseItem.status.charAt(0).toUpperCase() + caseItem.status.slice(1)}`]}`}
+                                >
+                                  {caseItem.status}
+                                </span>
+                              </td>
+                              <td>
+                                {new Date(caseItem.created_at).toLocaleDateString("en-GB", {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                })}
+                              </td>
                               <td>
                                 <button
                                   onClick={() => navigate(`/client-case/${caseItem.id}`)}
-                                  className={styles.ellipsisButton}
+                                  className={styles.iconButton}
                                   data-tooltip-id="details-tooltip"
                                   data-tooltip-content="View case details"
                                 >
-                                  <MoreVertical className={styles.ellipsisIcon} />
+                                  <MoreVertical className={styles.buttonIcon} />
                                 </button>
                               </td>
                             </tr>
@@ -434,24 +559,43 @@ export default function ClientDashboard() {
                       </table>
                     </div>
                   ) : (
-                    <p className={styles.emptyMessage}>No cases available. Feature coming soon.</p>
+                    <div className={styles.emptyState}>
+                      <p>No cases available. Feature coming soon.</p>
+                    </div>
                   )}
                 </div>
-              </>
+              </div>
             )}
 
+            {/* Appointments Tab */}
             {activeTab === "appointments" && (
-              <div className={styles.card} id="appointments">
-                <h2 className={styles.sectionTitle}>Appointments</h2>
+              <div className={styles.card}>
+                <div className={styles.cardHeader}>
+                  <h2 className={styles.cardTitle}>All Appointments</h2>
+                  <button onClick={() => navigate("/browse-lawyers")} className={styles.primaryButton}>
+                    Schedule New
+                  </button>
+                </div>
                 {loading ? (
-                  <p className={styles.emptyMessage}>Loading appointments...</p>
+                  <div className={styles.loadingState}>
+                    <div className={styles.miniLoader}></div>
+                    <p>Loading appointments...</p>
+                  </div>
                 ) : error ? (
-                  <p className={styles.errorMessage}>{error}</p>
+                  <div className={styles.errorState}>
+                    <AlertCircle className={styles.errorIcon} />
+                    <p>{error}</p>
+                  </div>
                 ) : appointments.length === 0 ? (
-                  <p className={styles.emptyMessage}>You have no appointments scheduled.</p>
+                  <div className={styles.emptyState}>
+                    <p>You have no appointments scheduled.</p>
+                    <button onClick={() => navigate("/browse-lawyers")} className={styles.secondaryButton}>
+                      Schedule an Appointment
+                    </button>
+                  </div>
                 ) : (
                   <div className={styles.tableWrapper}>
-                    <table className={styles.appointmentTable}>
+                    <table className={styles.dataTable}>
                       <thead>
                         <tr>
                           <th>Lawyer Name</th>
@@ -464,18 +608,38 @@ export default function ClientDashboard() {
                       <tbody>
                         {appointments.map((appt) => (
                           <tr key={appt.id}>
-                            <td>{appt.lawyer_name}</td>
-                            <td>{new Date(appt.appointment_date).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
-                            <td>{appt.status}</td>
-                            <td>{new Date(appt.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                            <td className={styles.primaryCell}>{appt.lawyer_name}</td>
+                            <td>
+                              {new Date(appt.appointment_date).toLocaleString("en-GB", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </td>
+                            <td>
+                              <span
+                                className={`${styles.statusBadge} ${styles[`status${appt.status.charAt(0).toUpperCase() + appt.status.slice(1)}`]}`}
+                              >
+                                {appt.status}
+                              </span>
+                            </td>
+                            <td>
+                              {new Date(appt.created_at).toLocaleDateString("en-GB", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              })}
+                            </td>
                             <td>
                               <button
                                 onClick={() => handleAppointmentDetails(appt)}
-                                className={styles.ellipsisButton}
+                                className={styles.iconButton}
                                 data-tooltip-id="details-tooltip"
                                 data-tooltip-content="View appointment details"
                               >
-                                <MoreVertical className={styles.ellipsisIcon} />
+                                <MoreVertical className={styles.buttonIcon} />
                               </button>
                             </td>
                           </tr>
@@ -487,14 +651,20 @@ export default function ClientDashboard() {
               </div>
             )}
 
+            {/* Cases Tab */}
             {activeTab === "cases" && (
-              <div className={styles.card} id="cases">
-                <h2 className={styles.sectionTitle}>Your Cases</h2>
+              <div className={styles.card}>
+                <div className={styles.cardHeader}>
+                  <h2 className={styles.cardTitle}>All Cases</h2>
+                </div>
                 {loading ? (
-                  <p className={styles.emptyMessage}>Loading cases...</p>
+                  <div className={styles.loadingState}>
+                    <div className={styles.miniLoader}></div>
+                    <p>Loading cases...</p>
+                  </div>
                 ) : cases.length > 0 ? (
                   <div className={styles.tableWrapper}>
-                    <table className={styles.caseTable}>
+                    <table className={styles.dataTable}>
                       <thead>
                         <tr>
                           <th>Case Info</th>
@@ -507,25 +677,35 @@ export default function ClientDashboard() {
                       <tbody>
                         {cases.map((caseItem) => (
                           <tr key={caseItem.id}>
-                            <td>
+                            <td className={styles.primaryCell}>
                               <div className={styles.caseInfo}>
-                                <div className={styles.caseDetails}>
-                                  <span className={styles.caseTitle}>{caseItem.title}</span>
-                                  <span className={styles.caseDescription}>{caseItem.description || "No description"}</span>
-                                </div>
+                                <div className={styles.caseTitle}>{caseItem.title}</div>
+                                <div className={styles.caseDescription}>{caseItem.description || "No description"}</div>
                               </div>
                             </td>
-                            <td>{caseItem.id}</td>
-                            <td>{caseItem.status}</td>
-                            <td>{new Date(caseItem.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                            <td>#{caseItem.id}</td>
+                            <td>
+                              <span
+                                className={`${styles.statusBadge} ${styles[`status${caseItem.status.charAt(0).toUpperCase() + caseItem.status.slice(1)}`]}`}
+                              >
+                                {caseItem.status}
+                              </span>
+                            </td>
+                            <td>
+                              {new Date(caseItem.created_at).toLocaleDateString("en-GB", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              })}
+                            </td>
                             <td>
                               <button
                                 onClick={() => navigate(`/client-case/${caseItem.id}`)}
-                                className={styles.ellipsisButton}
+                                className={styles.iconButton}
                                 data-tooltip-id="details-tooltip"
                                 data-tooltip-content="View case details"
                               >
-                                <MoreVertical className={styles.ellipsisIcon} />
+                                <MoreVertical className={styles.buttonIcon} />
                               </button>
                             </td>
                           </tr>
@@ -534,125 +714,195 @@ export default function ClientDashboard() {
                     </table>
                   </div>
                 ) : (
-                  <p className={styles.emptyMessage}>No cases available.</p>
+                  <div className={styles.emptyState}>
+                    <p>No cases available.</p>
+                  </div>
                 )}
               </div>
             )}
 
+            {/* Profile Tab */}
             {activeTab === "profile" && (
-              <div className={styles.profileCard} id="profile">
+              <div className={styles.profileCard}>
                 {isEditingProfile ? (
                   <form onSubmit={handleProfileSave} className={styles.editForm}>
-                    <div className={styles.formGroup}>
-                      <label>Profile Picture:</label>
-                      <div className={styles.profilePictureWrapper}>
-                        <img
-                          src={formData.profile_picture || "https://via.placeholder.com/100"}
-                          alt="Profile"
-                          className={styles.profilePicture}
+                    <div className={styles.formHeader}>
+                      <h2 className={styles.formTitle}>Edit Profile</h2>
+                    </div>
+
+                    <div className={styles.profilePictureSection}>
+                      <img
+                        src={formData.profile_picture || "https://via.placeholder.com/100"}
+                        alt="Profile"
+                        className={styles.profilePicture}
+                      />
+                      <label htmlFor="profilePictureUpload" className={styles.uploadButton}>
+                        Change Photo
+                        <input
+                          id="profilePictureUpload"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleProfilePictureChange}
+                          className={styles.fileInput}
                         />
-                        <label htmlFor="profilePictureUpload" className={styles.uploadButton}>
-                          Upload
-                          <input
-                            id="profilePictureUpload"
-                            type="file"
-                            accept="image/*"
-                            onChange={handleProfilePictureChange}
-                            className={styles.fileInput}
-                          />
-                        </label>
+                      </label>
+                    </div>
+
+                    <div className={styles.formGrid}>
+                      <div className={styles.formGroup}>
+                        <label>Email:</label>
+                        <input type="email" name="email" value={formData.email} className={styles.formInput} disabled />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label>Phone:</label>
+                        <input
+                          type="text"
+                          name="phone"
+                          value={formData.phone || ""}
+                          onChange={handleProfileChange}
+                          className={styles.formInput}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label>Address:</label>
+                        <input
+                          type="text"
+                          name="address"
+                          value={formData.address || ""}
+                          onChange={handleProfileChange}
+                          className={styles.formInput}
+                        />
+                      </div>
+                      <div className={styles.formGroup + " " + styles.fullWidth}>
+                        <label>Bio:</label>
+                        <textarea
+                          name="bio"
+                          value={formData.bio || ""}
+                          onChange={handleProfileChange}
+                          className={styles.formTextarea}
+                        />
                       </div>
                     </div>
-                    <div className={styles.formGroup}>
-                      <label>Email:</label>
-                      <input type="email" name="email" value={formData.email} className={styles.formInput} disabled />
-                    </div>
-                    <div className={styles.formGroup}>
-                      <label>Phone:</label>
-                      <input type="text" name="phone" value={formData.phone || ""} onChange={handleProfileChange} className={styles.formInput} />
-                    </div>
-                    <div className={styles.formGroup}>
-                      <label>Address:</label>
-                      <input type="text" name="address" value={formData.address || ""} onChange={handleProfileChange} className={styles.formInput} />
-                    </div>
-                    <div className={styles.formGroup}>
-                      <label>Bio:</label>
-                      <textarea name="bio" value={formData.bio || ""} onChange={handleProfileChange} className={styles.formTextarea} />
-                    </div>
+
                     <div className={styles.formActions}>
-                      <button type="submit" className={styles.actionButton} disabled={loading}>Save</button>
-                      <button type="button" onClick={() => setIsEditingProfile(false)} className={styles.cancelButton} disabled={loading}>Cancel</button>
+                      <button type="submit" className={styles.primaryButton} disabled={loading}>
+                        Save Changes
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingProfile(false)}
+                        className={styles.secondaryButton}
+                        disabled={loading}
+                      >
+                        Cancel
+                      </button>
                     </div>
                   </form>
                 ) : (
-                  <>
+                  <div className={styles.profileView}>
                     <div className={styles.profileHeader}>
-                      <div className={styles.profilePictureWrapper}>
+                      <div className={styles.profileImageContainer}>
                         <img
-                          src={client.profile_picture ? `http://127.0.0.1:5000${client.profile_picture}` : "https://via.placeholder.com/100"}
+                          src={
+                            client.profile_picture
+                              ? `http://127.0.0.1:5000${client.profile_picture}`
+                              : "https://via.placeholder.com/100"
+                          }
                           alt="Profile"
-                          className={styles.profilePicture}
+                          className={styles.profileImage}
                         />
                       </div>
                       <div className={styles.profileInfo}>
-                        <h3>{client.name}</h3>
-                        <p className={styles.profileSubtitle}>Client</p>
+                        <h2 className={styles.profileName}>{client.name}</h2>
+                        <p className={styles.profileRole}>Client</p>
+                        <button
+                          onClick={() => setIsEditingProfile(true)}
+                          className={styles.editProfileButton}
+                          data-tooltip-id="edit-tooltip"
+                          data-tooltip-content="Edit your profile details"
+                        >
+                          Edit Profile
+                        </button>
                       </div>
                     </div>
-                    <div className={styles.profileDetails}>
-                      <p className={styles.profileItem}><strong>Email:</strong> {client.email}</p>
-                      <p className={styles.profileItem}><strong>Phone:</strong> {client.phone || "Not provided"}</p>
-                      <p className={styles.profileItem}><strong>Address:</strong> {client.address || "Not provided"}</p>
-                      <p className={styles.profileItem}><strong>Bio:</strong> {client.bio || "Not provided"}</p>
+
+                    <div className={styles.profileDetailsCard}>
+                      <h3 className={styles.detailsTitle}>Contact Information</h3>
+                      <div className={styles.detailsGrid}>
+                        <div className={styles.detailItem}>
+                          <div className={styles.detailLabel}>Email</div>
+                          <div className={styles.detailValue}>{client.email}</div>
+                        </div>
+                        <div className={styles.detailItem}>
+                          <div className={styles.detailLabel}>Phone</div>
+                          <div className={styles.detailValue}>{client.phone || "Not provided"}</div>
+                        </div>
+                        <div className={styles.detailItem}>
+                          <div className={styles.detailLabel}>Address</div>
+                          <div className={styles.detailValue}>{client.address || "Not provided"}</div>
+                        </div>
+                      </div>
                     </div>
-                    <button 
-                      onClick={() => setIsEditingProfile(true)} 
-                      className={styles.actionButton} 
-                      data-tooltip-id="edit-tooltip" 
-                      data-tooltip-content="Edit your profile details"
-                    >
-                      Edit Profile
-                    </button>
-                  </>
+
+                    <div className={styles.profileDetailsCard}>
+                      <h3 className={styles.detailsTitle}>About</h3>
+                      <p className={styles.bioText}>{client.bio || "No bio information provided."}</p>
+                    </div>
+                  </div>
                 )}
               </div>
             )}
 
+            {/* Settings Tab */}
             {activeTab === "settings" && (
-              <div className={styles.card} id="settings">
-                <h2 className={styles.sectionTitle}>Account Settings</h2>
-                <form onSubmit={handleSettingsSave} className={styles.editForm}>
-                  <div className={styles.formGroup}>
-                    <label>Email Notifications:</label>
-                    <input
-                      type="checkbox"
-                      name="email_notifications"
-                      checked={settingsFormData.email_notifications}
-                      onChange={handleSettingsChange}
-                    />
+              <div className={styles.settingsContainer}>
+                <div className={styles.card}>
+                  <div className={styles.cardHeader}>
+                    <h2 className={styles.cardTitle}>Notification Settings</h2>
                   </div>
-                  <div className={styles.formGroup}>
-                    <label>Preferred Contact Method:</label>
-                    <select
-                      name="preferred_contact"
-                      value={settingsFormData.preferred_contact}
-                      onChange={handleSettingsChange}
-                      className={styles.formInput}
-                    >
-                      <option value="Email">Email</option>
-                      <option value="Phone">Phone</option>
-                    </select>
-                  </div>
-                  <div className={styles.formActions}>
-                    <button type="submit" className={styles.actionButton} disabled={loading}>Save Settings</button>
-                  </div>
-                </form>
+                  <form onSubmit={handleSettingsSave} className={styles.settingsForm}>
+                    <div className={styles.settingsGroup}>
+                      <label className={styles.checkboxLabel}>
+                        <input
+                          type="checkbox"
+                          name="email_notifications"
+                          checked={settingsFormData.email_notifications}
+                          onChange={handleSettingsChange}
+                          className={styles.checkbox}
+                        />
+                        <span>Email Notifications</span>
+                      </label>
+                      <p className={styles.settingsDescription}>
+                        Receive email notifications about appointments, case updates, and more.
+                      </p>
+                    </div>
+                    <div className={styles.settingsGroup}>
+                      <label>Preferred Contact Method:</label>
+                      <select
+                        name="preferred_contact"
+                        value={settingsFormData.preferred_contact}
+                        onChange={handleSettingsChange}
+                        className={styles.formSelect}
+                      >
+                        <option value="Email">Email</option>
+                        <option value="Phone">Phone</option>
+                      </select>
+                    </div>
+                    <div className={styles.formActions}>
+                      <button type="submit" className={styles.primaryButton} disabled={loading}>
+                        Save Settings
+                      </button>
+                    </div>
+                  </form>
+                </div>
 
-                <div className={styles.card} style={{ marginTop: '2rem' }}>
-                  <h2 className={styles.sectionTitle}>Change Password</h2>
-                  <form onSubmit={handlePasswordUpdate} className={styles.editForm}>
+                <div className={styles.card}>
+                  <div className={styles.cardHeader}>
+                    <h2 className={styles.cardTitle}>Change Password</h2>
+                  </div>
+                  <form onSubmit={handlePasswordUpdate} className={styles.passwordForm}>
                     <div className={styles.formGroup}>
-                      <label htmlFor="currentPassword">Current Password:</label>
+                      <label htmlFor="currentPassword">Current Password</label>
                       <input
                         type="password"
                         id="currentPassword"
@@ -665,7 +915,7 @@ export default function ClientDashboard() {
                       />
                     </div>
                     <div className={styles.formGroup}>
-                      <label htmlFor="newPassword">New Password:</label>
+                      <label htmlFor="newPassword">New Password</label>
                       <input
                         type="password"
                         id="newPassword"
@@ -678,7 +928,7 @@ export default function ClientDashboard() {
                       />
                     </div>
                     <div className={styles.formGroup}>
-                      <label htmlFor="confirmNewPassword">Confirm New Password:</label>
+                      <label htmlFor="confirmNewPassword">Confirm New Password</label>
                       <input
                         type="password"
                         id="confirmNewPassword"
@@ -691,12 +941,13 @@ export default function ClientDashboard() {
                       />
                     </div>
                     {passwordError && (
-                      <p className={styles.errorMessage} style={{ color: '#ef4444', marginTop: '0.5rem' }}>
+                      <div className={styles.errorMessage}>
+                        <AlertCircle className={styles.errorIcon} />
                         {passwordError}
-                      </p>
+                      </div>
                     )}
                     <div className={styles.formActions}>
-                      <button type="submit" className={styles.actionButton} disabled={loading}>
+                      <button type="submit" className={styles.primaryButton} disabled={loading}>
                         Update Password
                       </button>
                       <button
@@ -705,11 +956,11 @@ export default function ClientDashboard() {
                           setPasswordData({
                             currentPassword: "",
                             newPassword: "",
-                            confirmNewPassword: ""
-                          });
-                          setPasswordError("");
+                            confirmNewPassword: "",
+                          })
+                          setPasswordError("")
                         }}
-                        className={styles.cancelButton}
+                        className={styles.secondaryButton}
                         disabled={loading}
                       >
                         Cancel
@@ -723,46 +974,92 @@ export default function ClientDashboard() {
         </main>
       </div>
 
+      {/* Appointment Details Modal */}
       <AnimatePresence>
         {selectedAppointment && (
           <motion.div
-            className={styles.dialogOverlay}
+            className={styles.modalOverlay}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className={styles.dialogBox}
+              className={styles.modalContent}
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
             >
-              <h3>Appointment Details</h3>
-              <div className={styles.appointmentDialogContent}>
-                <p><strong>Lawyer Name:</strong> {selectedAppointment.lawyer_name}</p>
-                <p><strong>Specialization:</strong> {selectedAppointment.specialization}</p>
-                <p><strong>Date & Time:</strong> {new Date(selectedAppointment.appointment_date).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
-                <p><strong>Status:</strong> {selectedAppointment.status}</p>
-                <p><strong>Booked On:</strong> {new Date(selectedAppointment.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+              <div className={styles.modalHeader}>
+                <h3>Appointment Details</h3>
+                <button onClick={() => setSelectedAppointment(null)} className={styles.closeButton}>
+                  <X className={styles.closeIcon} />
+                </button>
               </div>
-              <button onClick={() => setSelectedAppointment(null)} className={styles.cancelButton}>Close</button>
+              <div className={styles.modalBody}>
+                <div className={styles.appointmentDetail}>
+                  <div className={styles.detailLabel}>Lawyer Name</div>
+                  <div className={styles.detailValue}>{selectedAppointment.lawyer_name}</div>
+                </div>
+                <div className={styles.appointmentDetail}>
+                  <div className={styles.detailLabel}>Specialization</div>
+                  <div className={styles.detailValue}>{selectedAppointment.specialization}</div>
+                </div>
+                <div className={styles.appointmentDetail}>
+                  <div className={styles.detailLabel}>Date & Time</div>
+                  <div className={styles.detailValue}>
+                    {new Date(selectedAppointment.appointment_date).toLocaleString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </div>
+                </div>
+                <div className={styles.appointmentDetail}>
+                  <div className={styles.detailLabel}>Status</div>
+                  <div className={styles.detailValue}>
+                    <span
+                      className={`${styles.statusBadge} ${styles[`status${selectedAppointment.status.charAt(0).toUpperCase() + selectedAppointment.status.slice(1)}`]}`}
+                    >
+                      {selectedAppointment.status}
+                    </span>
+                  </div>
+                </div>
+                <div className={styles.appointmentDetail}>
+                  <div className={styles.detailLabel}>Booked On</div>
+                  <div className={styles.detailValue}>
+                    {new Date(selectedAppointment.created_at).toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </div>
+                </div>
+              </div>
+              <div className={styles.modalFooter}>
+                <button onClick={() => setSelectedAppointment(null)} className={styles.secondaryButton}>
+                  Close
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
+      {/* Notifications */}
       <div className={styles.notificationContainer}>
         <AnimatePresence>
           {notifications.map((notification) => (
             <motion.div
               key={notification.id}
-              className={`${styles.notification} ${notification.type === 'error' ? styles.errorNotification : styles.successNotification}`}
+              className={`${styles.notification} ${notification.type === "error" ? styles.errorNotification : styles.successNotification}`}
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 50 }}
               transition={{ duration: 0.3 }}
             >
-              {notification.type === 'success' ? (
+              {notification.type === "success" ? (
                 <CheckCircle className={styles.notificationIcon} />
               ) : (
                 <AlertCircle className={styles.notificationIcon} />
@@ -773,9 +1070,11 @@ export default function ClientDashboard() {
         </AnimatePresence>
       </div>
 
-      <div className={styles.loaderOverlay} style={{ display: loading ? 'flex' : 'none' }}>
+      {/* Loading Overlay */}
+      <div className={styles.loaderOverlay} style={{ display: loading ? "flex" : "none" }}>
         <div className={styles.loader}></div>
       </div>
     </div>
-  );
+  )
 }
+
