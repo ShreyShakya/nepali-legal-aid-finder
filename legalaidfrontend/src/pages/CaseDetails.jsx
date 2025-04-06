@@ -17,6 +17,8 @@ import {
   Download,
   Send,
   Check,
+  ArrowLeft,
+  Briefcase,
 } from "lucide-react"
 import axios from "axios"
 import styles from "./CaseDetails.module.css"
@@ -50,6 +52,11 @@ export default function CaseDetails() {
   const [newEvidence, setNewEvidence] = useState({ file: null, description: "" })
   const [newMessage, setNewMessage] = useState("")
   const [activeTab, setActiveTab] = useState("notes")
+  const [theme, setTheme] = useState(localStorage.getItem("theme") || "light")
+
+  useEffect(() => {
+    document.body.className = theme === "dark" ? styles.darkTheme : ""
+  }, [theme])
 
   // Helper function for notifications
   const addNotification = (message, type = "success") => {
@@ -127,11 +134,9 @@ export default function CaseDetails() {
 
     try {
       const token = localStorage.getItem("token")
-      const response = await axios.put(
-        `http://127.0.0.1:5000/api/case/${caseId}`,
-        overviewFormData,
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
+      const response = await axios.put(`http://127.0.0.1:5000/api/case/${caseId}`, overviewFormData, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
       setCaseData(response.data.case)
       setIsEditingOverview(false)
       addNotification("Case overview updated successfully")
@@ -153,11 +158,9 @@ export default function CaseDetails() {
 
     try {
       const token = localStorage.getItem("token")
-      const response = await axios.post(
-        `http://127.0.0.1:5000/api/case/${caseId}/timeline`,
-        progressFormData,
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
+      const response = await axios.post(`http://127.0.0.1:5000/api/case/${caseId}/timeline`, progressFormData, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
       setTimelineEvents([...timelineEvents, response.data.event])
       setProgressFormData({ progress_event: "", event_date: "" })
       addNotification("Timeline event added successfully")
@@ -180,11 +183,9 @@ export default function CaseDetails() {
       const token = localStorage.getItem("token")
       const formData = new FormData()
       formData.append("file", newDocument)
-      const response = await axios.post(
-        `http://127.0.0.1:5000/api/case/${caseId}/documents`,
-        formData,
-        { headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" } }
-      )
+      const response = await axios.post(`http://127.0.0.1:5000/api/case/${caseId}/documents`, formData, {
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
+      })
       setDocuments([...documents, response.data.document])
       setNewDocument(null)
       document.getElementById("document-upload").value = ""
@@ -201,10 +202,9 @@ export default function CaseDetails() {
 
     try {
       const token = localStorage.getItem("token")
-      await axios.delete(
-        `http://127.0.0.1:5000/api/case/${caseId}/documents/${documentId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
+      await axios.delete(`http://127.0.0.1:5000/api/case/${caseId}/documents/${documentId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
       setDocuments(documents.filter((doc) => doc.id !== documentId))
       addNotification("Document deleted successfully")
     } catch (err) {
@@ -229,11 +229,9 @@ export default function CaseDetails() {
         formData.append("file", newEvidence.file)
       }
       formData.append("description", newEvidence.description)
-      const response = await axios.post(
-        `http://127.0.0.1:5000/api/case/${caseId}/evidence`,
-        formData,
-        { headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" } }
-      )
+      const response = await axios.post(`http://127.0.0.1:5000/api/case/${caseId}/evidence`, formData, {
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
+      })
       setEvidenceList([...evidenceList, response.data.evidence])
       setNewEvidence({ file: null, description: "" })
       if (document.getElementById("evidence-upload")) {
@@ -255,11 +253,9 @@ export default function CaseDetails() {
       const response = await axios.put(
         `http://127.0.0.1:5000/api/case/${caseId}/evidence/${evidenceId}/review`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       )
-      setEvidenceList(
-        evidenceList.map((ev) => (ev.id === evidenceId ? response.data.evidence : ev))
-      )
+      setEvidenceList(evidenceList.map((ev) => (ev.id === evidenceId ? response.data.evidence : ev)))
       addNotification("Evidence marked as reviewed")
     } catch (err) {
       addNotification(err.response?.data?.error || "Failed to mark evidence as reviewed", "error")
@@ -276,7 +272,7 @@ export default function CaseDetails() {
       await axios.put(
         `http://127.0.0.1:5000/api/case/${caseId}/notes`,
         { private_notes: privateNotes },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       )
       addNotification("Private notes updated successfully")
     } catch (err) {
@@ -296,7 +292,7 @@ export default function CaseDetails() {
       const response = await axios.post(
         `http://127.0.0.1:5000/api/case/${caseId}/messages`,
         { message: newMessage },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       )
       setMessages([...messages, response.data.message])
       setNewMessage("")
@@ -311,19 +307,37 @@ export default function CaseDetails() {
   // Render loading state
   if (!caseData) {
     return (
-      <div className={styles.caseDetailsPage}>
-        <div className={styles.loader}></div>
+      <div className={`${styles.caseDetailsPage} ${theme === "dark" ? styles.darkTheme : ""}`}>
+        <div className={styles.loaderContainer}>
+          <div className={styles.loader}></div>
+          <p>Loading case details...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className={styles.caseDetailsPage}>
+    <div className={`${styles.caseDetailsPage} ${theme === "dark" ? styles.darkTheme : ""}`}>
       <header className={styles.header}>
-        <h1>Case: {caseData.title}</h1>
-        <button onClick={() => navigate("/lawyerdashboard")} className={styles.backButton}>
-          Back to Dashboard
-        </button>
+        <div className={styles.headerLeft}>
+          <button onClick={() => navigate("/lawyerdashboard")} className={styles.backButton}>
+            <ArrowLeft className={styles.buttonIcon} />
+            <span>Back to Dashboard</span>
+          </button>
+          <h1>
+            <Briefcase className={styles.headerIcon} />
+            Case: {caseData.title}
+          </h1>
+        </div>
+        <div className={styles.headerRight}>
+          <div className={styles.caseStatus}>
+            <span
+              className={`${styles.statusBadge} ${styles[`status${caseData.status.charAt(0).toUpperCase() + caseData.status.slice(1)}`]}`}
+            >
+              {caseData.status}
+            </span>
+          </div>
+        </div>
       </header>
 
       <main className={styles.main}>
@@ -332,144 +346,167 @@ export default function CaseDetails() {
           <div className={styles.mainColumn}>
             {/* Case Overview Section */}
             <div className={styles.card}>
-              <h2>
-                <FileText className={styles.icon} /> Case Overview
-              </h2>
+              <div className={styles.cardHeader}>
+                <h2 className={styles.cardTitle}>
+                  <FileText className={styles.cardIcon} /> Case Overview
+                </h2>
+                {!isEditingOverview && (
+                  <button onClick={() => setIsEditingOverview(true)} className={styles.secondaryButton}>
+                    Update Details
+                  </button>
+                )}
+              </div>
+
               <div className={styles.caseInfo}>
                 <div className={styles.infoGrid}>
-                  <div>
-                    <p>
-                      <strong>Case ID:</strong> #{caseData.id}
-                    </p>
-                    <p>
-                      <strong>Title:</strong> {caseData.title}
-                    </p>
-                    <p>
-                      <strong>Case Type:</strong> {caseData.case_type}
-                    </p>
-                    <p>
-                      <strong>Filing Date:</strong>{" "}
-                      {caseData.filing_date
-                        ? new Date(caseData.filing_date).toLocaleDateString()
-                        : "N/A"}
-                    </p>
+                  <div className={styles.infoSection}>
+                    <h3 className={styles.infoSectionTitle}>Case Information</h3>
+                    <div className={styles.infoItem}>
+                      <span className={styles.infoLabel}>Case ID:</span>
+                      <span className={styles.infoValue}>#{caseData.id}</span>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <span className={styles.infoLabel}>Title:</span>
+                      <span className={styles.infoValue}>{caseData.title}</span>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <span className={styles.infoLabel}>Case Type:</span>
+                      <span className={styles.infoValue}>{caseData.case_type}</span>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <span className={styles.infoLabel}>Filing Date:</span>
+                      <span className={styles.infoValue}>
+                        {caseData.filing_date ? new Date(caseData.filing_date).toLocaleDateString() : "N/A"}
+                      </span>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <span className={styles.infoLabel}>Jurisdiction:</span>
+                      <span className={styles.infoValue}>{caseData.jurisdiction}</span>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <span className={styles.infoLabel}>Priority:</span>
+                      <span className={`${styles.priorityBadge} ${styles[`priority${caseData.priority}`]}`}>
+                        {caseData.priority}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <p>
-                      <strong>Client:</strong> {caseData.client_name}
-                    </p>
-                    <p>
-                      <strong>Contact:</strong> {caseData.client_contact_info || "N/A"}
-                    </p>
-                    <p>
-                      <strong>Plaintiff:</strong> {caseData.plaintiff_name || "N/A"}
-                    </p>
-                    <p>
-                      <strong>Opposing Party:</strong> {caseData.defendant_name}
-                    </p>
+
+                  <div className={styles.infoSection}>
+                    <h3 className={styles.infoSectionTitle}>Parties Involved</h3>
+                    <div className={styles.infoItem}>
+                      <span className={styles.infoLabel}>Client:</span>
+                      <span className={styles.infoValue}>{caseData.client_name}</span>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <span className={styles.infoLabel}>Contact:</span>
+                      <span className={styles.infoValue}>{caseData.client_contact_info || "N/A"}</span>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <span className={styles.infoLabel}>Plaintiff:</span>
+                      <span className={styles.infoValue}>{caseData.plaintiff_name || "N/A"}</span>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <span className={styles.infoLabel}>Opposing Party:</span>
+                      <span className={styles.infoValue}>{caseData.defendant_name}</span>
+                    </div>
                   </div>
-                  <div>
-                    <p>
-                      <strong>Jurisdiction:</strong> {caseData.jurisdiction}
-                    </p>
-                    <p>
-                      <strong>Priority:</strong> {caseData.priority}
-                    </p>
-                    <p>
-                      <strong>Description:</strong>{" "}
-                      {caseData.description || "No description provided"}
-                    </p>
-                  </div>
+                </div>
+
+                <div className={styles.infoSection}>
+                  <h3 className={styles.infoSectionTitle}>Description</h3>
+                  <p className={styles.caseDescription}>{caseData.description || "No description provided"}</p>
                 </div>
 
                 {isEditingOverview ? (
                   <form onSubmit={handleOverviewSubmit} className={styles.editForm}>
-                    <div className={styles.formRow}>
-                      <div className={styles.formGroup}>
-                        <label>Case Status:</label>
-                        <select
-                          name="case_status"
-                          value={overviewFormData.case_status}
-                          onChange={handleOverviewFormChange}
-                          className={styles.formInput}
-                        >
-                          <option value="pending">Pending</option>
-                          <option value="accepted">Accepted</option>
-                          <option value="rejected">Rejected</option>
-                          <option value="completed">Completed</option>
-                        </select>
+                    <div className={styles.formSection}>
+                      <h3 className={styles.formSectionTitle}>Update Case Details</h3>
+                      <div className={styles.formGrid}>
+                        <div className={styles.formGroup}>
+                          <label>Case Status:</label>
+                          <select
+                            name="case_status"
+                            value={overviewFormData.case_status}
+                            onChange={handleOverviewFormChange}
+                            className={styles.formSelect}
+                          >
+                            <option value="pending">Pending</option>
+                            <option value="accepted">Accepted</option>
+                            <option value="rejected">Rejected</option>
+                            <option value="completed">Completed</option>
+                          </select>
+                        </div>
+                        <div className={styles.formGroup}>
+                          <label>Next Hearing Date:</label>
+                          <input
+                            type="date"
+                            name="next_hearing_date"
+                            value={overviewFormData.next_hearing_date}
+                            onChange={handleOverviewFormChange}
+                            className={styles.formInput}
+                          />
+                        </div>
+                        <div className={styles.formGroup}>
+                          <label>Jurisdiction:</label>
+                          <select
+                            name="jurisdiction"
+                            value={overviewFormData.jurisdiction}
+                            onChange={handleOverviewFormChange}
+                            className={styles.formSelect}
+                          >
+                            <option value="District Court">District Court</option>
+                            <option value="High Court">High Court</option>
+                            <option value="Supreme Court">Supreme Court</option>
+                          </select>
+                        </div>
+                        <div className={styles.formGroup}>
+                          <label>Priority:</label>
+                          <select
+                            name="priority"
+                            value={overviewFormData.priority}
+                            onChange={handleOverviewFormChange}
+                            className={styles.formSelect}
+                          >
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                          </select>
+                        </div>
                       </div>
                       <div className={styles.formGroup}>
-                        <label>Next Hearing Date:</label>
-                        <input
-                          type="date"
-                          name="next_hearing_date"
-                          value={overviewFormData.next_hearing_date}
+                        <label>Description:</label>
+                        <textarea
+                          name="description"
+                          value={overviewFormData.description}
                           onChange={handleOverviewFormChange}
-                          className={styles.formInput}
+                          className={styles.formTextarea}
                         />
                       </div>
                     </div>
-                    <div className={styles.formRow}>
-                      <div className={styles.formGroup}>
-                        <label>Jurisdiction:</label>
-                        <select
-                          name="jurisdiction"
-                          value={overviewFormData.jurisdiction}
-                          onChange={handleOverviewFormChange}
-                          className={styles.formInput}
-                        >
-                          <option value="District Court">District Court</option>
-                          <option value="High Court">High Court</option>
-                          <option value="Supreme Court">Supreme Court</option>
-                        </select>
-                      </div>
-                      <div className={styles.formGroup}>
-                        <label>Priority:</label>
-                        <select
-                          name="priority"
-                          value={overviewFormData.priority}
-                          onChange={handleOverviewFormChange}
-                          className={styles.formInput}
-                        >
-                          <option value="Low">Low</option>
-                          <option value="Medium">Medium</option>
-                          <option value="High">High</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div className={styles.formGroup}>
-                      <label>Description:</label>
-                      <textarea
-                        name="description"
-                        value={overviewFormData.description}
-                        onChange={handleOverviewFormChange}
-                        className={styles.formTextarea}
-                      />
-                    </div>
                     <div className={styles.formActions}>
-                      <button type="submit" className={styles.actionButton}>
-                        Save
+                      <button type="submit" className={styles.primaryButton}>
+                        Save Changes
                       </button>
-                      <button type="button" onClick={() => setIsEditingOverview(false)} className={styles.cancelButton}>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingOverview(false)}
+                        className={styles.secondaryButton}
+                      >
                         Cancel
                       </button>
                     </div>
                   </form>
                 ) : (
-                  <div className={styles.statusSection}>
-                    <div className={styles.statusInfo}>
-                      <div className={`${styles.statusBadge} ${styles[caseData.status]}`}>{caseData.status}</div>
-                      <div className={styles.hearingDate}>
-                        <strong>Next Hearing:</strong>{" "}
+                  <div className={styles.hearingInfo}>
+                    <div className={styles.hearingDate}>
+                      <Calendar className={styles.iconSmall} />
+                      <span>Next Hearing:</span>
+                      <strong>
                         {caseData.next_hearing_date
                           ? new Date(caseData.next_hearing_date).toLocaleDateString()
                           : "Not scheduled"}
-                      </div>
+                      </strong>
                     </div>
-                    <button onClick={() => setIsEditingOverview(true)} className={styles.actionButton}>
-                      Update Status
-                    </button>
                   </div>
                 )}
               </div>
@@ -477,9 +514,11 @@ export default function CaseDetails() {
 
             {/* Case Timeline Section */}
             <div className={styles.card}>
-              <h2>
-                <Calendar className={styles.icon} /> Case Timeline
-              </h2>
+              <div className={styles.cardHeader}>
+                <h2 className={styles.cardTitle}>
+                  <Calendar className={styles.cardIcon} /> Case Timeline
+                </h2>
+              </div>
 
               {timelineEvents.length > 0 ? (
                 <div className={styles.timelineContainer}>
@@ -499,13 +538,16 @@ export default function CaseDetails() {
                   ))}
                 </div>
               ) : (
-                <p className={styles.emptyState}>No timeline events recorded yet</p>
+                <div className={styles.emptyState}>
+                  <Calendar className={styles.emptyStateIcon} />
+                  <p>No timeline events recorded yet</p>
+                </div>
               )}
 
               <div className={styles.addEventSection}>
-                <h3>Add Timeline Event</h3>
+                <h3 className={styles.sectionTitle}>Add Timeline Event</h3>
                 <form onSubmit={handleProgressSubmit} className={styles.editForm}>
-                  <div className={styles.formRow}>
+                  <div className={styles.formGrid}>
                     <div className={styles.formGroup}>
                       <label>Event Description:</label>
                       <input
@@ -528,18 +570,22 @@ export default function CaseDetails() {
                       />
                     </div>
                   </div>
-                  <button type="submit" className={styles.actionButton}>
-                    Add Event
-                  </button>
+                  <div className={styles.formActions}>
+                    <button type="submit" className={styles.primaryButton}>
+                      Add Event
+                    </button>
+                  </div>
                 </form>
               </div>
             </div>
 
             {/* Document Manager Section */}
             <div className={styles.card}>
-              <h2>
-                <File className={styles.icon} /> Documents
-              </h2>
+              <div className={styles.cardHeader}>
+                <h2 className={styles.cardTitle}>
+                  <File className={styles.cardIcon} /> Documents
+                </h2>
+              </div>
 
               <div className={styles.uploadSection}>
                 <div className={styles.formGroup}>
@@ -556,7 +602,7 @@ export default function CaseDetails() {
                   {newDocument && (
                     <div className={styles.selectedFile}>
                       <span>{newDocument.name}</span>
-                      <button onClick={handleDocumentUpload} className={styles.uploadButton}>
+                      <button onClick={handleDocumentUpload} className={styles.primaryButton}>
                         Upload
                       </button>
                     </div>
@@ -566,7 +612,7 @@ export default function CaseDetails() {
 
               {documents.length > 0 ? (
                 <div className={styles.documentList}>
-                  <h3>Case Documents</h3>
+                  <h3 className={styles.sectionTitle}>Case Documents</h3>
                   <div className={styles.documentGrid}>
                     {documents.map((doc) => (
                       <div key={doc.id} className={styles.documentCard}>
@@ -599,7 +645,10 @@ export default function CaseDetails() {
                   </div>
                 </div>
               ) : (
-                <p className={styles.emptyState}>No documents uploaded yet</p>
+                <div className={styles.emptyState}>
+                  <File className={styles.emptyStateIcon} />
+                  <p>No documents uploaded yet</p>
+                </div>
               )}
             </div>
           </div>
@@ -608,9 +657,11 @@ export default function CaseDetails() {
           <div className={styles.sideColumn}>
             {/* Evidence Manager Section */}
             <div className={styles.card}>
-              <h2>
-                <File className={styles.icon} /> Evidence
-              </h2>
+              <div className={styles.cardHeader}>
+                <h2 className={styles.cardTitle}>
+                  <File className={styles.cardIcon} /> Evidence
+                </h2>
+              </div>
 
               <div className={styles.evidenceForm}>
                 <div className={styles.formGroup}>
@@ -645,7 +696,7 @@ export default function CaseDetails() {
 
                 <button
                   onClick={handleEvidenceSubmit}
-                  className={styles.actionButton}
+                  className={styles.primaryButton}
                   disabled={!newEvidence.description}
                 >
                   Add Evidence
@@ -654,12 +705,12 @@ export default function CaseDetails() {
 
               {evidenceList.length > 0 ? (
                 <div className={styles.evidenceList}>
-                  <h3>Evidence Items</h3>
+                  <h3 className={styles.sectionTitle}>Evidence Items</h3>
                   {evidenceList.map((evidence) => (
                     <div key={evidence.id} className={styles.evidenceItem}>
                       <div className={styles.evidenceHeader}>
                         <div
-                          className={`${styles.evidenceStatus} ${evidence.reviewed ? styles.reviewed : styles.pending}`}
+                          className={`${styles.evidenceStatus} ${evidence.reviewed ? styles.statusReviewed : styles.statusPending}`}
                         >
                           {evidence.reviewed ? (
                             <>
@@ -677,29 +728,34 @@ export default function CaseDetails() {
                             className={styles.downloadLink}
                             download
                           >
-                            Download
+                            <Download className={styles.iconSmall} /> Download
                           </a>
                         )}
                       </div>
                       <p className={styles.evidenceDescription}>{evidence.description || "No description"}</p>
                       {!evidence.reviewed && (
                         <button onClick={() => handleMarkEvidenceReviewed(evidence.id)} className={styles.reviewButton}>
-                          Mark as Reviewed
+                          <Check className={styles.iconSmall} /> Mark as Reviewed
                         </button>
                       )}
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className={styles.emptyState}>No evidence items added yet</p>
+                <div className={styles.emptyState}>
+                  <File className={styles.emptyStateIcon} />
+                  <p>No evidence items added yet</p>
+                </div>
               )}
             </div>
 
             {/* Case Notes & Communication Section */}
             <div className={styles.card}>
-              <h2>
-                <MessageSquare className={styles.icon} /> Notes & Communication
-              </h2>
+              <div className={styles.cardHeader}>
+                <h2 className={styles.cardTitle}>
+                  <MessageSquare className={styles.cardIcon} /> Notes & Communication
+                </h2>
+              </div>
 
               <div className={styles.tabsContainer}>
                 <div className={styles.tabs}>
@@ -726,7 +782,7 @@ export default function CaseDetails() {
                         className={styles.notesTextarea}
                         placeholder="Enter your private notes here..."
                       />
-                      <button onClick={handlePrivateNotesSubmit} className={styles.actionButton}>
+                      <button onClick={handlePrivateNotesSubmit} className={styles.primaryButton}>
                         Save Notes
                       </button>
                     </div>
@@ -748,7 +804,10 @@ export default function CaseDetails() {
                             </div>
                           ))
                         ) : (
-                          <p className={styles.emptyState}>No messages yet</p>
+                          <div className={styles.emptyState}>
+                            <MessageSquare className={styles.emptyStateIcon} />
+                            <p>No messages yet</p>
+                          </div>
                         )}
                       </div>
                       <div className={styles.messageInput}>
@@ -758,6 +817,7 @@ export default function CaseDetails() {
                           onChange={(e) => setNewMessage(e.target.value)}
                           placeholder="Type your message..."
                           className={styles.formInput}
+                          onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
                         />
                         <button onClick={handleSendMessage} className={styles.sendButton}>
                           <Send className={styles.iconSmall} />
@@ -778,9 +838,9 @@ export default function CaseDetails() {
           {notifications.map((notification) => (
             <motion.div
               key={notification.id}
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 50 }}
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 50 }}
               className={`${styles.notification} ${styles[notification.type]}`}
             >
               {notification.type === "success" ? (
@@ -796,10 +856,11 @@ export default function CaseDetails() {
 
       {/* Loading Overlay */}
       {isLoading && (
-        <div className={styles.loadingOverlay}>
+        <div className={styles.loaderOverlay}>
           <div className={styles.loader}></div>
         </div>
       )}
     </div>
   )
 }
+

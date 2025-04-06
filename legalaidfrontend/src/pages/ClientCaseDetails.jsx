@@ -13,6 +13,8 @@ import {
   Clock,
   Download,
   Send,
+  ArrowLeft,
+  Briefcase,
 } from "lucide-react"
 import axios from "axios"
 import styles from "./ClientCaseDetails.module.css"
@@ -30,6 +32,11 @@ export default function ClientCaseDetails() {
   const [evidenceList, setEvidenceList] = useState([])
   const [messages, setMessages] = useState([])
   const [newMessage, setNewMessage] = useState("")
+  const [theme, setTheme] = useState(localStorage.getItem("theme") || "light")
+
+  useEffect(() => {
+    document.body.className = theme === "dark" ? styles.darkTheme : ""
+  }, [theme])
 
   // Helper function for notifications
   const addNotification = (message, type = "success") => {
@@ -83,7 +90,7 @@ export default function ClientCaseDetails() {
       const response = await axios.post(
         `http://127.0.0.1:5000/api/client-case/${caseId}/messages`,
         { message: newMessage },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       )
       setMessages([...messages, response.data.message])
       setNewMessage("")
@@ -98,19 +105,37 @@ export default function ClientCaseDetails() {
   // Render loading state
   if (!caseData) {
     return (
-      <div className={styles.caseDetailsPage}>
-        <div className={styles.loader}></div>
+      <div className={`${styles.caseDetailsPage} ${theme === "dark" ? styles.darkTheme : ""}`}>
+        <div className={styles.loaderContainer}>
+          <div className={styles.loader}></div>
+          <p>Loading case details...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className={styles.caseDetailsPage}>
+    <div className={`${styles.caseDetailsPage} ${theme === "dark" ? styles.darkTheme : ""}`}>
       <header className={styles.header}>
-        <h1>Case: {caseData.title}</h1>
-        <button onClick={() => navigate("/client-dashboard")} className={styles.backButton}>
-          Back to Dashboard
-        </button>
+        <div className={styles.headerLeft}>
+          <button onClick={() => navigate("/client-dashboard")} className={styles.backButton}>
+            <ArrowLeft className={styles.buttonIcon} />
+            <span>Back to Dashboard</span>
+          </button>
+          <h1>
+            <Briefcase className={styles.headerIcon} />
+            Case: {caseData.title}
+          </h1>
+        </div>
+        <div className={styles.headerRight}>
+          <div className={styles.caseStatus}>
+            <span
+              className={`${styles.statusBadge} ${styles[`status${caseData.status.charAt(0).toUpperCase() + caseData.status.slice(1)}`]}`}
+            >
+              {caseData.status}
+            </span>
+          </div>
+        </div>
       </header>
 
       <main className={styles.main}>
@@ -119,64 +144,81 @@ export default function ClientCaseDetails() {
           <div className={styles.mainColumn}>
             {/* Case Overview Section */}
             <div className={styles.card}>
-              <h2>
-                <FileText className={styles.icon} /> Case Overview
-              </h2>
+              <div className={styles.cardHeader}>
+                <h2 className={styles.cardTitle}>
+                  <FileText className={styles.cardIcon} /> Case Overview
+                </h2>
+              </div>
+
               <div className={styles.caseInfo}>
                 <div className={styles.infoGrid}>
-                  <div>
-                    <p>
-                      <strong>Case ID:</strong> #{caseData.id}
-                    </p>
-                    <p>
-                      <strong>Title:</strong> {caseData.title}
-                    </p>
-                    <p>
-                      <strong>Case Type:</strong> {caseData.case_type}
-                    </p>
-                    <p>
-                      <strong>Filing Date:</strong>{" "}
-                      {caseData.filing_date
-                        ? new Date(caseData.filing_date).toLocaleDateString()
-                        : "N/A"}
-                    </p>
+                  <div className={styles.infoSection}>
+                    <h3 className={styles.infoSectionTitle}>Case Information</h3>
+                    <div className={styles.infoItem}>
+                      <span className={styles.infoLabel}>Case ID:</span>
+                      <span className={styles.infoValue}>#{caseData.id}</span>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <span className={styles.infoLabel}>Title:</span>
+                      <span className={styles.infoValue}>{caseData.title}</span>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <span className={styles.infoLabel}>Case Type:</span>
+                      <span className={styles.infoValue}>{caseData.case_type}</span>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <span className={styles.infoLabel}>Filing Date:</span>
+                      <span className={styles.infoValue}>
+                        {caseData.filing_date ? new Date(caseData.filing_date).toLocaleDateString() : "N/A"}
+                      </span>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <span className={styles.infoLabel}>Jurisdiction:</span>
+                      <span className={styles.infoValue}>{caseData.jurisdiction}</span>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <span className={styles.infoLabel}>Priority:</span>
+                      <span className={`${styles.priorityBadge} ${styles[`priority${caseData.priority}`]}`}>
+                        {caseData.priority}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <p>
-                      <strong>Lawyer:</strong> {caseData.lawyer_name}
-                    </p>
-                    <p>
-                      <strong>Contact:</strong> {caseData.lawyer_contact_info || "N/A"}
-                    </p>
-                    <p>
-                      <strong>Plaintiff:</strong> {caseData.plaintiff_name || "N/A"}
-                    </p>
-                    <p>
-                      <strong>Opposing Party:</strong> {caseData.defendant_name}
-                    </p>
-                  </div>
-                  <div>
-                    <p>
-                      <strong>Jurisdiction:</strong> {caseData.jurisdiction}
-                    </p>
-                    <p>
-                      <strong>Priority:</strong> {caseData.priority}
-                    </p>
-                    <p>
-                      <strong>Description:</strong>{" "}
-                      {caseData.description || "No description provided"}
-                    </p>
+
+                  <div className={styles.infoSection}>
+                    <h3 className={styles.infoSectionTitle}>Legal Representation</h3>
+                    <div className={styles.infoItem}>
+                      <span className={styles.infoLabel}>Lawyer:</span>
+                      <span className={styles.infoValue}>{caseData.lawyer_name}</span>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <span className={styles.infoLabel}>Contact:</span>
+                      <span className={styles.infoValue}>{caseData.lawyer_contact_info || "N/A"}</span>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <span className={styles.infoLabel}>Plaintiff:</span>
+                      <span className={styles.infoValue}>{caseData.plaintiff_name || "N/A"}</span>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <span className={styles.infoLabel}>Opposing Party:</span>
+                      <span className={styles.infoValue}>{caseData.defendant_name}</span>
+                    </div>
                   </div>
                 </div>
-                <div className={styles.statusSection}>
-                  <div className={styles.statusInfo}>
-                    <div className={`${styles.statusBadge} ${styles[caseData.status]}`}>{caseData.status}</div>
-                    <div className={styles.hearingDate}>
-                      <strong>Next Hearing:</strong>{" "}
+
+                <div className={styles.infoSection}>
+                  <h3 className={styles.infoSectionTitle}>Description</h3>
+                  <p className={styles.caseDescription}>{caseData.description || "No description provided"}</p>
+                </div>
+
+                <div className={styles.hearingInfo}>
+                  <div className={styles.hearingDate}>
+                    <Calendar className={styles.iconSmall} />
+                    <span>Next Hearing:</span>
+                    <strong>
                       {caseData.next_hearing_date
                         ? new Date(caseData.next_hearing_date).toLocaleDateString()
                         : "Not scheduled"}
-                    </div>
+                    </strong>
                   </div>
                 </div>
               </div>
@@ -184,9 +226,12 @@ export default function ClientCaseDetails() {
 
             {/* Case Timeline Section */}
             <div className={styles.card}>
-              <h2>
-                <Calendar className={styles.icon} /> Case Timeline
-              </h2>
+              <div className={styles.cardHeader}>
+                <h2 className={styles.cardTitle}>
+                  <Calendar className={styles.cardIcon} /> Case Timeline
+                </h2>
+              </div>
+
               {timelineEvents.length > 0 ? (
                 <div className={styles.timelineContainer}>
                   {timelineEvents.map((event, index) => (
@@ -205,18 +250,24 @@ export default function ClientCaseDetails() {
                   ))}
                 </div>
               ) : (
-                <p className={styles.emptyState}>No timeline events recorded yet</p>
+                <div className={styles.emptyState}>
+                  <Calendar className={styles.emptyStateIcon} />
+                  <p>No timeline events recorded yet</p>
+                </div>
               )}
             </div>
 
             {/* Document Manager Section */}
             <div className={styles.card}>
-              <h2>
-                <File className={styles.icon} /> Documents
-              </h2>
+              <div className={styles.cardHeader}>
+                <h2 className={styles.cardTitle}>
+                  <File className={styles.cardIcon} /> Documents
+                </h2>
+              </div>
+
               {documents.length > 0 ? (
                 <div className={styles.documentList}>
-                  <h3>Case Documents</h3>
+                  <h3 className={styles.sectionTitle}>Case Documents</h3>
                   <div className={styles.documentGrid}>
                     {documents.map((doc) => (
                       <div key={doc.id} className={styles.documentCard}>
@@ -242,7 +293,10 @@ export default function ClientCaseDetails() {
                   </div>
                 </div>
               ) : (
-                <p className={styles.emptyState}>No documents uploaded yet</p>
+                <div className={styles.emptyState}>
+                  <File className={styles.emptyStateIcon} />
+                  <p>No documents uploaded yet</p>
+                </div>
               )}
             </div>
           </div>
@@ -251,16 +305,19 @@ export default function ClientCaseDetails() {
           <div className={styles.sideColumn}>
             {/* Evidence Manager Section */}
             <div className={styles.card}>
-              <h2>
-                <File className={styles.icon} /> Evidence
-              </h2>
+              <div className={styles.cardHeader}>
+                <h2 className={styles.cardTitle}>
+                  <File className={styles.cardIcon} /> Evidence
+                </h2>
+              </div>
+
               {evidenceList.length > 0 ? (
                 <div className={styles.evidenceList}>
-                  <h3>Reviewed Evidence</h3>
+                  <h3 className={styles.sectionTitle}>Reviewed Evidence</h3>
                   {evidenceList.map((evidence) => (
                     <div key={evidence.id} className={styles.evidenceItem}>
                       <div className={styles.evidenceHeader}>
-                        <div className={`${styles.evidenceStatus} ${styles.reviewed}`}>
+                        <div className={`${styles.evidenceStatus} ${styles.statusReviewed}`}>
                           <CheckCircle className={styles.iconSmall} /> Reviewed
                         </div>
                         {evidence.file_path && (
@@ -269,7 +326,7 @@ export default function ClientCaseDetails() {
                             className={styles.downloadLink}
                             download
                           >
-                            Download
+                            <Download className={styles.iconSmall} /> Download
                           </a>
                         )}
                       </div>
@@ -278,15 +335,21 @@ export default function ClientCaseDetails() {
                   ))}
                 </div>
               ) : (
-                <p className={styles.emptyState}>No reviewed evidence available</p>
+                <div className={styles.emptyState}>
+                  <File className={styles.emptyStateIcon} />
+                  <p>No reviewed evidence available</p>
+                </div>
               )}
             </div>
 
             {/* Communication Section */}
             <div className={styles.card}>
-              <h2>
-                <MessageSquare className={styles.icon} /> Messages
-              </h2>
+              <div className={styles.cardHeader}>
+                <h2 className={styles.cardTitle}>
+                  <MessageSquare className={styles.cardIcon} /> Messages
+                </h2>
+              </div>
+
               <div className={styles.messagesSection}>
                 <div className={styles.messageList}>
                   {messages.length > 0 ? (
@@ -298,13 +361,14 @@ export default function ClientCaseDetails() {
                         }`}
                       >
                         <p>{msg.message}</p>
-                        <span className={styles.messageTimestamp}>
-                          {new Date(msg.created_at).toLocaleString()}
-                        </span>
+                        <span className={styles.messageTimestamp}>{new Date(msg.created_at).toLocaleString()}</span>
                       </div>
                     ))
                   ) : (
-                    <p className={styles.emptyState}>No messages yet</p>
+                    <div className={styles.emptyState}>
+                      <MessageSquare className={styles.emptyStateIcon} />
+                      <p>No messages yet</p>
+                    </div>
                   )}
                 </div>
                 <div className={styles.messageInput}>
@@ -314,6 +378,7 @@ export default function ClientCaseDetails() {
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder="Type your message..."
                     className={styles.formInput}
+                    onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
                   />
                   <button onClick={handleSendMessage} className={styles.sendButton}>
                     <Send className={styles.iconSmall} />
@@ -331,9 +396,9 @@ export default function ClientCaseDetails() {
           {notifications.map((notification) => (
             <motion.div
               key={notification.id}
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 50 }}
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 50 }}
               className={`${styles.notification} ${styles[notification.type]}`}
             >
               {notification.type === "success" ? (
@@ -349,10 +414,11 @@ export default function ClientCaseDetails() {
 
       {/* Loading Overlay */}
       {isLoading && (
-        <div className={styles.loadingOverlay}>
+        <div className={styles.loaderOverlay}>
           <div className={styles.loader}></div>
         </div>
       )}
     </div>
   )
 }
+
