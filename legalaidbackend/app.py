@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
+from flask_socketio import SocketIO, emit, join_room, leave_room
 import pymysql
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
@@ -11,7 +12,11 @@ from werkzeug.utils import secure_filename
 import pytz  # For timezone handling
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = "your-secret-key-here"  # Replace with a secure key in production
 CORS(app, resources={r"/api/*": {"origins": "http://localhost:5173"}})
+
+# Initialize Flask-SocketIO
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Configuration for file uploads
 UPLOAD_FOLDER = 'uploads'
@@ -394,6 +399,36 @@ def lawyer_cases():
             conn.close()
         return jsonify({'cases': cases}), 200
 
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/lawyer-client-cases/<int:client_id>', methods=['GET', 'OPTIONS'])
+def lawyer_client_cases(client_id):
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
+
+    try:
+        lawyer_id = decoded['lawyer_id']
+        conn = pymysql.connect(**db_config)
+        try:
+            with conn.cursor() as cursor:
+                sql = """
+                    SELECT c.id, c.title, c.case_type, c.description, c.status, c.created_at, c.priority,
+                           c.filing_date, c.jurisdiction, c.plaintiff_name, c.defendant_name
+                    FROM cases c
+                    WHERE c.lawyer_id = %s AND c.client_id = %s
+                    ORDER BY c.created_at DESC
+                """
+                cursor.execute(sql, (lawyer_id, client_id))
+                cases = cursor.fetchall()
+        finally:
+            conn.close()
+        return jsonify({'cases': cases}), 200
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
@@ -1248,48 +1283,77 @@ def update_private_notes(case_id):
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-@app.route('/api/case/<int:case_id>/messages', methods=['POST'])
-def send_message(case_id):
+@app.route('/api/case/<int:case_id>/messages', methods=['GET', 'POST', 'OPTIONS'])
+def case_messages(case_id):
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
     decoded, error_response, status = validate_token()
     if error_response:
         return error_response, status
 
+    conn = pymysql.connect(**db_config)
     try:
-        lawyer_id = decoded['lawyer_id']
-        data = request.json
-        if not data or 'message' not in data:
-            return jsonify({'error': 'Message is required'}), 400
+        with conn.cursor() as cursor:
+            if request.method == 'GET':
+                # Fetch messages for the case
+                sql = """
+                    SELECT cm.id, cm.sender, cm.message, cm.created_at
+                    FROM case_messages cm
+                    WHERE cm.case_id = %s
+                    ORDER BY cm.created_at ASC
+                """
+                cursor.execute(sql, (case_id,))
+                messages = cursor.fetchall()
+                return jsonify({'messages': messages}), 200
 
-        message = data['message']
+            elif request.method == 'POST':
+                # Add a new message to the case
+                data = request.get_json()
+                message = data.get('message')
+                sender = 'lawyer' if 'lawyer_id' in decoded else 'client'
 
-        conn = pymysql.connect(**db_config)
-        try:
-            with conn.cursor() as cursor:
-                # Verify the case belongs to the lawyer
-                cursor.execute("SELECT lawyer_id FROM cases WHERE id = %s", (case_id,))
-                case = cursor.fetchone()
-                if not case or case['lawyer_id'] != lawyer_id:
-                    return jsonify({'error': 'Case not found or unauthorized'}), 403
+                if not message:
+                    return jsonify({'error': 'Message content is required'}), 400
 
-                # Insert message
-                cursor.execute(
-                    "INSERT INTO case_messages (case_id, sender, message) VALUES (%s, %s, %s)",
-                    (case_id, 'lawyer', message)
-                )
+                # Verify the case belongs to the user
+                if 'lawyer_id' in decoded:
+                    cursor.execute("SELECT lawyer_id FROM cases WHERE id = %s", (case_id,))
+                    case = cursor.fetchone()
+                    if not case or case['lawyer_id'] != decoded['lawyer_id']:
+                        return jsonify({'error': 'Case not found or unauthorized'}), 403
+                else:
+                    cursor.execute("SELECT client_id FROM cases WHERE id = %s", (case_id,))
+                    case = cursor.fetchone()
+                    if not case or case['client_id'] != decoded['client_id']:
+                        return jsonify({'error': 'Case not found or unauthorized'}), 403
+
+                sql = """
+                    INSERT INTO case_messages (case_id, sender, message)
+                    VALUES (%s, %s, %s)
+                """
+                cursor.execute(sql, (case_id, sender, message))
                 conn.commit()
 
-                # Fetch the newly added message
-                cursor.execute(
-                    "SELECT id, sender, message, created_at FROM case_messages WHERE id = LAST_INSERT_ID()"
-                )
+                # Fetch the newly created message
+                sql = """
+                    SELECT cm.id, cm.sender, cm.message, cm.created_at
+                    FROM case_messages cm
+                    WHERE cm.id = LAST_INSERT_ID()
+                """
+                cursor.execute(sql)
                 new_message = cursor.fetchone()
-        finally:
-            conn.close()
-        return jsonify({'message': new_message, 'message': 'Message sent successfully'}), 201
 
+                # Emit the new message to the WebSocket room
+                room = f"case_{case_id}"
+                socketio.emit('new_message', new_message, room=room)
+
+                return jsonify({'message': new_message}), 201
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
+    finally:
+        conn.close()
 
 @app.route('/api/lawyer-clients', methods=['GET', 'OPTIONS'])
 def lawyer_clients():
@@ -1415,49 +1479,6 @@ def get_client_case(case_id):
             'evidence': evidence,
             'messages': messages
         }), 200
-
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        return jsonify({'error': f'Server error: {str(e)}'}), 500
-
-@app.route('/api/client-case/<int:case_id>/messages', methods=['POST'])
-def send_client_message(case_id):
-    decoded, error_response, status = validate_token()
-    if error_response:
-        return error_response, status
-
-    try:
-        client_id = decoded['client_id']
-        data = request.json
-        if not data or 'message' not in data:
-            return jsonify({'error': 'Message is required'}), 400
-
-        message = data['message']
-
-        conn = pymysql.connect(**db_config)
-        try:
-            with conn.cursor() as cursor:
-                # Verify the case belongs to the client
-                cursor.execute("SELECT client_id FROM cases WHERE id = %s", (case_id,))
-                case = cursor.fetchone()
-                if not case or case['client_id'] != client_id:
-                    return jsonify({'error': 'Case not found or unauthorized'}), 403
-
-                # Insert message
-                cursor.execute(
-                    "INSERT INTO case_messages (case_id, sender, message) VALUES (%s, %s, %s)",
-                    (case_id, 'client', message)
-                )
-                conn.commit()
-
-                # Fetch the newly added message
-                cursor.execute(
-                    "SELECT id, sender, message, created_at FROM case_messages WHERE id = LAST_INSERT_ID()"
-                )
-                new_message = cursor.fetchone()
-        finally:
-            conn.close()
-        return jsonify({'message': new_message, 'message': 'Message sent successfully'}), 201
 
     except Exception as e:
         print(f"Error: {str(e)}")
@@ -1656,5 +1677,30 @@ def download_template(filename):
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
+# WebSocket Events
+@socketio.on('connect')
+def handle_connect():
+    print('Client connected')
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    print('Client disconnected')
+
+@socketio.on('join')
+def on_join(data):
+    case_id = data['case_id']
+    room = f"case_{case_id}"
+    join_room(room)
+    print(f'Client joined room: {room}')
+    emit('status', {'message': f'Joined room for case {case_id}'}, room=room)
+
+@socketio.on('leave')
+def on_leave(data):
+    case_id = data['case_id']
+    room = f"case_{case_id}"
+    leave_room(room)
+    print(f'Client left room: {room}')
+    emit('status', {'message': f'Left room for case {case_id}'}, room=room)
+
 if __name__ == '__main__':
-    app.run(debug=True, host='127.0.0.1', port=5000)
+    socketio.run(app, debug=True, host='127.0.0.1', port=5000)

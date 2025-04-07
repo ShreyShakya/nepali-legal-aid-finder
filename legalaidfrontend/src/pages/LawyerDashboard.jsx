@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect } from "react";
 import {
   Scale,
   Sun,
@@ -16,32 +16,36 @@ import {
   BarChart2,
   ChevronRight,
   Briefcase,
-  MessageCircle, // Add MessageCircle icon for the chat button
-} from "lucide-react"
-import axios from "axios"
-import { useNavigate } from "react-router-dom"
-import { motion, AnimatePresence } from "framer-motion"
-import { Tooltip } from "react-tooltip"
-import styles from "./LawyerDashboard.module.css"
+  MessageCircle,
+} from "lucide-react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { Tooltip } from "react-tooltip";
+import styles from "./LawyerDashboard.module.css";
+import io from "socket.io-client"; // Import Socket.IO client
+
+// Initialize Socket.IO client
+const socket = io("http://127.0.0.1:5000");
 
 export default function LawyerDashboard() {
-  const [lawyer, setLawyer] = useState(null)
-  const [cases, setCases] = useState([])
-  const [appointments, setAppointments] = useState([])
-  const [clients, setClients] = useState([])
-  const [notifications, setNotifications] = useState([])
-  const [isEditingProfile, setIsEditingProfile] = useState(false)
-  const [formData, setFormData] = useState({})
-  const [settingsFormData, setSettingsFormData] = useState({})
-  const [profilePictureFile, setProfilePictureFile] = useState(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [theme, setTheme] = useState(localStorage.getItem("theme") || "light")
-  const [dialog, setDialog] = useState({ isOpen: false, message: "", onConfirm: null })
-  const [selectedCase, setSelectedCase] = useState(null)
-  const [selectedAppointment, setSelectedAppointment] = useState(null)
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState("dashboard")
-  const [isCreatingCase, setIsCreatingCase] = useState(false)
+  const [lawyer, setLawyer] = useState(null);
+  const [cases, setCases] = useState([]);
+  const [appointments, setAppointments] = useState([]);
+  const [clients, setClients] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [formData, setFormData] = useState({});
+  const [settingsFormData, setSettingsFormData] = useState({});
+  const [profilePictureFile, setProfilePictureFile] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
+  const [dialog, setDialog] = useState({ isOpen: false, message: "", onConfirm: null });
+  const [selectedCase, setSelectedCase] = useState(null);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [isCreatingCase, setIsCreatingCase] = useState(false);
   const [newCaseData, setNewCaseData] = useState({
     client_id: "",
     title: "",
@@ -53,201 +57,295 @@ export default function LawyerDashboard() {
     plaintiff_name: "",
     defendant_name: "",
     priority: "Medium",
-  })
+  });
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
     newPassword: "",
     confirmNewPassword: "",
-  })
-  const [passwordError, setPasswordError] = useState("")
-  const [isChatOpen, setIsChatOpen] = useState(false) // New state for chat modal
-  const [chatMessages, setChatMessages] = useState([]) // Placeholder for chat messages
-  const [newMessage, setNewMessage] = useState("") // State for new message input
+  });
+  const [passwordError, setPasswordError] = useState("");
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [selectedClient, setSelectedClient] = useState(null); // For selecting a client to chat with
+  const [clientCases, setClientCases] = useState([]); // Store cases for the selected client
+  const [selectedCaseForChat, setSelectedCaseForChat] = useState(null); // Store the selected case for chat
 
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   useEffect(() => {
-    document.body.className = theme === "dark" ? styles.darkTheme : ""
-    localStorage.setItem("theme", theme)
-  }, [theme])
+    document.body.className = theme === "dark" ? styles.darkTheme : "";
+    localStorage.setItem("theme", theme);
+  }, [theme]);
 
-  const toggleTheme = () => setTheme(theme === "light" ? "dark" : "light")
-  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
-  const toggleChat = () => setIsChatOpen(!isChatOpen) // Function to toggle chat modal
+  const toggleTheme = () => setTheme(theme === "light" ? "dark" : "light");
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+  const toggleChat = () => {
+    setIsChatOpen(!isChatOpen);
+    if (isChatOpen) {
+      // Leave the room when closing the chat
+      if (selectedCaseForChat) {
+        socket.emit("leave", { case_id: selectedCaseForChat.id });
+      }
+      setSelectedClient(null);
+      setClientCases([]);
+      setSelectedCaseForChat(null);
+      setChatMessages([]);
+    }
+  };
 
   const addNotification = (message, type = "success") => {
-    const id = Date.now()
-    setNotifications((prev) => [...prev, { id, message, type }])
-    setTimeout(() => setNotifications((prev) => prev.filter((n) => n.id !== id)), 3000)
-  }
+    const id = Date.now();
+    setNotifications((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => setNotifications((prev) => prev.filter((n) => n.id !== id)), 3000);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
-      const token = localStorage.getItem("token")
+      const token = localStorage.getItem("token");
       if (!token) {
-        addNotification("Please log in to access the dashboard", "error")
-        navigate("/lawyer-login")
-        return
+        addNotification("Please log in to access the dashboard", "error");
+        navigate("/lawyer-login");
+        return;
       }
 
-      setIsLoading(true)
+      setIsLoading(true);
       try {
         const profileResponse = await axios.get("http://127.0.0.1:5000/api/lawyer-profile", {
           headers: { Authorization: `Bearer ${token}` },
-        })
-        setLawyer(profileResponse.data.lawyer)
-        setFormData(profileResponse.data.lawyer)
+        });
+        setLawyer(profileResponse.data.lawyer);
+        setFormData(profileResponse.data.lawyer);
         setSettingsFormData({
           email_notifications: profileResponse.data.lawyer.email_notifications,
           preferred_contact: profileResponse.data.lawyer.preferred_contact,
-        })
+        });
 
         const casesResponse = await axios.get("http://127.0.0.1:5000/api/lawyer-cases", {
           headers: { Authorization: `Bearer ${token}` },
-        })
-        setCases(casesResponse.data.cases)
+        });
+        setCases(casesResponse.data.cases);
 
         try {
           const appointmentsResponse = await axios.get(
             `http://127.0.0.1:5000/api/lawyer-appointments/${profileResponse.data.lawyer.id}`,
             { headers: { Authorization: `Bearer ${token}` } },
-          )
-          setAppointments(appointmentsResponse.data.appointments || [])
+          );
+          setAppointments(appointmentsResponse.data.appointments || []);
         } catch (apptErr) {
-          addNotification("Failed to load appointments. This feature may not be available yet.", "error")
-          setAppointments([])
+          addNotification("Failed to load appointments. This feature may not be available yet.", "error");
+          setAppointments([]);
         }
 
         try {
           const clientsResponse = await axios.get("http://127.0.0.1:5000/api/lawyer-clients", {
             headers: { Authorization: `Bearer ${token}` },
-          })
-          setClients(clientsResponse.data.clients || [])
+          });
+          setClients(clientsResponse.data.clients || []);
         } catch (clientErr) {
-          addNotification("Failed to load clients. You may not be able to create cases.", "error")
-          setClients([])
+          addNotification("Failed to load clients. You may not be able to create cases.", "error");
+          setClients([]);
         }
       } catch (err) {
-        console.log("Error:", err.response?.data?.error || err.message)
-        addNotification(err.response?.data?.error || "Failed to load data", "error")
-        localStorage.removeItem("token")
-        localStorage.removeItem("lawyer")
-        navigate("/lawyer-login")
+        console.log("Error:", err.response?.data?.error || err.message);
+        addNotification(err.response?.data?.error || "Failed to load data", "error");
+        localStorage.removeItem("token");
+        localStorage.removeItem("lawyer");
+        navigate("/lawyer-login");
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
+    };
+    fetchData();
+  }, [navigate]);
+
+  // Handle Socket.IO events
+  useEffect(() => {
+    socket.on("connect", () => {
+      console.log("Connected to Socket.IO server");
+    });
+
+    socket.on("new_message", (message) => {
+      setChatMessages((prev) => [...prev, message]);
+    });
+
+    socket.on("status", (data) => {
+      console.log(data.message);
+    });
+
+    return () => {
+      socket.off("connect");
+      socket.off("new_message");
+      socket.off("status");
+    };
+  }, []);
+
+  const handleClientSelect = async (client) => {
+    setSelectedClient(client);
+    setSelectedCaseForChat(null);
+    setChatMessages([]);
+    const token = localStorage.getItem("token");
+    try {
+      const response = await axios.get(
+        `http://127.0.0.1:5000/api/lawyer-client-cases/${client.id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setClientCases(response.data.cases);
+    } catch (err) {
+      addNotification(err.response?.data?.error || "Failed to load client cases", "error");
+      setClientCases([]);
     }
-    fetchData()
-  }, [navigate])
+  };
+
+  const handleCaseSelectForChat = async (caseItem) => {
+    setSelectedCaseForChat(caseItem);
+    const token = localStorage.getItem("token");
+
+    // Join the WebSocket room for this case
+    socket.emit("join", { case_id: caseItem.id });
+
+    // Fetch existing messages for the case
+    try {
+      const response = await axios.get(
+        `http://127.0.0.1:5000/api/case/${caseItem.id}/messages`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setChatMessages(response.data.messages);
+    } catch (err) {
+      addNotification(err.response?.data?.error || "Failed to load messages", "error");
+      setChatMessages([]);
+    }
+  };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !selectedCaseForChat) return;
+
+    const token = localStorage.getItem("token");
+    try {
+      const response = await axios.post(
+        `http://127.0.0.1:5000/api/case/${selectedCaseForChat.id}/messages`,
+        { message: newMessage },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setNewMessage("");
+    } catch (err) {
+      addNotification(err.response?.data?.error || "Failed to send message", "error");
+    }
+  };
 
   const handleLogout = () => {
     setDialog({
       isOpen: true,
       message: "Are you sure you want to logout?",
       onConfirm: () => {
-        localStorage.removeItem("token")
-        localStorage.removeItem("lawyer")
-        addNotification("Logged out successfully", "success")
-        navigate("/lawyer-login")
+        localStorage.removeItem("token");
+        localStorage.removeItem("lawyer");
+        addNotification("Logged out successfully", "success");
+        navigate("/lawyer-login");
       },
-    })
-  }
+    });
+  };
 
   const handleProfileChange = (e) => {
-    const { name, value, type, checked } = e.target
-    setFormData({ ...formData, [name]: type === "checkbox" ? checked : value })
-  }
+    const { name, value, type, checked } = e.target;
+    setFormData({ ...formData, [name]: type === "checkbox" ? checked : value });
+  };
 
   const handleSettingsChange = (e) => {
-    const { name, value, type, checked } = e.target
-    setSettingsFormData({ ...settingsFormData, [name]: type === "checkbox" ? checked : value })
-  }
+    const { name, value, type, checked } = e.target;
+    setSettingsFormData({ ...settingsFormData, [name]: type === "checkbox" ? checked : value });
+  };
 
   const handleProfilePictureChange = (e) => {
-    const file = e.target.files[0]
+    const file = e.target.files[0];
     if (file) {
-      setProfilePictureFile(file)
-      const reader = new FileReader()
-      reader.onloadend = () => setFormData({ ...formData, profile_picture: reader.result })
-      reader.readAsDataURL(file)
+      setProfilePictureFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setFormData({ ...formData, profile_picture: reader.result });
+      reader.readAsDataURL(file);
     }
-  }
+  };
 
   const handleProfileSave = async (e) => {
-    e.preventDefault()
-    const token = localStorage.getItem("token")
-    setIsLoading(true)
+    e.preventDefault();
+    const token = localStorage.getItem("token");
+    setIsLoading(true);
     try {
-      const formDataToSend = new FormData()
+      const formDataToSend = new FormData();
       for (const key in formData) {
-        if (key !== "profile_picture") formDataToSend.append(key, formData[key])
+        if (key !== "profile_picture") formDataToSend.append(key, formData[key]);
       }
-      if (profilePictureFile) formDataToSend.append("profile_picture", profilePictureFile)
+      if (profilePictureFile) formDataToSend.append("profile_picture", profilePictureFile);
 
       const response = await axios.put("http://127.0.0.1:5000/api/lawyer-profile", formDataToSend, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
         },
-      })
-      setLawyer(response.data.lawyer)
-      localStorage.setItem("lawyer", JSON.stringify(response.data.lawyer))
-      setIsEditingProfile(false)
-      setProfilePictureFile(null)
-      addNotification(response.data.message || "Profile updated successfully", "success")
+      });
+      setLawyer(response.data.lawyer);
+      localStorage.setItem("lawyer", JSON.stringify(response.data.lawyer));
+      setIsEditingProfile(false);
+      setProfilePictureFile(null);
+      addNotification(response.data.message || "Profile updated successfully", "success");
     } catch (err) {
-      addNotification(err.response?.data?.error || "Failed to update profile", "error")
+      addNotification(err.response?.data?.error || "Failed to update profile", "error");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleSettingsSave = async (e) => {
-    e.preventDefault()
-    const token = localStorage.getItem("token")
-    setIsLoading(true)
+    e.preventDefault();
+    const token = localStorage.getItem("token");
+    setIsLoading(true);
     try {
       const response = await axios.put("http://127.0.0.1:5000/api/lawyer-profile", settingsFormData, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      })
-      setLawyer(response.data.lawyer)
-      localStorage.setItem("lawyer", JSON.stringify(response.data.lawyer))
-      addNotification(response.data.message || "Settings updated successfully", "success")
+      });
+      setLawyer(response.data.lawyer);
+      localStorage.setItem("lawyer", JSON.stringify(response.data.lawyer));
+      addNotification(response.data.message || "Settings updated successfully", "success");
     } catch (err) {
-      addNotification(err.response?.data?.error || "Failed to update settings", "error")
+      addNotification(err.response?.data?.error || "Failed to update settings", "error");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handlePasswordChange = (e) => {
-    const { name, value } = e.target
-    setPasswordData({ ...passwordData, [name]: value })
-    setPasswordError("")
-  }
+    const { name, value } = e.target;
+    setPasswordData({ ...passwordData, [name]: value });
+    setPasswordError("");
+  };
 
   const handlePasswordUpdate = async (e) => {
-    e.preventDefault()
-    const token = localStorage.getItem("token")
+    e.preventDefault();
+    const token = localStorage.getItem("token");
 
     if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmNewPassword) {
-      setPasswordError("All fields are required")
-      return
+      setPasswordError("All fields are required");
+      return;
     }
 
     if (passwordData.newPassword !== passwordData.confirmNewPassword) {
-      setPasswordError("New password and confirmation do not match")
-      return
+      setPasswordError("New password and confirmation do not match");
+      return;
     }
 
     if (passwordData.newPassword.length < 8) {
-      setPasswordError("New password must be at least 8 characters long")
-      return
+      setPasswordError("New password must be at least 8 characters long");
+      return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       const response = await axios.put(
         "http://127.0.0.1:5000/api/lawyer/change-password",
@@ -258,101 +356,101 @@ export default function LawyerDashboard() {
         {
           headers: { Authorization: `Bearer ${token}` },
         },
-      )
+      );
 
       setPasswordData({
         currentPassword: "",
         newPassword: "",
         confirmNewPassword: "",
-      })
-      setPasswordError("")
-      addNotification(response.data.message || "Password updated successfully", "success")
+      });
+      setPasswordError("");
+      addNotification(response.data.message || "Password updated successfully", "success");
 
       setDialog({
         isOpen: true,
         message: "Password changed successfully. You will be logged out. Please log in again with your new password.",
         onConfirm: () => {
-          localStorage.removeItem("token")
-          localStorage.removeItem("lawyer")
-          navigate("/lawyer-login")
+          localStorage.removeItem("token");
+          localStorage.removeItem("lawyer");
+          navigate("/lawyer-login");
         },
-      })
+      });
     } catch (err) {
-      setPasswordError(err.response?.data?.error || "Failed to update password")
-      addNotification(err.response?.data?.error || "Failed to update password", "error")
+      setPasswordError(err.response?.data?.error || "Failed to update password");
+      addNotification(err.response?.data?.error || "Failed to update password", "error");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleCaseDetails = (caseItem) => {
-    navigate(`/case-details/${caseItem.id}`)
-  }
+    navigate(`/case-details/${caseItem.id}`);
+  };
 
   const handleAppointmentDetails = (appointment) => {
-    setSelectedAppointment(appointment)
-  }
+    setSelectedAppointment(appointment);
+  };
 
   const handleStatusChange = async (caseId, newStatus) => {
-    const token = localStorage.getItem("token")
-    setIsLoading(true)
+    const token = localStorage.getItem("token");
+    setIsLoading(true);
     try {
       const response = await axios.put(
         `http://127.0.0.1:5000/api/lawyer-case/${caseId}/update-status`,
         { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } },
-      )
+      );
       const casesResponse = await axios.get("http://127.0.0.1:5000/api/lawyer-cases", {
         headers: { Authorization: `Bearer ${token}` },
-      })
-      setCases(casesResponse.data.cases)
-      addNotification(response.data.message || "Case status updated successfully", "success")
+      });
+      setCases(casesResponse.data.cases);
+      addNotification(response.data.message || "Case status updated successfully", "success");
     } catch (err) {
-      addNotification(err.response?.data?.error || "Failed to update case status", "error")
+      addNotification(err.response?.data?.error || "Failed to update case status", "error");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleUpdateAppointmentStatus = async (appointmentId, newStatus) => {
-    const token = localStorage.getItem("token")
-    setIsLoading(true)
+    const token = localStorage.getItem("token");
+    setIsLoading(true);
     try {
       const response = await axios.put(
         `http://127.0.0.1:5000/api/update-appointment-status/${appointmentId}`,
         { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } },
-      )
+      );
       const appointmentsResponse = await axios.get(`http://127.0.0.1:5000/api/lawyer-appointments/${lawyer.id}`, {
         headers: { Authorization: `Bearer ${token}` },
-      })
-      setAppointments(appointmentsResponse.data.appointments || [])
-      addNotification(response.data.message || `Appointment ${newStatus} successfully`, "success")
+      });
+      setAppointments(appointmentsResponse.data.appointments || []);
+      addNotification(response.data.message || `Appointment ${newStatus} successfully`, "success");
     } catch (err) {
-      addNotification(err.response?.data?.error || `Failed to ${newStatus} appointment`, "error")
+      addNotification(err.response?.data?.error || `Failed to ${newStatus} appointment`, "error");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleNewCaseChange = (e) => {
-    const { name, value } = e.target
-    setNewCaseData({ ...newCaseData, [name]: value })
-  }
+    const { name, value } = e.target;
+    setNewCaseData({ ...newCaseData, [name]: value });
+  };
 
   const handleCreateCase = async (e) => {
-    e.preventDefault()
-    const token = localStorage.getItem("token")
-    setIsLoading(true)
+    e.preventDefault();
+    const token = localStorage.getItem("token");
+    setIsLoading(true);
     try {
       const response = await axios.post("http://127.0.0.1:5000/api/create-case", newCaseData, {
         headers: { Authorization: `Bearer ${token}` },
-      })
+      });
       const casesResponse = await axios.get("http://127.0.0.1:5000/api/lawyer-cases", {
         headers: { Authorization: `Bearer ${token}` },
-      })
-      setCases(casesResponse.data.cases)
-      setIsCreatingCase(false)
+      });
+      setCases(casesResponse.data.cases);
+      setIsCreatingCase(false);
       setNewCaseData({
         client_id: "",
         title: "",
@@ -364,43 +462,26 @@ export default function LawyerDashboard() {
         plaintiff_name: "",
         defendant_name: "",
         priority: "Medium",
-      })
-      addNotification(response.data.message || "Case created successfully", "success")
+      });
+      addNotification(response.data.message || "Case created successfully", "success");
     } catch (err) {
-      addNotification(err.response?.data?.error || "Failed to create case", "error")
+      addNotification(err.response?.data?.error || "Failed to create case", "error");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
-  // Handle sending a new message (placeholder for now)
-  const handleSendMessage = (e) => {
-    e.preventDefault()
-    if (!newMessage.trim()) return
+  const totalCases = cases.length;
+  const pendingCases = cases.filter((c) => c.status === "pending").length;
+  const highPriorityCases = cases.filter((c) => c.priority === "High").length;
+  const completedCases = cases.filter((c) => c.status === "completed").length;
 
-    const message = {
-      id: Date.now(),
-      text: newMessage,
-      sender: "lawyer", // For now, assume the lawyer is sending the message
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    }
-
-    setChatMessages([...chatMessages, message])
-    setNewMessage("")
-    // In a real app, you'd send this message to the backend and update the chat
-  }
-
-  const totalCases = cases.length
-  const pendingCases = cases.filter((c) => c.status === "pending").length
-  const highPriorityCases = cases.filter((c) => c.priority === "High").length
-  const completedCases = cases.filter((c) => c.status === "completed").length
-
-  const recentCases = cases.slice(0, 3)
+  const recentCases = cases.slice(0, 3);
 
   const upcomingAppointments = appointments
     .filter((appt) => new Date(appt.appointment_date) >= new Date() && appt.status !== "cancelled")
     .sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date))
-    .slice(0, 3)
+    .slice(0, 3);
 
   if (!lawyer) {
     return (
@@ -410,7 +491,7 @@ export default function LawyerDashboard() {
           <p>Loading your dashboard...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -420,7 +501,7 @@ export default function LawyerDashboard() {
       <Tooltip id="edit-tooltip" />
       <Tooltip id="details-tooltip" />
       <Tooltip id="create-case-tooltip" />
-      <Tooltip id="chat-tooltip" /> {/* Tooltip for chat button */}
+      <Tooltip id="chat-tooltip" />
 
       <div className={styles.layout}>
         {/* Sidebar */}
@@ -458,8 +539,8 @@ export default function LawyerDashboard() {
           <nav className={styles.sidebarNav}>
             <button
               onClick={() => {
-                setActiveTab("dashboard")
-                setIsSidebarOpen(false)
+                setActiveTab("dashboard");
+                setIsSidebarOpen(false);
               }}
               className={`${styles.navLink} ${activeTab === "dashboard" ? styles.activeNavLink : ""}`}
             >
@@ -469,8 +550,8 @@ export default function LawyerDashboard() {
             </button>
             <button
               onClick={() => {
-                setActiveTab("cases")
-                setIsSidebarOpen(false)
+                setActiveTab("cases");
+                setIsSidebarOpen(false);
               }}
               className={`${styles.navLink} ${activeTab === "cases" ? styles.activeNavLink : ""}`}
             >
@@ -480,8 +561,8 @@ export default function LawyerDashboard() {
             </button>
             <button
               onClick={() => {
-                setActiveTab("appointments")
-                setIsSidebarOpen(false)
+                setActiveTab("appointments");
+                setIsSidebarOpen(false);
               }}
               className={`${styles.navLink} ${activeTab === "appointments" ? styles.activeNavLink : ""}`}
             >
@@ -491,8 +572,8 @@ export default function LawyerDashboard() {
             </button>
             <button
               onClick={() => {
-                setActiveTab("profile")
-                setIsSidebarOpen(false)
+                setActiveTab("profile");
+                setIsSidebarOpen(false);
               }}
               className={`${styles.navLink} ${activeTab === "profile" ? styles.activeNavLink : ""}`}
             >
@@ -502,8 +583,8 @@ export default function LawyerDashboard() {
             </button>
             <button
               onClick={() => {
-                setActiveTab("settings")
-                setIsSidebarOpen(false)
+                setActiveTab("settings");
+                setIsSidebarOpen(false);
               }}
               className={`${styles.navLink} ${activeTab === "settings" ? styles.activeNavLink : ""}`}
             >
@@ -678,8 +759,8 @@ export default function LawyerDashboard() {
                       <p>No cases assigned yet.</p>
                       <button
                         onClick={() => {
-                          setActiveTab("cases")
-                          setIsCreatingCase(true)
+                          setActiveTab("cases");
+                          setIsCreatingCase(true);
                         }}
                         className={styles.secondaryButton}
                       >
@@ -1404,8 +1485,8 @@ export default function LawyerDashboard() {
                             currentPassword: "",
                             newPassword: "",
                             confirmNewPassword: "",
-                          })
-                          setPasswordError("")
+                          });
+                          setPasswordError("");
                         }}
                         className={styles.secondaryButton}
                         disabled={isLoading}
@@ -1594,8 +1675,8 @@ export default function LawyerDashboard() {
                   <div className={styles.modalActions}>
                     <button
                       onClick={() => {
-                        handleUpdateAppointmentStatus(selectedAppointment.id, "confirmed")
-                        setSelectedAppointment(null)
+                        handleUpdateAppointmentStatus(selectedAppointment.id, "confirmed");
+                        setSelectedAppointment(null);
                       }}
                       className={styles.primaryButton}
                     >
@@ -1603,8 +1684,8 @@ export default function LawyerDashboard() {
                     </button>
                     <button
                       onClick={() => {
-                        handleUpdateAppointmentStatus(selectedAppointment.id, "cancelled")
-                        setSelectedAppointment(null)
+                        handleUpdateAppointmentStatus(selectedAppointment.id, "cancelled");
+                        setSelectedAppointment(null);
                       }}
                       className={styles.dangerButton}
                     >
@@ -1648,39 +1729,107 @@ export default function LawyerDashboard() {
               </button>
             </div>
             <div className={styles.chatBody}>
-              {chatMessages.length > 0 ? (
-                chatMessages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`${styles.chatMessage} ${
-                      message.sender === "lawyer" ? styles.chatMessageSent : styles.chatMessageReceived
-                    }`}
+              {!selectedClient ? (
+                <div className={styles.clientSelection}>
+                  <h4>Select a Client to Chat With</h4>
+                  {clients.length > 0 ? (
+                    <ul className={styles.clientList}>
+                      {clients.map((client) => (
+                        <li
+                          key={client.id}
+                          onClick={() => handleClientSelect(client)}
+                          className={styles.clientItem}
+                        >
+                          {client.name}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>No clients available.</p>
+                  )}
+                </div>
+              ) : !selectedCaseForChat ? (
+                <div className={styles.caseSelection}>
+                  <h4>Select a Case for {selectedClient.name}</h4>
+                  {clientCases.length > 0 ? (
+                    <ul className={styles.caseList}>
+                      {clientCases.map((caseItem) => (
+                        <li
+                          key={caseItem.id}
+                          onClick={() => handleCaseSelectForChat(caseItem)}
+                          className={styles.caseItem}
+                        >
+                          {caseItem.title} (#{caseItem.id})
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>No cases found for this client.</p>
+                  )}
+                  <button
+                    onClick={() => setSelectedClient(null)}
+                    className={styles.backButton}
                   >
-                    <div className={styles.messageBubble}>
-                      <p>{message.text}</p>
-                      <span className={styles.messageTimestamp}>{message.timestamp}</span>
+                    Back to Clients
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className={styles.chatConversation}>
+                    <h4>Chat for Case: {selectedCaseForChat.title}</h4>
+                    <div className={styles.messagesContainer}>
+                      {chatMessages.length > 0 ? (
+                        chatMessages.map((message) => (
+                          <div
+                            key={message.id}
+                            className={`${styles.chatMessage} ${
+                              message.sender === "lawyer" ? styles.chatMessageSent : styles.chatMessageReceived
+                            }`}
+                          >
+                            <div className={styles.messageBubble}>
+                              <p>{message.message}</p>
+                              <span className={styles.messageTimestamp}>
+                                {new Date(message.created_at).toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className={styles.chatEmpty}>
+                          <MessageCircle className={styles.chatEmptyIcon} />
+                          <p>No messages yet. Start a conversation!</p>
+                        </div>
+                      )}
                     </div>
                   </div>
-                ))
-              ) : (
-                <div className={styles.chatEmpty}>
-                  <MessageCircle className={styles.chatEmptyIcon} />
-                  <p>No messages yet. Start a conversation!</p>
-                </div>
+                  <form onSubmit={handleSendMessage} className={styles.chatInputForm}>
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      placeholder="Type a message..."
+                      className={styles.chatInput}
+                    />
+                    <button type="submit" className={styles.sendButton}>
+                      Send
+                    </button>
+                  </form>
+                  <button
+                    onClick={() => {
+                      socket.emit("leave", { case_id: selectedCaseForChat.id });
+                      setSelectedCaseForChat(null);
+                      setChatMessages([]);
+                    }}
+                    className={styles.backButton}
+                  >
+                    Back to Cases
+                  </button>
+                </>
               )}
             </div>
-            <form onSubmit={handleSendMessage} className={styles.chatInputForm}>
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type a message..."
-                className={styles.chatInput}
-              />
-              <button type="submit" className={styles.sendButton}>
-                Send
-              </button>
-            </form>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1691,7 +1840,7 @@ export default function LawyerDashboard() {
           {notifications.map((notification) => (
             <motion.div
               key={notification.id}
-              className={`${styles.notification} ${notification.type === "error" ? styles.errorNotification : styles.successNotification}`}
+              className={`${styles.notification} ${notification.type === "error" ? styles.notificationError : styles.notificationSuccess}`}
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 50 }}
@@ -1713,5 +1862,5 @@ export default function LawyerDashboard() {
         <div className={styles.loader}></div>
       </div>
     </div>
-  )
+  );
 }
