@@ -76,8 +76,8 @@ export default function LandingPage() {
     },
     {
       icon: <Shield className={styles.featureIcon} />,
-      title: "Document Security",
-      description: "Keep your legal documents secure with enterprise-grade encryption and protection.",
+      title: "Document Templates",
+      description: "Get access to downloadable legal document templates with ease.",
     },
   ];
 
