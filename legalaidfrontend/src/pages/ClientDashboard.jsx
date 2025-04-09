@@ -18,9 +18,14 @@ import {
   X,
   MoreVertical,
   ChevronRight,
+  MessageCircle, // Added for chat
 } from "lucide-react"
 import { Tooltip } from "react-tooltip"
 import styles from "./ClientDashboard.module.css"
+import io from "socket.io-client" // Import Socket.IO client
+
+// Initialize Socket.IO client
+const socket = io("http://127.0.0.1:5000")
 
 export default function ClientDashboard() {
   const [client, setClient] = useState(null)
@@ -43,6 +48,13 @@ export default function ClientDashboard() {
     confirmNewPassword: "",
   })
   const [passwordError, setPasswordError] = useState("")
+  
+  // Chat-related state
+  const [isChatOpen, setIsChatOpen] = useState(false)
+  const [chatMessages, setChatMessages] = useState([])
+  const [newMessage, setNewMessage] = useState("")
+  const [selectedCaseForChat, setSelectedCaseForChat] = useState(null)
+
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -52,6 +64,14 @@ export default function ClientDashboard() {
 
   const toggleTheme = () => setTheme(theme === "light" ? "dark" : "light")
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
+  const toggleChat = () => {
+    setIsChatOpen(!isChatOpen)
+    if (isChatOpen && selectedCaseForChat) {
+      socket.emit("leave", { case_id: selectedCaseForChat.id })
+      setSelectedCaseForChat(null)
+      setChatMessages([])
+    }
+  }
 
   const addNotification = (message, type = "success") => {
     const id = Date.now()
@@ -83,13 +103,11 @@ export default function ClientDashboard() {
     setLoading(true)
     setError("")
     try {
-      // Fetch appointments
       const appointmentsResponse = await axios.get("http://127.0.0.1:5000/api/client-appointments", {
         headers: { Authorization: `Bearer ${token}` },
       })
       setAppointments(appointmentsResponse.data.appointments || [])
 
-      // Fetch cases
       try {
         const casesResponse = await axios.get("http://127.0.0.1:5000/api/client-cases", {
           headers: { Authorization: `Bearer ${token}` },
@@ -104,6 +122,61 @@ export default function ClientDashboard() {
       addNotification(err.response?.data?.error || "Failed to fetch data", "error")
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Handle Socket.IO events
+  useEffect(() => {
+    socket.on("connect", () => {
+      console.log("Connected to Socket.IO server")
+    })
+
+    socket.on("new_message", (message) => {
+      setChatMessages((prev) => [...prev, message])
+    })
+
+    socket.on("status", (data) => {
+      console.log(data.message)
+    })
+
+    return () => {
+      socket.off("connect")
+      socket.off("new_message")
+      socket.off("status")
+    }
+  }, [])
+
+  const handleCaseSelectForChat = async (caseItem) => {
+    setSelectedCaseForChat(caseItem)
+    const token = localStorage.getItem("clientToken")
+
+    socket.emit("join", { case_id: caseItem.id })
+
+    try {
+      const response = await axios.get(`http://127.0.0.1:5000/api/case/${caseItem.id}/messages`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      setChatMessages(response.data.messages)
+    } catch (err) {
+      addNotification(err.response?.data?.error || "Failed to load messages", "error")
+      setChatMessages([])
+    }
+  }
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault()
+    if (!newMessage.trim() || !selectedCaseForChat) return
+
+    const token = localStorage.getItem("clientToken")
+    try {
+      const response = await axios.post(
+        `http://127.0.0.1:5000/api/case/${selectedCaseForChat.id}/messages`,
+        { message: newMessage },
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      setNewMessage("")
+    } catch (err) {
+      addNotification(err.response?.data?.error || "Failed to send message", "error")
     }
   }
 
@@ -268,6 +341,7 @@ export default function ClientDashboard() {
       <Tooltip id="logout-tooltip" />
       <Tooltip id="details-tooltip" />
       <Tooltip id="edit-tooltip" />
+      <Tooltip id="chat-tooltip" /> {/* Added for chat */}
 
       <div className={styles.layout}>
         {/* Sidebar */}
@@ -1044,6 +1118,113 @@ export default function ClientDashboard() {
         )}
       </AnimatePresence>
 
+      {/* Chat Button */}
+      <button
+        onClick={toggleChat}
+        className={styles.chatButton}
+        data-tooltip-id="chat-tooltip"
+        data-tooltip-content="Open chat"
+      >
+        <MessageCircle className={styles.chatIcon} />
+      </button>
+
+      {/* Chat Modal */}
+      <AnimatePresence>
+        {isChatOpen && (
+          <motion.div
+            className={styles.chatModal}
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className={styles.chatHeader}>
+              <h3>Chat</h3>
+              <button onClick={toggleChat} className={styles.closeButton}>
+                <X className={styles.closeIcon} />
+              </button>
+            </div>
+            <div className={styles.chatBody}>
+              {!selectedCaseForChat ? (
+                <div className={styles.caseSelection}>
+                  <h4>Select a Case to Chat About</h4>
+                  {cases.length > 0 ? (
+                    <ul className={styles.caseList}>
+                      {cases.map((caseItem) => (
+                        <li
+                          key={caseItem.id}
+                          onClick={() => handleCaseSelectForChat(caseItem)}
+                          className={styles.caseItem}
+                        >
+                          {caseItem.title} (#{caseItem.id})
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>No cases available to chat about.</p>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <div className={styles.chatConversation}>
+                    <h4>Chat for Case: {selectedCaseForChat.title}</h4>
+                    <div className={styles.messagesContainer}>
+                      {chatMessages.length > 0 ? (
+                        chatMessages.map((message) => (
+                          <div
+                            key={message.id}
+                            className={`${styles.chatMessage} ${
+                              message.sender === "client" ? styles.chatMessageSent : styles.chatMessageReceived
+                            }`}
+                          >
+                            <div className={styles.messageBubble}>
+                              <p>{message.message}</p>
+                              <span className={styles.messageTimestamp}>
+                                {new Date(message.created_at).toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className={styles.chatEmpty}>
+                          <MessageCircle className={styles.chatEmptyIcon} />
+                          <p>No messages yet. Start a conversation!</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <form onSubmit={handleSendMessage} className={styles.chatInputForm}>
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      placeholder="Type a message..."
+                      className={styles.chatInput}
+                    />
+                    <button type="submit" className={styles.sendButton}>
+                      Send
+                    </button>
+                  </form>
+                  <button
+                    onClick={() => {
+                      socket.emit("leave", { case_id: selectedCaseForChat.id })
+                      setSelectedCaseForChat(null)
+                      setChatMessages([])
+                    }}
+                    className={styles.backButton}
+                  >
+                    Back to Cases
+                  </button>
+                </>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Notifications */}
       <div className={styles.notificationContainer}>
         <AnimatePresence>
@@ -1074,4 +1255,3 @@ export default function ClientDashboard() {
     </div>
   )
 }
-
