@@ -13,7 +13,7 @@ import pytz  # For timezone handling
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "your-secret-key-here"  # Replace with a secure key in production
-CORS(app, resources={r"/api/*": {"origins": "http://localhost:5173"}})
+CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "http://localhost:3000"]}})  # Allow admin frontend
 
 # Initialize Flask-SocketIO
 socketio = SocketIO(app, cors_allowed_origins="*")
@@ -76,6 +76,271 @@ def validate_token():
         return None, jsonify({'error': 'Token has expired'}), 401
     except jwt.InvalidTokenError:
         return None, jsonify({'error': 'Invalid token'}), 401
+
+# Admin-specific decorator
+def admin_required(func):
+    def wrapper(*args, **kwargs):
+        decoded, error_response, status = validate_token()
+        if error_response:
+            return error_response, status
+        if 'admin_id' not in decoded:
+            return jsonify({'error': 'Admin access required'}), 403
+        return func(decoded['admin_id'], *args, **kwargs)
+    wrapper.__name__ = func.__name__
+    return wrapper
+
+@app.route('/api/admin/register', methods=['POST'])
+def register_admin():
+    try:
+        data = request.json
+        username = data.get('username')
+        email = data.get('email')
+        password = data.get('password')
+
+        if not all([username, email, password]):
+            return jsonify({'error': 'Username, email, and password are required'}), 400
+
+        hashed_bytes = hash_password(password)
+        hashed_password = base64.b64encode(hashed_bytes).decode('utf-8')
+
+        conn = pymysql.connect(**db_config)
+        try:
+            with conn.cursor() as cursor:
+                sql = """
+                    INSERT INTO admins (username, email, password)
+                    VALUES (%s, %s, %s)
+                """
+                cursor.execute(sql, (username, email, hashed_password))
+                conn.commit()
+        finally:
+            conn.close()
+        return jsonify({'message': 'Admin registered successfully'}), 201
+
+    except pymysql.err.IntegrityError:
+        return jsonify({'error': 'Username or email already exists'}), 409
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/admin/login', methods=['POST'])
+def login_admin():
+    try:
+        data = request.json
+        email = data.get('email')
+        password = data.get('password')
+
+        if not all([email, password]):
+            return jsonify({'error': 'Email and password are required'}), 400
+
+        conn = pymysql.connect(**db_config)
+        try:
+            with conn.cursor() as cursor:
+                sql = "SELECT * FROM admins WHERE email = %s"
+                cursor.execute(sql, (email,))
+                admin = cursor.fetchone()
+        finally:
+            conn.close()
+
+        if not admin:
+            return jsonify({'error': 'Invalid email or password'}), 401
+
+        stored_password = base64.b64decode(admin['password'])
+        if verify_password(stored_password, password):
+            expiration_time = datetime.utcnow() + timedelta(hours=24)
+            token_payload = {
+                'admin_id': admin['id'],
+                'email': admin['email'],
+                'exp': int(expiration_time.timestamp())
+            }
+            token = jwt.encode(token_payload, SECRET_KEY, algorithm='HS256')
+            return jsonify({
+                'message': 'Login successful',
+                'token': token,
+                'admin': {
+                    'id': admin['id'],
+                    'username': admin['username'],
+                    'email': admin['email']
+                }
+            }), 200
+        else:
+            return jsonify({'error': 'Invalid email or password'}), 401
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/admin/lawyers', methods=['GET'])
+@admin_required
+def get_all_lawyers(admin_id):
+    try:
+        conn = pymysql.connect(**db_config)
+        try:
+            with conn.cursor() as cursor:
+                sql = """
+                    SELECT id, name, email, specialization, location, availability_status, profile_picture
+                    FROM lawyers
+                """
+                cursor.execute(sql)
+                lawyers = cursor.fetchall()
+        finally:
+            conn.close()
+
+        for lawyer in lawyers:
+            if lawyer['profile_picture']:
+                lawyer['profile_picture'] = f"/uploads/{lawyer['profile_picture']}"
+        return jsonify({'lawyers': lawyers}), 200
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/admin/lawyers/<int:lawyer_id>', methods=['DELETE'])
+@admin_required
+def delete_lawyer(admin_id, lawyer_id):
+    try:
+        conn = pymysql.connect(**db_config)
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT id FROM lawyers WHERE id = %s", (lawyer_id,))
+                if not cursor.fetchone():
+                    return jsonify({'error': 'Lawyer not found'}), 404
+
+                cursor.execute("DELETE FROM lawyers WHERE id = %s", (lawyer_id,))
+                conn.commit()
+        finally:
+            conn.close()
+        return jsonify({'message': 'Lawyer deleted successfully'}), 200
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/admin/clients', methods=['GET'])
+@admin_required
+def get_all_clients(admin_id):
+    try:
+        conn = pymysql.connect(**db_config)
+        try:
+            with conn.cursor() as cursor:
+                sql = """
+                    SELECT id, name, email, phone, address, profile_picture
+                    FROM clients
+                """
+                cursor.execute(sql)
+                clients = cursor.fetchall()
+        finally:
+            conn.close()
+
+        for client in clients:
+            if client['profile_picture']:
+                client['profile_picture'] = f"/uploads/{client['profile_picture']}"
+        return jsonify({'clients': clients}), 200
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/admin/clients/<int:client_id>', methods=['DELETE'])
+@admin_required
+def delete_client(admin_id, client_id):
+    try:
+        conn = pymysql.connect(**db_config)
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT id FROM clients WHERE id = %s", (client_id,))
+                if not cursor.fetchone():
+                    return jsonify({'error': 'Client not found'}), 404
+
+                cursor.execute("DELETE FROM clients WHERE id = %s", (client_id,))
+                conn.commit()
+        finally:
+            conn.close()
+        return jsonify({'message': 'Client deleted successfully'}), 200
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/admin/cases', methods=['GET'])
+@admin_required
+def get_all_cases(admin_id):
+    try:
+        conn = pymysql.connect(**db_config)
+        try:
+            with conn.cursor() as cursor:
+                sql = """
+                    SELECT c.id, c.title, c.case_type, c.status, c.created_at,
+                           l.name AS lawyer_name, cl.name AS client_name
+                    FROM cases c
+                    JOIN lawyers l ON c.lawyer_id = l.id
+                    JOIN clients cl ON c.client_id = cl.id
+                """
+                cursor.execute(sql)
+                cases = cursor.fetchall()
+        finally:
+            conn.close()
+        return jsonify({'cases': cases}), 200
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/admin/cases/<int:case_id>', methods=['DELETE'])
+@admin_required
+def delete_case(admin_id, case_id):
+    try:
+        conn = pymysql.connect(**db_config)
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT id FROM cases WHERE id = %s", (case_id,))
+                if not cursor.fetchone():
+                    return jsonify({'error': 'Case not found'}), 404
+
+                cursor.execute("DELETE FROM cases WHERE id = %s", (case_id,))
+                conn.commit()
+        finally:
+            conn.close()
+        return jsonify({'message': 'Case deleted successfully'}), 200
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/admin/appointments', methods=['GET'])
+@admin_required
+def get_all_appointments(admin_id):
+    try:
+        conn = pymysql.connect(**db_config)
+        try:
+            with conn.cursor() as cursor:
+                sql = """
+                    SELECT a.id, a.appointment_date, a.status, l.name AS lawyer_name, c.name AS client_name
+                    FROM appointments a
+                    JOIN lawyers l ON a.lawyer_id = l.id
+                    JOIN clients c ON a.client_id = c.id
+                """
+                cursor.execute(sql)
+                appointments = cursor.fetchall()
+        finally:
+            conn.close()
+        return jsonify({'appointments': appointments}), 200
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/admin/appointments/<int:appointment_id>', methods=['DELETE'])
+@admin_required
+def delete_appointment(admin_id, appointment_id):
+    try:
+        conn = pymysql.connect(**db_config)
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT id FROM appointments WHERE id = %s", (appointment_id,))
+                if not cursor.fetchone():
+                    return jsonify({'error': 'Appointment not found'}), 404
+
+                cursor.execute("DELETE FROM appointments WHERE id = %s", (appointment_id,))
+                conn.commit()
+        finally:
+            conn.close()
+        return jsonify({'message': 'Appointment deleted successfully'}), 200
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 @app.route('/api/register-lawyer', methods=['POST'])
 def register_lawyer():
