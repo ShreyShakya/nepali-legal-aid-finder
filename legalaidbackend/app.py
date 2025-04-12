@@ -1610,6 +1610,10 @@ def case_messages(case_id):
                 """
                 cursor.execute(sql, (case_id,))
                 messages = cursor.fetchall()
+                # Convert datetime to string for GET response
+                for message in messages:
+                    if isinstance(message['created_at'], datetime):
+                        message['created_at'] = message['created_at'].isoformat()
                 return jsonify({'messages': messages}), 200
 
             elif request.method == 'POST':
@@ -1648,6 +1652,10 @@ def case_messages(case_id):
                 """
                 cursor.execute(sql)
                 new_message = cursor.fetchone()
+
+                # Convert datetime to string before returning
+                if new_message and isinstance(new_message['created_at'], datetime):
+                    new_message['created_at'] = new_message['created_at'].isoformat()
 
                 # Emit the new message to the WebSocket room
                 room = f"case_{case_id}"
