@@ -30,7 +30,12 @@ const Dashboard = () => {
       const fetchTemplates = async () => {
         setLoadingTemplates(true);
         try {
-          const response = await axios.get('http://127.0.0.1:5000/api/document-templates');
+          const token = localStorage.getItem('adminToken');
+          const response = await axios.get('http://127.0.0.1:5000/api/document-templates', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
           setTemplates(response.data.templates);
         } catch (error) {
           console.error('Error fetching templates:', error);
@@ -82,11 +87,42 @@ const Dashboard = () => {
       setFile(null);
       document.getElementById('fileInput').value = '';
       // Refresh templates list
-      const templatesResponse = await axios.get('http://127.0.0.1:5000/api/document-templates');
+      const templatesResponse = await axios.get('http://127.0.0.1:5000/api/document-templates', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       setTemplates(templatesResponse.data.templates);
     } catch (error) {
       setUploadMessage('');
       setUploadError(error.response?.data?.error || 'Failed to upload template');
+    }
+  };
+
+  const handleDelete = async (filename) => {
+    if (!window.confirm('Are you sure you want to delete this template?')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('adminToken');
+      await axios.delete(`http://127.0.0.1:5000/api/admin/delete-template/${filename}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setUploadMessage('Template deleted successfully!');
+      setUploadError('');
+      // Refresh templates list
+      const templatesResponse = await axios.get('http://127.0.0.1:5000/api/document-templates', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setTemplates(templatesResponse.data.templates);
+    } catch (error) {
+      setUploadMessage('');
+      setUploadError(error.response?.data?.error || 'Failed to delete template');
     }
   };
 
@@ -161,14 +197,22 @@ const Dashboard = () => {
               <div className={styles.templatesList}>
                 {templates.map((template) => (
                   <div key={template.download_url} className={styles.templateItem}>
-                    <span>{template.filename}</span>
-                    <a
-                      href={`http://127.0.0.1:5000${template.download_url}`}
-                      download
-                      className={styles.downloadButton}
-                    >
-                      Download
-                    </a>
+                    <span>{template.original_filename}</span>
+                    <div className={styles.buttonGroup}>
+                      <a
+                        href={`http://127.0.0.1:5000${template.download_url}`}
+                        download
+                        className={styles.downloadButton}
+                      >
+                        Download
+                      </a>
+                      <button
+                        onClick={() => handleDelete(template.filename)}
+                        className={styles.deleteButton}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

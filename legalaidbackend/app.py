@@ -2001,6 +2001,39 @@ def serve_template(filename):
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
+    
+@app.route('/api/admin/delete-template/<filename>', methods=['DELETE'])
+@admin_required
+def delete_template(admin_id, filename):
+    try:
+        conn = pymysql.connect(**db_config)
+        try:
+            with conn.cursor() as cursor:
+                # Verify the template exists in the database
+                sql = "SELECT filename FROM document_templates WHERE filename = %s"
+                cursor.execute(sql, (filename,))
+                template = cursor.fetchone()
+                if not template:
+                    return jsonify({'error': 'Template not found'}), 404
+
+                # Delete the file from the filesystem
+                file_path = os.path.join(DOCUMENT_TEMPLATES_FOLDER, filename)
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                else:
+                    print(f"File {file_path} not found on server, proceeding with database deletion.")
+
+                # Delete the template from the database
+                sql = "DELETE FROM document_templates WHERE filename = %s"
+                cursor.execute(sql, (filename,))
+                conn.commit()
+        finally:
+            conn.close()
+        return jsonify({'message': 'Template deleted successfully'}), 200
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+    
 
 # WebSocket handlers for real-time case messaging
 @socketio.on('join_case')

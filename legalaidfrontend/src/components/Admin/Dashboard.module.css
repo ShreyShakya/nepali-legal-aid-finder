@@ -131,3 +131,22 @@
 .downloadButton:hover {
   background-color: #218838;
 }
+
+.buttonGroup {
+  display: flex;
+  gap: 10px;
+}
+
+.deleteButton {
+  padding: 8px 16px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.deleteButton:hover {
+  background-color: #c82333;
+}
