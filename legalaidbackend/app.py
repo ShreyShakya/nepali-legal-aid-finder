@@ -664,7 +664,7 @@ def change_password():
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-@app.route('/Uploads/<filename>')
+@app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
@@ -691,7 +691,6 @@ def lawyer_cases():
         try:
             with conn.cursor() as cursor:
                 sql = """
-                    SELECT c.id, c.titleProjectedness = 0
                     SELECT c.id, c.title, c.case_type, c.description, c.status, c.created_at, c.priority,
                            c.filing_date, c.jurisdiction, c.plaintiff_name, c.defendant_name,
                            cl.name AS client_name
