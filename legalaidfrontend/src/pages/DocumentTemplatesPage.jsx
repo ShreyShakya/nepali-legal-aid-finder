@@ -25,11 +25,6 @@ export default function DocumentTemplatesPage() {
   const [lawyerDropdownOpen, setLawyerDropdownOpen] = useState(false)
 
   useEffect(() => {
-    const token = localStorage.getItem("token")
-    if (!token) {
-      window.location.href = "/client-login"
-      return
-    }
     setIsVisible(true)
     fetchTemplates()
   }, [])
@@ -37,12 +32,7 @@ export default function DocumentTemplatesPage() {
   const fetchTemplates = async () => {
     setLoading(true)
     try {
-      const token = localStorage.getItem("token")
-      const response = await axios.get("http://127.0.0.1:5000/api/document-templates", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+      const response = await axios.get("http://127.0.0.1:5000/api/document-templates")
       setTemplates(response.data.templates)
     } catch (err) {
       setError("Failed to load document templates. Please try again later.")
@@ -52,25 +42,16 @@ export default function DocumentTemplatesPage() {
     }
   }
 
-  const handleDownload = async (downloadUrl, filename) => {
+  const handleDownload = async (downloadUrl, originalFilename) => {
     try {
-      const token = localStorage.getItem("token")
-      if (!token) {
-        setError("Please log in to download templates.")
-        window.location.href = "/client-login"
-        return
-      }
       const response = await axios.get(`http://127.0.0.1:5000${downloadUrl}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
         responseType: "blob",
       })
 
       const url = window.URL.createObjectURL(new Blob([response.data]))
       const link = document.createElement("a")
       link.href = url
-      link.setAttribute("download", filename)
+      link.setAttribute("download", originalFilename)
       document.body.appendChild(link)
       link.click()
       link.remove()
@@ -91,10 +72,10 @@ export default function DocumentTemplatesPage() {
       <header className={styles.header}>
         <div className={styles.container}>
           <a href="/">
-          <div className={styles.logo}>
-            <Scale className={styles.logoIcon} />
-            <span>NepaliLegalAidFinder</span>
-          </div>
+            <div className={styles.logo}>
+              <Scale className={styles.logoIcon} />
+              <span>NepaliLegalAidFinder</span>
+            </div>
           </a>
           <div
             className={`${styles.mobileMenuButton} ${mobileMenuOpen ? styles.active : ""}`}
@@ -198,11 +179,11 @@ export default function DocumentTemplatesPage() {
                   <div className={styles.templateIconWrapper}>
                     <FileText className={styles.templateIcon} />
                   </div>
-                  <h3>{template.filename}</h3>
+                  <h3>{template.original_filename}</h3>
                   <p>Download this template to get started with your legal documentation.</p>
                   <button
                     className={styles.downloadButton}
-                    onClick={() => handleDownload(template.download_url, template.filename)}
+                    onClick={() => handleDownload(template.download_url, template.original_filename)}
                   >
                     <Download className={styles.buttonIcon} />
                     Download
@@ -241,4 +222,3 @@ export default function DocumentTemplatesPage() {
     </div>
   )
 }
-

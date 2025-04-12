@@ -10,6 +10,7 @@ import jwt
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 import pytz  # For timezone handling
+import uuid  # For unique filenames
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "your-secret-key-here"  # Replace with a secure key in production
@@ -24,7 +25,7 @@ EVIDENCE_FOLDER = 'evidence'
 COURT_FILES_FOLDER = 'court_files'
 DOCUMENT_TEMPLATES_FOLDER = 'document_templates'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf', 'doc', 'docx'}  # Updated for templates
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(EVIDENCE_FOLDER, exist_ok=True)
 os.makedirs(COURT_FILES_FOLDER, exist_ok=True)
@@ -165,6 +166,45 @@ def login_admin():
         else:
             return jsonify({'error': 'Invalid email or password'}), 401
 
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/admin/upload-template', methods=['POST'])
+@admin_required
+def upload_template(admin_id):
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        if not allowed_file(file.filename):
+            return jsonify({'error': 'Invalid file type. Allowed: pdf, doc, docx'}), 400
+
+        # Sanitize and generate unique filename
+        original_filename = secure_filename(file.filename)
+        extension = os.path.splitext(original_filename)[1]
+        unique_filename = f"template_{uuid.uuid4().hex}{extension}"
+        file_path = os.path.join(DOCUMENT_TEMPLATES_FOLDER, unique_filename)
+        file.save(file_path)
+
+        # Save metadata to database
+        conn = pymysql.connect(**db_config)
+        try:
+            with conn.cursor() as cursor:
+                sql = """
+                    INSERT INTO document_templates (filename, original_filename, uploaded_by)
+                    VALUES (%s, %s, %s)
+                """
+                cursor.execute(sql, (unique_filename, original_filename, admin_id))
+                conn.commit()
+        finally:
+            conn.close()
+
+        return jsonify({'message': 'Template uploaded successfully'}), 201
+    except pymysql.err.IntegrityError:
+        return jsonify({'error': 'Filename conflict in database'}), 409
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
@@ -624,7 +664,7 @@ def change_password():
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-@app.route('/uploads/<filename>')
+@app.route('/Uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
@@ -651,6 +691,7 @@ def lawyer_cases():
         try:
             with conn.cursor() as cursor:
                 sql = """
+                    SELECT c.id, c.titleProjectedness = 0
                     SELECT c.id, c.title, c.case_type, c.description, c.status, c.created_at, c.priority,
                            c.filing_date, c.jurisdiction, c.plaintiff_name, c.defendant_name,
                            cl.name AS client_name
@@ -1909,63 +1950,74 @@ def get_document_templates():
     if request.method == "OPTIONS":
         return jsonify({}), 200
 
-    decoded, error_response, status = validate_token()
-    if error_response:
-        return error_response, status
-
     try:
-        templates = []
-        for filename in os.listdir(DOCUMENT_TEMPLATES_FOLDER):
-            file_path = os.path.join(DOCUMENT_TEMPLATES_FOLDER, filename)
-            if os.path.isfile(file_path):
-                templates.append({
-                    'filename': filename,
-                    'download_url': f"/api/document-templates/{filename}"
-                })
-        return jsonify({'templates': templates}), 200
+        conn = pymysql.connect(**db_config)
+        try:
+            with conn.cursor() as cursor:
+                sql = """
+                    SELECT original_filename, upload_date, filename
+                    FROM document_templates
+                    ORDER BY upload_date DESC
+                """
+                cursor.execute(sql)
+                templates = cursor.fetchall()
+        finally:
+            conn.close()
 
+        # Format response for both admin dashboard and public page
+        templates_response = [
+            {
+                'original_filename': template['original_filename'],
+                'upload_date': template['upload_date'].isoformat(),
+                'download_url': f"/api/document-templates/{template['filename']}"
+            }
+            for template in templates
+        ]
+        return jsonify({'templates': templates_response}), 200
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-@app.route('/api/document-templates/<filename>')
-def download_template(filename):
-    decoded, error_response, status = validate_token()
-    if error_response:
-        return error_response, status
-
+@app.route('/api/document-templates/<filename>', methods=['GET'])
+def serve_template(filename):
     try:
-        return send_from_directory(DOCUMENT_TEMPLATES_FOLDER, filename, as_attachment=True)
-    except FileNotFoundError:
-        return jsonify({'error': 'File not found'}), 404
+        conn = pymysql.connect(**db_config)
+        try:
+            with conn.cursor() as cursor:
+                # Verify the file exists in the database
+                sql = "SELECT filename FROM document_templates WHERE filename = %s"
+                cursor.execute(sql, (filename,))
+                template = cursor.fetchone()
+                if not template:
+                    return jsonify({'error': 'Template not found'}), 404
+        finally:
+            conn.close()
+
+        file_path = os.path.join(DOCUMENT_TEMPLATES_FOLDER, filename)
+        if not os.path.exists(file_path):
+            return jsonify({'error': 'File not found on server'}), 404
+
+        return send_from_directory(DOCUMENT_TEMPLATES_FOLDER, filename)
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-# WebSocket Events
-@socketio.on('connect')
-def handle_connect():
-    print('Client connected')
+# WebSocket handlers for real-time case messaging
+@socketio.on('join_case')
+def on_join_case(data):
+    case_id = data.get('case_id')
+    if case_id:
+        room = f"case_{case_id}"
+        join_room(room)
+        emit('status', {'message': f'Joined case room {case_id}'}, to=room)
 
-@socketio.on('disconnect')
-def handle_disconnect():
-    print('Client disconnected')
-
-@socketio.on('join')
-def on_join(data):
-    case_id = data['case_id']
-    room = f"case_{case_id}"
-    join_room(room)
-    print(f'Client joined room: {room}')
-    emit('status', {'message': f'Joined room for case {case_id}'}, room=room)
-
-@socketio.on('leave')
-def on_leave(data):
-    case_id = data['case_id']
-    room = f"case_{case_id}"
-    leave_room(room)
-    print(f'Client left room: {room}')
-    emit('status', {'message': f'Left room for case {case_id}'}, room=room)
+@socketio.on('leave_case')
+def on_leave_case(data):
+    case_id = data.get('case_id')
+    if case_id:
+        room = f"case_{case_id}"
+        leave_room(room)
+        emit('status', {'message': f'Left case room {case_id}'}, to=room)
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True, host='127.0.0.1', port=5000)
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
