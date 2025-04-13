@@ -27,3 +27,18 @@ export const deleteCase = (caseId) => api.delete(`/admin/cases/${caseId}`);
 export const getAppointments = () => api.get('/admin/appointments');
 export const deleteAppointment = (appointmentId) =>
   api.delete(`/admin/appointments/${appointmentId}`);
+
+// Added in the previous step
+export const deleteDocumentTemplate = (filename) =>
+  api.delete(`/admin/delete-template/${filename}`);
+
+// Add this to fetch document templates
+export const getDocumentTemplates = () => api.get('/document-templates');
+
+// Optionally, add a function to upload templates
+export const uploadDocumentTemplate = (formData) =>
+  api.post('/admin/upload-template', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });

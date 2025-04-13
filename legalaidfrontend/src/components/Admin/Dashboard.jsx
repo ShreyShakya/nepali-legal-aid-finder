@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import styles from './Dashboard.module.css';
 import LawyersList from './LawyersList';
 import ClientsList from './ClientsList';
 import CasesList from './CasesList';
 import AppointmentsList from './AppointmentsList';
+import { getDocumentTemplates, uploadDocumentTemplate, deleteDocumentTemplate, getLawyers } from './api';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -15,14 +15,38 @@ const Dashboard = () => {
   const [uploadError, setUploadError] = useState('');
   const [templates, setTemplates] = useState([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [deleting, setDeleting] = useState({});
 
-  // Check token on mount
+  // Validate token on mount
   useEffect(() => {
-    const token = localStorage.getItem('adminToken');
-    if (!token) {
-      navigate('/admin/login');
-    }
+    const validateToken = async () => {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        navigate('/admin/login');
+        return;
+      }
+
+      try {
+        await getLawyers(); // Validate token by making an authenticated request
+      } catch (error) {
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          localStorage.removeItem('adminToken');
+          localStorage.removeItem('admin');
+          navigate('/admin/login');
+        }
+      }
+    };
+
+    validateToken();
   }, [navigate]);
+
+  // Clear messages when switching tabs
+  useEffect(() => {
+    if (activeTab !== 'documents') {
+      setUploadMessage('');
+      setUploadError('');
+    }
+  }, [activeTab]);
 
   // Fetch templates when switching to Documents tab
   useEffect(() => {
@@ -30,12 +54,7 @@ const Dashboard = () => {
       const fetchTemplates = async () => {
         setLoadingTemplates(true);
         try {
-          const token = localStorage.getItem('adminToken');
-          const response = await axios.get('http://127.0.0.1:5000/api/document-templates', {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
+          const response = await getDocumentTemplates();
           setTemplates(response.data.templates);
         } catch (error) {
           console.error('Error fetching templates:', error);
@@ -69,33 +88,24 @@ const Dashboard = () => {
 
     const formData = new FormData();
     formData.append('file', file);
-    const token = localStorage.getItem('adminToken');
 
     try {
-      const response = await axios.post(
-        'http://127.0.0.1:5000/api/admin/upload-template',
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
+      const response = await uploadDocumentTemplate(formData);
       setUploadMessage(response.data.message);
       setUploadError('');
       setFile(null);
       document.getElementById('fileInput').value = '';
-      // Refresh templates list
-      const templatesResponse = await axios.get('http://127.0.0.1:5000/api/document-templates', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const templatesResponse = await getDocumentTemplates();
       setTemplates(templatesResponse.data.templates);
     } catch (error) {
       setUploadMessage('');
-      setUploadError(error.response?.data?.error || 'Failed to upload template');
+      const errorMsg =
+        error.response?.status === 400
+          ? error.response?.data?.error || 'Invalid file. Please upload a PDF, DOC, or DOCX file.'
+          : error.response?.status === 401
+          ? 'Unauthorized. Please log in again.'
+          : 'Failed to upload template. Please try again.';
+      setUploadError(errorMsg);
     }
   };
 
@@ -104,25 +114,24 @@ const Dashboard = () => {
       return;
     }
 
+    setDeleting((prev) => ({ ...prev, [filename]: true }));
+    const previousTemplates = [...templates];
+    setTemplates((prevTemplates) =>
+      prevTemplates.filter((template) => template.download_url !== `/api/document-templates/${filename}`)
+    );
+    setUploadMessage('Template deleted successfully!');
+    setUploadError('');
+
     try {
-      const token = localStorage.getItem('adminToken');
-      await axios.delete(`http://127.0.0.1:5000/api/admin/delete-template/${filename}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      setUploadMessage('Template deleted successfully!');
-      setUploadError('');
-      // Refresh templates list
-      const templatesResponse = await axios.get('http://127.0.0.1:5000/api/document-templates', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await deleteDocumentTemplate(filename);
+      const templatesResponse = await getDocumentTemplates();
       setTemplates(templatesResponse.data.templates);
     } catch (error) {
+      setTemplates(previousTemplates);
       setUploadMessage('');
       setUploadError(error.response?.data?.error || 'Failed to delete template');
+    } finally {
+      setDeleting((prev) => ({ ...prev, [filename]: false }));
     }
   };
 
@@ -195,26 +204,30 @@ const Dashboard = () => {
               <p>No templates uploaded yet.</p>
             ) : (
               <div className={styles.templatesList}>
-                {templates.map((template) => (
-                  <div key={template.download_url} className={styles.templateItem}>
-                    <span>{template.original_filename}</span>
-                    <div className={styles.buttonGroup}>
-                      <a
-                        href={`http://127.0.0.1:5000${template.download_url}`}
-                        download
-                        className={styles.downloadButton}
-                      >
-                        Download
-                      </a>
-                      <button
-                        onClick={() => handleDelete(template.filename)}
-                        className={styles.deleteButton}
-                      >
-                        Delete
-                      </button>
+                {templates.map((template) => {
+                  const filename = template.download_url.split('/').pop();
+                  return (
+                    <div key={template.download_url} className={styles.templateItem}>
+                      <span>{template.original_filename}</span>
+                      <div className={styles.buttonGroup}>
+                        <a
+                          href={`http://127.0.0.1:5000${template.download_url}`}
+                          download
+                          className={styles.downloadButton}
+                        >
+                          Download
+                        </a>
+                        <button
+                          onClick={() => handleDelete(filename)}
+                          className={styles.deleteButton}
+                          disabled={deleting[filename]}
+                        >
+                          {deleting[filename] ? 'Deleting...' : 'Delete'}
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
