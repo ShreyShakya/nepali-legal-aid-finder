@@ -89,13 +89,13 @@ export default function DocumentTemplatesPage() {
           <nav className={`${styles.mainNav} ${mobileMenuOpen ? styles.open : ""}`}>
             <ul>
               <li>
-                <a href="#features">Features</a>
+                <a href="/">Features</a>
               </li>
               <li>
-                <a href="#attorneys">Attorneys</a>
+                <a href="/">Attorneys</a>
               </li>
               <li>
-                <a href="#contact">Contact</a>
+                <a href="/">Contact</a>
               </li>
               <li>
                 <a href="/document-templates">Document Templates</a>

@@ -142,23 +142,12 @@ export default function BrowseLawyers() {
       {/* Header */}
       <header className={styles.header}>
         <div className={styles.container}>
+        <a href="/">
           <div className={styles.logo}>
             <Scale className={styles.logoIcon} />
             <span>NepaliLegalAidFinder</span>
           </div>
-          <nav className={styles.mainNav}>
-            <ul>
-              <li>
-                <a href="/">Home</a>
-              </li>
-              <li>
-                <a href="/client-login">Client Login</a>
-              </li>
-              <li>
-                <a href="/lawyer-login">Lawyer Login</a>
-              </li>
-            </ul>
-          </nav>
+          </a>
         </div>
       </header>
 
