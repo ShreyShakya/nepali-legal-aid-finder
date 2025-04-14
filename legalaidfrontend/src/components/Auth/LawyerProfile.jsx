@@ -83,6 +83,10 @@ export default function LawyerProfile() {
       navigate('/client-registration');
       return;
     }
+    if (lawyer.availability_status === "Busy") {
+      alert("This lawyer is currently busy and not accepting appointments.");
+      return;
+    }
     setShowModal(true);
   };
 
@@ -138,7 +142,6 @@ export default function LawyerProfile() {
       setShowModal(false);
       fetchBookedTimes(id);
     } catch (err) {
-      // Display the backend error message
       const errorMessage = err.response?.data?.error || "Failed to book appointment.";
       alert(errorMessage);
     }
@@ -225,7 +228,10 @@ export default function LawyerProfile() {
                 </p>
                 <button
                   onClick={handleBookAppointment}
-                  className={styles.bookButton}
+                  className={`${styles.bookButton} ${
+                    lawyer.availability_status === "Busy" ? styles.disabledButton : ""
+                  }`}
+                  disabled={lawyer.availability_status === "Busy"}
                 >
                   Book an Appointment
                 </button>

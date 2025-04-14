@@ -1,5 +1,3 @@
-"use client"
-
 import { useState } from "react"
 import { motion } from "framer-motion"
 import { Scale } from "lucide-react"
@@ -18,14 +16,58 @@ export default function ClientRegistration() {
     email: "",
     password: "",
     phone: "",
+    otp: "",
   })
   const [message, setMessage] = useState("")
   const [isError, setIsError] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isOtpSent, setIsOtpSent] = useState(false)
+  const [isOtpVerified, setIsOtpVerified] = useState(false)
   const navigate = useNavigate()
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
+  }
+
+  const handleSendOtp = async () => {
+    setIsLoading(true)
+    setMessage("")
+    setIsError(false)
+
+    try {
+      const response = await axios.post('http://127.0.0.1:5000/api/send-otp', {
+        email: formData.email,
+      })
+      setMessage(response.data.message)
+      setIsError(false)
+      setIsOtpSent(true)
+    } catch (error) {
+      setMessage(error.response?.data?.error || "Failed to send OTP")
+      setIsError(true)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleVerifyOtp = async () => {
+    setIsLoading(true)
+    setMessage("")
+    setIsError(false)
+
+    try {
+      const response = await axios.post('http://127.0.0.1:5000/api/verify-otp', {
+        email: formData.email,
+        otp: formData.otp,
+      })
+      setMessage(response.data.message)
+      setIsError(false)
+      setIsOtpVerified(true)
+    } catch (error) {
+      setMessage(error.response?.data?.error || "OTP verification failed")
+      setIsError(true)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleSubmit = async (e) => {
@@ -34,10 +76,20 @@ export default function ClientRegistration() {
     setMessage("")
     setIsError(false)
 
+    if (!isOtpVerified) {
+      setMessage("Please verify OTP before registering")
+      setIsError(true)
+      setIsLoading(false)
+      return
+    }
+
     const data = new FormData()
     for (const key in formData) {
-      data.append(key, formData[key])
+      if (key !== 'otp') {
+        data.append(key, formData[key])
+      }
     }
+    data.append('is_otp_verified', isOtpVerified)
 
     try {
       const response = await axios.post('http://127.0.0.1:5000/api/register-client', data, {
@@ -47,7 +99,9 @@ export default function ClientRegistration() {
       })
       setMessage(response.data.message)
       setIsError(false)
-      setFormData({ name: "", email: "", password: "", phone: "" })
+      setFormData({ name: "", email: "", password: "", phone: "", otp: "" })
+      setIsOtpSent(false)
+      setIsOtpVerified(false)
       setTimeout(() => navigate('/client-login'), 2000)
     } catch (error) {
       setMessage(error.response?.data?.error || "Registration failed")
@@ -64,7 +118,6 @@ export default function ClientRegistration() {
       animate="visible"
       variants={fadeIn}
     >
-
       <section className={styles.hero}>
         <div className={styles.heroContainer}>
           <motion.div className={styles.heroContent}>
@@ -97,9 +150,43 @@ export default function ClientRegistration() {
                   onChange={handleChange}
                   required
                   className={styles.formInput}
-                  disabled={isLoading}
+                  disabled={isLoading || isOtpVerified}
                 />
+                {!isOtpSent && (
+                  <button
+                    type="button"
+                    onClick={handleSendOtp}
+                    className={styles.submitButton}
+                    disabled={isLoading || !formData.email}
+                  >
+                    {isLoading ? "Sending OTP..." : "Send OTP"}
+                  </button>
+                )}
               </div>
+              {isOtpSent && !isOtpVerified && (
+                <div className={styles.formGroup}>
+                  <label htmlFor="otp">OTP</label>
+                  <input
+                    type="text"
+                    id="otp"
+                    name="otp"
+                    placeholder="Enter OTP"
+                    value={formData.otp}
+                    onChange={handleChange}
+                    required
+                    className={styles.formInput}
+                    disabled={isLoading}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleVerifyOtp}
+                    className={styles.submitButton}
+                    disabled={isLoading || !formData.otp}
+                  >
+                    {isLoading ? "Verifying OTP..." : "Verify OTP"}
+                  </button>
+                </div>
+              )}
               <div className={styles.formGroup}>
                 <label htmlFor="password">Password</label>
                 <input
@@ -130,7 +217,7 @@ export default function ClientRegistration() {
               <button
                 type="submit"
                 className={styles.submitButton}
-                disabled={isLoading}
+                disabled={isLoading || !isOtpVerified}
               >
                 {isLoading ? "Registering..." : "Register"}
               </button>

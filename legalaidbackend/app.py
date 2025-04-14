@@ -13,7 +13,7 @@ import pytz  # For timezone handling
 import uuid  # For unique filenames
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = "your-secret-key-here"  # Replace with a secure key in production
+app.config['SECRET_KEY'] = "your-secret-key-here" 
 CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "http://localhost:3000"]}})  # Allow admin frontend
 
 # Initialize Flask-SocketIO
@@ -34,7 +34,7 @@ os.makedirs(DOCUMENT_TEMPLATES_FOLDER, exist_ok=True)
 db_config = {
     'host': 'localhost',
     'user': 'root',
-    'password': '',  # Update with your MySQL password
+    'password': '',  
     'database': 'legalaid_db',
     'cursorclass': pymysql.cursors.DictCursor
 }
@@ -78,7 +78,7 @@ def validate_token():
     except jwt.InvalidTokenError:
         return None, jsonify({'error': 'Invalid token'}), 401
 
-# Admin-specific decorator
+# Admin specific decorator
 def admin_required(func):
     def wrapper(*args, **kwargs):
         decoded, error_response, status = validate_token()
@@ -992,7 +992,7 @@ def book_appointment():
         if not all([lawyer_id, appointment_date_str]):
             return jsonify({'error': 'Lawyer ID and appointment date are required'}), 400
 
-        # Parse the appointment date (this will be offset-aware in UTC)
+        # Parse the appointment date 
         try:
             appointment_date = datetime.fromisoformat(appointment_date_str.replace('Z', '+00:00'))
         except ValueError:
@@ -1011,7 +1011,7 @@ def book_appointment():
                     conn.rollback()
                     return jsonify({'error': 'Lawyer not found'}), 404
 
-                # Check for existing appointments within a 30-minute window
+                # Check for existing appointments within a 30 minute window
                 cursor.execute("""
                     SELECT appointment_date 
                     FROM appointments 
@@ -1023,7 +1023,7 @@ def book_appointment():
 
                 for appt in existing_appointments:
                     existing_date = appt['appointment_date']
-                    # If existing_date is offset-naive, make it offset-aware (assume UTC)
+                    # If existing_date is offset naive make it offset-aware (assume UTC)
                     if existing_date.tzinfo is None:
                         existing_date = pytz.UTC.localize(existing_date)
                     # Calculate the time difference in minutes
