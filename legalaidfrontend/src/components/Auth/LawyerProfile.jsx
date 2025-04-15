@@ -169,10 +169,12 @@ export default function LawyerProfile() {
     >
       <header className={styles.header}>
         <div className={styles.container}>
+          <a href="/">
           <div className={styles.logo}>
             <Scale className={styles.logoIcon} />
             <span>NepaliLegalAidFinder</span>
           </div>
+          </a>
           <nav className={styles.mainNav}>
             <ul>
               <li><a href="/">Home</a></li>

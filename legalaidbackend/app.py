@@ -11,11 +11,17 @@ from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 import pytz  # For timezone handling
 import uuid  # For unique filenames
+import smtplib
+from email.mime.text import MIMEText
+import random
+import string
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "your-secret-key-here" 
 CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "http://localhost:3000"]}})  # Allow admin frontend
 
+EMAIL_ADDRESS = '23anonymusguy@gmail.com'  # Replace with your Gmail
+EMAIL_PASSWORD = 'qird cmcw dqqh kdzt'  
 # Initialize Flask-SocketIO
 socketio = SocketIO(app, cors_allowed_origins="*")
 
@@ -401,9 +407,13 @@ def register_lawyer():
         working_hours_start = data.get('working_hours_start', '09:00')
         working_hours_end = data.get('working_hours_end', '17:00')
         preferred_contact = data.get('preferred_contact', 'Email')
+        is_otp_verified = data.get('is_otp_verified') == 'true'
 
         if not all([name, email, password]):
             return jsonify({'error': 'Name, email, and password are required'}), 400
+
+        if not is_otp_verified:
+            return jsonify({'error': 'OTP verification required'}), 400
 
         hashed_bytes = hash_password(password)
         hashed_password = base64.b64encode(hashed_bytes).decode('utf-8')
@@ -776,7 +786,7 @@ def update_case_status(case_id):
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
-
+# Updated register_client route
 @app.route('/api/register-client', methods=['POST'])
 def register_client():
     try:
@@ -788,13 +798,13 @@ def register_client():
         email = data.get('email')
         password = data.get('password')
         phone = data.get('phone')
-        address = data.get('address', '')
-        bio = data.get('bio', '')
-        email_notifications = data.get('email_notifications', 1)
-        preferred_contact = data.get('preferred_contact', 'Email')
+        is_otp_verified = data.get('is_otp_verified') == 'true'
 
         if not all([name, email, password]):
             return jsonify({'error': 'Name, email, and password are required'}), 400
+
+        if not is_otp_verified:
+            return jsonify({'error': 'OTP verification required'}), 400
 
         hashed_bytes = hash_password(password)
         hashed_password = base64.b64encode(hashed_bytes).decode('utf-8')
@@ -816,8 +826,7 @@ def register_client():
                                         preferred_contact, profile_picture)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """
-                cursor.execute(sql, (name, email, hashed_password, phone, address, bio, email_notifications, 
-                                    preferred_contact, profile_picture))
+                cursor.execute(sql, (name, email, hashed_password, phone, '', '', 1, 'Email', profile_picture))
                 conn.commit()
         finally:
             conn.close()
@@ -2040,7 +2049,112 @@ def delete_template(admin_id, filename):
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
-    
+
+ # Add to existing functions
+def send_otp_email(email, otp):
+    try:
+        msg = MIMEText(f"Your OTP for LegalAid registration is: {otp}. It is valid for 10 minutes.")
+        msg['Subject'] = 'LegalAid Registration OTP'
+        msg['From'] = EMAIL_ADDRESS
+        msg['To'] = email
+
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+            server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            server.sendmail(EMAIL_ADDRESS, email, msg.as_string())
+        return True
+    except Exception as e:
+        print(f"Error sending OTP email: {str(e)}")
+        return False
+
+def generate_otp(length=6):
+    return ''.join(random.choices(string.digits, k=length))
+
+# New routes for OTP
+@app.route('/api/send-otp', methods=['POST'])
+def send_otp():
+    try:
+        data = request.json
+        email = data.get('email')
+        if not email:
+            return jsonify({'error': 'Email is required'}), 400
+
+        # Check if email already exists
+        conn = pymysql.connect(**db_config)
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT id FROM clients WHERE email = %s", (email,))
+                if cursor.fetchone():
+                    return jsonify({'error': 'Email already registered'}), 409
+        finally:
+            conn.close()
+
+        # Generate OTP
+        otp = generate_otp()
+        expires_at = datetime.utcnow() + timedelta(minutes=10)
+
+        # Store OTP in database
+        conn = pymysql.connect(**db_config)
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("DELETE FROM otps WHERE email = %s", (email,))
+                cursor.execute(
+                    "INSERT INTO otps (email, otp, expires_at) VALUES (%s, %s, %s)",
+                    (email, otp, expires_at)
+                )
+                conn.commit()
+        finally:
+            conn.close()
+
+        # Send OTP via email
+        if send_otp_email(email, otp):
+            return jsonify({'message': 'OTP sent successfully'}), 200
+        else:
+            return jsonify({'error': 'Failed to send OTP'}), 500
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/verify-otp', methods=['POST'])
+def verify_otp():
+    try:
+        data = request.json
+        email = data.get('email')
+        otp = data.get('otp')
+        if not all([email, otp]):
+            return jsonify({'error': 'Email and OTP are required'}), 400
+
+        conn = pymysql.connect(**db_config)
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    "SELECT otp, expires_at FROM otps WHERE email = %s",
+                    (email,)
+                )
+                otp_record = cursor.fetchone()
+                if not otp_record:
+                    return jsonify({'error': 'Invalid or expired OTP'}), 400
+
+                stored_otp = otp_record['otp']
+                expires_at = otp_record['expires_at']
+                current_time = datetime.utcnow()
+
+                if current_time > expires_at:
+                    cursor.execute("DELETE FROM otps WHERE email = %s", (email,))
+                    conn.commit()
+                    return jsonify({'error': 'OTP has expired'}), 400
+
+                if stored_otp != otp:
+                    return jsonify({'error': 'Invalid OTP'}), 400
+
+                # OTP is valid, delete it
+                cursor.execute("DELETE FROM otps WHERE email = %s", (email,))
+                conn.commit()
+                return jsonify({'message': 'OTP verified successfully'}), 200
+        finally:
+            conn.close()
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500   
 
 # WebSocket handlers for real-time case messaging
 @socketio.on('join_case')
