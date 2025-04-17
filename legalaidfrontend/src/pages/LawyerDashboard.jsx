@@ -24,10 +24,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip } from "react-tooltip";
 import styles from "./LawyerDashboard.module.css";
-import io from "socket.io-client"; // Import Socket.IO client
-
-// Initialize Socket.IO client
-const socket = io("http://127.0.0.1:5000");
+import io from "socket.io-client";
 
 export default function LawyerDashboard() {
   const [lawyer, setLawyer] = useState(null);
@@ -68,9 +65,10 @@ export default function LawyerDashboard() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
-  const [selectedClient, setSelectedClient] = useState(null); // For selecting a client to chat with
-  const [clientCases, setClientCases] = useState([]); // Store cases for the selected client
-  const [selectedCaseForChat, setSelectedCaseForChat] = useState(null); // Store the selected case for chat
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [clientCases, setClientCases] = useState([]);
+  const [selectedCaseForChat, setSelectedCaseForChat] = useState(null);
+  const [socket, setSocket] = useState(null);
 
   const navigate = useNavigate();
 
@@ -79,37 +77,22 @@ export default function LawyerDashboard() {
     localStorage.setItem("theme", theme);
   }, [theme]);
 
-  const toggleTheme = () => setTheme(theme === "light" ? "dark" : "light");
-  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
-  const toggleChat = () => {
-    setIsChatOpen(!isChatOpen);
-    if (isChatOpen) {
-      // Leave the room when closing the chat
-      if (selectedCaseForChat) {
-        socket.emit("leave", { case_id: selectedCaseForChat.id });
-      }
-      setSelectedClient(null);
-      setClientCases([]);
-      setSelectedCaseForChat(null);
-      setChatMessages([]);
-    }
-  };
-
-  const addNotification = (message, type = "success") => {
-    const id = Date.now();
-    setNotifications((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => setNotifications((prev) => prev.filter((n) => n.id !== id)), 3000);
-  };
-
   useEffect(() => {
-    const fetchData = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        addNotification("Please log in to access the dashboard", "error");
-        navigate("/lawyer-login");
-        return;
-      }
+    const token = localStorage.getItem("token");
+    if (!token) {
+      addNotification("Please log in to access the dashboard", "error");
+      navigate("/lawyer-login");
+      return;
+    }
 
+    // Initialize SocketIO connection
+    const newSocket = io("http://127.0.0.1:5000", {
+      query: { token },
+      transports: ["websocket"],
+    });
+    setSocket(newSocket);
+
+    const fetchData = async () => {
       setIsLoading(true);
       try {
         const profileResponse = await axios.get("http://127.0.0.1:5000/api/lawyer-profile", {
@@ -158,28 +141,59 @@ export default function LawyerDashboard() {
       }
     };
     fetchData();
-  }, [navigate]);
 
-  // Handle Socket.IO events
-  useEffect(() => {
-    socket.on("connect", () => {
+    // SocketIO event listeners
+    newSocket.on("connect", () => {
       console.log("Connected to Socket.IO server");
     });
 
-    socket.on("new_message", (message) => {
-      setChatMessages((prev) => [...prev, message]);
+    newSocket.on("new_message", (message) => {
+      if (message.case_id === selectedCaseForChat?.id) {
+        setChatMessages((prev) => [...prev, message]);
+      }
     });
 
-    socket.on("status", (data) => {
+    newSocket.on("status", (data) => {
       console.log(data.message);
     });
 
+    newSocket.on("call_error", (data) => {
+      addNotification(data.error, "error");
+    });
+
+    // Cleanup on unmount
     return () => {
-      socket.off("connect");
-      socket.off("new_message");
-      socket.off("status");
+      newSocket.off("connect");
+      newSocket.off("new_message");
+      newSocket.off("status");
+      newSocket.off("call_error");
+      if (selectedCaseForChat) {
+        newSocket.emit("leave", { case_id: selectedCaseForChat.id });
+      }
+      newSocket.disconnect();
     };
-  }, []);
+  }, [navigate, selectedCaseForChat]);
+
+  const toggleTheme = () => setTheme(theme === "light" ? "dark" : "light");
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+  const toggleChat = () => {
+    setIsChatOpen(!isChatOpen);
+    if (isChatOpen) {
+      if (selectedCaseForChat) {
+        socket.emit("leave", { case_id: selectedCaseForChat.id });
+      }
+      setSelectedClient(null);
+      setClientCases([]);
+      setSelectedCaseForChat(null);
+      setChatMessages([]);
+    }
+  };
+
+  const addNotification = (message, type = "success") => {
+    const id = Date.now();
+    setNotifications((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => setNotifications((prev) => prev.filter((n) => n.id !== id)), 3000);
+  };
 
   const handleClientSelect = async (client) => {
     setSelectedClient(client);
@@ -204,10 +218,8 @@ export default function LawyerDashboard() {
     setSelectedCaseForChat(caseItem);
     const token = localStorage.getItem("token");
 
-    // Join the WebSocket room for this case
     socket.emit("join", { case_id: caseItem.id });
 
-    // Fetch existing messages for the case
     try {
       const response = await axios.get(
         `http://127.0.0.1:5000/api/case/${caseItem.id}/messages`,
@@ -237,6 +249,31 @@ export default function LawyerDashboard() {
     } catch (err) {
       addNotification(err.response?.data?.error || "Failed to send message", "error");
     }
+  };
+
+  const handleInitiateVideoCall = () => {
+    if (!selectedCaseForChat || !selectedClient) {
+      addNotification("No case or client selected for video call", "error");
+      return;
+    }
+    const token = localStorage.getItem("token");
+    let lawyerId;
+    try {
+      const decoded = JSON.parse(atob(token.split('.')[1]));
+      lawyerId = decoded.lawyer_id;
+    } catch (err) {
+      addNotification("Invalid token", "error");
+      console.error(err);
+      return;
+    }
+
+    socket.emit("initiate_call", {
+      case_id: selectedCaseForChat.id,
+      lawyer_id: lawyerId,
+      client_id: selectedClient.id,
+    });
+
+    navigate(`/video-call?case_id=${selectedCaseForChat.id}&role=lawyer`);
   };
 
   const handleLogout = () => {
@@ -503,9 +540,9 @@ export default function LawyerDashboard() {
       <Tooltip id="details-tooltip" />
       <Tooltip id="create-case-tooltip" />
       <Tooltip id="chat-tooltip" />
+      <Tooltip id="video-call-tooltip" />
 
       <div className={styles.layout}>
-        {/* Sidebar */}
         <aside className={`${styles.sidebar} ${isSidebarOpen ? styles.sidebarOpen : ""}`}>
           <div className={styles.sidebarHeader}>
             <button className={styles.menuButton} onClick={toggleSidebar}>
@@ -602,7 +639,6 @@ export default function LawyerDashboard() {
           </div>
         </aside>
 
-        {/* Main Content */}
         <main className={styles.main}>
           <div className={styles.topBar}>
             <div className={styles.pageTitle}>
@@ -636,7 +672,6 @@ export default function LawyerDashboard() {
           </div>
 
           <div className={styles.dashboardContent}>
-            {/* Dashboard Tab */}
             {activeTab === "dashboard" && (
               <div className={styles.dashboardGrid}>
                 <div className={styles.welcomeCard}>
@@ -661,7 +696,7 @@ export default function LawyerDashboard() {
                     <div className={styles.statIconWrapper}>
                       <Clock className={styles.statIcon} />
                     </div>
-                    <div className={styles.statInfo}>
+                    <div titres={styles.statInfo}>
                       <h3>{pendingCases}</h3>
                       <p>Pending Cases</p>
                     </div>
@@ -842,7 +877,6 @@ export default function LawyerDashboard() {
               </div>
             )}
 
-            {/* Cases Tab */}
             {activeTab === "cases" && (
               <div className={styles.card}>
                 <div className={styles.cardHeader}>
@@ -1092,7 +1126,6 @@ export default function LawyerDashboard() {
               </div>
             )}
 
-            {/* Appointments Tab */}
             {activeTab === "appointments" && (
               <div className={styles.appointmentsContainer}>
                 <div className={styles.card}>
@@ -1195,7 +1228,6 @@ export default function LawyerDashboard() {
               </div>
             )}
 
-            {/* Profile Tab */}
             {activeTab === "profile" && (
               <div className={styles.profileCard}>
                 {isEditingProfile ? (
@@ -1382,7 +1414,6 @@ export default function LawyerDashboard() {
               </div>
             )}
 
-            {/* Settings Tab */}
             {activeTab === "settings" && (
               <div className={styles.settingsContainer}>
                 <div className={styles.card}>
@@ -1503,7 +1534,6 @@ export default function LawyerDashboard() {
         </main>
       </div>
 
-      {/* Confirmation Dialog */}
       <AnimatePresence>
         {dialog.isOpen && (
           <motion.div
@@ -1540,7 +1570,6 @@ export default function LawyerDashboard() {
         )}
       </AnimatePresence>
 
-      {/* Case Details Modal */}
       <AnimatePresence>
         {selectedCase && (
           <motion.div
@@ -1612,7 +1641,6 @@ export default function LawyerDashboard() {
         )}
       </AnimatePresence>
 
-      {/* Appointment Details Modal */}
       <AnimatePresence>
         {selectedAppointment && (
           <motion.div
@@ -1703,7 +1731,6 @@ export default function LawyerDashboard() {
         )}
       </AnimatePresence>
 
-      {/* Chat Button */}
       <button
         onClick={toggleChat}
         className={styles.chatButton}
@@ -1713,7 +1740,6 @@ export default function LawyerDashboard() {
         <MessageCircle className={styles.chatIcon} />
       </button>
 
-      {/* Chat Modal */}
       <AnimatePresence>
         {isChatOpen && (
           <motion.div
@@ -1780,6 +1806,7 @@ export default function LawyerDashboard() {
                     <div className={styles.chatConversationHeader}>
                       <h4>Chat for Case: {selectedCaseForChat.title}</h4>
                       <button
+                        onClick={handleInitiateVideoCall}
                         className={styles.videoCallButton}
                         data-tooltip-id="video-call-tooltip"
                         data-tooltip-content="Start video call"
@@ -1792,8 +1819,7 @@ export default function LawyerDashboard() {
                         chatMessages.map((message) => (
                           <div
                             key={message.id}
-                            className={`${styles.chatMessage} ${message.sender === "lawyer" ? styles.chatMessageSent : styles.chatMessageReceived
-                              }`}
+                            className={`${styles.chatMessage} ${message.sender === "lawyer" ? styles.chatMessageSent : styles.chatMessageReceived}`}
                           >
                             <div className={styles.messageBubble}>
                               <p>{message.message}</p>
@@ -1843,7 +1869,6 @@ export default function LawyerDashboard() {
         )}
       </AnimatePresence>
 
-      {/* Notifications */}
       <div className={styles.notificationContainer}>
         <AnimatePresence>
           {notifications.map((notification) => (
@@ -1866,7 +1891,6 @@ export default function LawyerDashboard() {
         </AnimatePresence>
       </div>
 
-      {/* Loading Overlay */}
       <div className={styles.loaderOverlay} style={{ display: isLoading ? "flex" : "none" }}>
         <div className={styles.loader}></div>
       </div>
