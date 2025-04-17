@@ -17,6 +17,7 @@ import {
   ChevronRight,
   Briefcase,
   MessageCircle,
+  Video,
 } from "lucide-react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -1776,15 +1777,23 @@ export default function LawyerDashboard() {
               ) : (
                 <>
                   <div className={styles.chatConversation}>
-                    <h4>Chat for Case: {selectedCaseForChat.title}</h4>
+                    <div className={styles.chatConversationHeader}>
+                      <h4>Chat for Case: {selectedCaseForChat.title}</h4>
+                      <button
+                        className={styles.videoCallButton}
+                        data-tooltip-id="video-call-tooltip"
+                        data-tooltip-content="Start video call"
+                      >
+                        <Video className={styles.videoCallIcon} />
+                      </button>
+                    </div>
                     <div className={styles.messagesContainer}>
                       {chatMessages.length > 0 ? (
                         chatMessages.map((message) => (
                           <div
                             key={message.id}
-                            className={`${styles.chatMessage} ${
-                              message.sender === "lawyer" ? styles.chatMessageSent : styles.chatMessageReceived
-                            }`}
+                            className={`${styles.chatMessage} ${message.sender === "lawyer" ? styles.chatMessageSent : styles.chatMessageReceived
+                              }`}
                           >
                             <div className={styles.messageBubble}>
                               <p>{message.message}</p>
