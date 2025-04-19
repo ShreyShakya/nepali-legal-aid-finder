@@ -2220,5 +2220,131 @@ def on_leave_case(data):
         leave_room(room)
         emit('status', {'message': f'Left case room {case_id}'}, to=room)
 
+# WebSocket handlers for video call signaling
+@socketio.on('connect')
+def on_connect():
+    token = request.args.get('token')
+    if not token:
+        emit('call_error', {'error': 'Token is missing'})
+        return False
+
+    try:
+        decoded = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        if 'client_id' not in decoded and 'lawyer_id' not in decoded:
+            emit('call_error', {'error': 'Invalid token: No client_id or lawyer_id'})
+            return False
+        # Store user info in session for later use
+        socketio.server.environ[request.sid] = {
+            'user_id': decoded.get('client_id') or decoded.get('lawyer_id'),
+            'role': 'client' if 'client_id' in decoded else 'lawyer'
+        }
+    except jwt.ExpiredSignatureError:
+        emit('call_error', {'error': 'Token has expired'})
+        return False
+    except jwt.InvalidTokenError:
+        emit('call_error', {'error': 'Invalid token'})
+        return False
+
+@socketio.on('join_call')
+def on_join_call(data):
+    case_id = data.get('case_id')
+    role = data.get('role')
+    if not case_id or not role or role not in ['client', 'lawyer']:
+        emit('call_error', {'error': 'Invalid case_id or role'})
+        return
+
+    user_info = socketio.server.environ.get(request.sid)
+    if not user_info or user_info['role'] != role:
+        emit('call_error', {'error': 'Unauthorized role'})
+        return
+
+    user_id = user_info['user_id']
+    conn = pymysql.connect(**db_config)
+    try:
+        with conn.cursor() as cursor:
+            # Verify user is authorized for the case
+            sql = f"SELECT id FROM cases WHERE id = %s AND {role}_id = %s"
+            cursor.execute(sql, (case_id, user_id))
+            if not cursor.fetchone():
+                emit('call_error', {'error': 'Unauthorized access to case'})
+                return
+    finally:
+        conn.close()
+
+    room = f"call_{case_id}"
+    join_room(room)
+    emit('status', {'message': f'Joined call room for case {case_id}'}, to=room)
+
+@socketio.on('offer')
+def on_offer(data):
+    case_id = data.get('case_id')
+    offer = data.get('offer')
+    if not case_id or not offer:
+        emit('call_error', {'error': 'Invalid offer data'})
+        return
+
+    user_info = socketio.server.environ.get(request.sid)
+    if not user_info:
+        emit('call_error', {'error': 'Unauthorized'})
+        return
+
+    room = f"call_{case_id}"
+    emit('offer', {'offer': offer}, to=room, include_self=False)
+
+@socketio.on('answer')
+def on_answer(data):
+    case_id = data.get('case_id')
+    answer = data.get('answer')
+    if not case_id or not answer:
+        emit('call_error', {'error': 'Invalid answer data'})
+        return
+
+    user_info = socketio.server.environ.get(request.sid)
+    if not user_info:
+        emit('call_error', {'error': 'Unauthorized'})
+        return
+
+    room = f"call_{case_id}"
+    emit('answer', {'answer': answer}, to=room, include_self=False)
+
+@socketio.on('ice_candidate')
+def on_ice_candidate(data):
+    case_id = data.get('case_id')
+    candidate = data.get('candidate')
+    if not case_id or not candidate:
+        emit('call_error', {'error': 'Invalid ICE candidate data'})
+        return
+
+    user_info = socketio.server.environ.get(request.sid)
+    if not user_info:
+        emit('call_error', {'error': 'Unauthorized'})
+        return
+
+    room = f"call_{case_id}"
+    emit('ice_candidate', {'candidate': candidate}, to=room, include_self=False)
+
+@socketio.on('end_call')
+def on_end_call(data):
+    case_id = data.get('case_id')
+    if not case_id:
+        emit('call_error', {'error': 'Invalid case_id'})
+        return
+
+    user_info = socketio.server.environ.get(request.sid)
+    if not user_info:
+        emit('call_error', {'error': 'Unauthorized'})
+        return
+
+    room = f"call_{case_id}"
+    emit('call_ended', {}, to=room)
+    leave_room(room)
+
+@socketio.on('disconnect')
+def on_disconnect():
+    user_info = socketio.server.environ.get(request.sid)
+    if user_info:
+        # Optionally notify rooms, but cleanup is handled by end_call
+        del socketio.server.environ[request.sid]
+
 if __name__ == '__main__':
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)
