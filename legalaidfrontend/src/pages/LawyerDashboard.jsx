@@ -5,7 +5,6 @@ import {
   Moon,
   FileText,
   Clock,
-  Calendar,
   User,
   Settings,
   AlertCircle,
@@ -1213,17 +1212,6 @@ export default function LawyerDashboard() {
                       <p>No appointments scheduled.</p>
                     </div>
                   )}
-                </div>
-
-                <div className={styles.card}>
-                  <div className={styles.cardHeader}>
-                    <h2 className={styles.cardTitle}>Calendar</h2>
-                  </div>
-                  <div className={styles.calendarPlaceholder}>
-                    <Calendar className={styles.calendarIcon} />
-                    <p>Calendar feature coming soon</p>
-                    <button className={styles.secondaryButton}>Add Events to Calendar</button>
-                  </div>
                 </div>
               </div>
             )}
