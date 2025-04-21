@@ -20,6 +20,7 @@ export default function LawyerRegistration() {
     email: "",
     password: "",
     otp: "",
+    pro_bono_availability: false,
   })
   const [profilePicture, setProfilePicture] = useState(null)
   const [message, setMessage] = useState("")
@@ -30,7 +31,11 @@ export default function LawyerRegistration() {
   const navigate = useNavigate()
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
+    const { name, value, type, checked } = e.target
+    setFormData({ 
+      ...formData, 
+      [name]: type === 'checkbox' ? checked : value 
+    })
   }
 
   const handleFileChange = (e) => {
@@ -110,7 +115,17 @@ export default function LawyerRegistration() {
       })
       setMessage(response.data.message)
       setIsError(false)
-      setFormData({ name: "", specialization: "", location: "", availability: "", bio: "", email: "", password: "", otp: "" })
+      setFormData({ 
+        name: "", 
+        specialization: "", 
+        location: "", 
+        availability: "", 
+        bio: "", 
+        email: "", 
+        password: "", 
+        otp: "",
+        pro_bono_availability: false 
+      })
       setProfilePicture(null)
       setIsOtpSent(false)
       setIsOtpVerified(false)
@@ -201,6 +216,19 @@ export default function LawyerRegistration() {
                   className={styles.formTextarea}
                   disabled={isLoading}
                 />
+              </div>
+              <div className={styles.formGroup}>
+                <label htmlFor="pro_bono_availability">
+                  <input
+                    type="checkbox"
+                    id="pro_bono_availability"
+                    name="pro_bono_availability"
+                    checked={formData.pro_bono_availability}
+                    onChange={handleChange}
+                    disabled={isLoading}
+                  />
+                  Available for Pro Bono Work
+                </label>
               </div>
               <div className={styles.formGroup}>
                 <label htmlFor="email">Email</label>

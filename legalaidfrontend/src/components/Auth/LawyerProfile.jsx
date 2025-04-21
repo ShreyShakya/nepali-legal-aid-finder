@@ -170,10 +170,10 @@ export default function LawyerProfile() {
       <header className={styles.header}>
         <div className={styles.container}>
           <a href="/">
-          <div className={styles.logo}>
-            <Scale className={styles.logoIcon} />
-            <span>NepaliLegalAidFinder</span>
-          </div>
+            <div className={styles.logo}>
+              <Scale className={styles.logoIcon} />
+              <span>NepaliLegalAidFinder</span>
+            </div>
           </a>
           <nav className={styles.mainNav}>
             <ul>
@@ -230,9 +230,8 @@ export default function LawyerProfile() {
                 </p>
                 <button
                   onClick={handleBookAppointment}
-                  className={`${styles.bookButton} ${
-                    lawyer.availability_status === "Busy" ? styles.disabledButton : ""
-                  }`}
+                  className={`${styles.bookButton} ${lawyer.availability_status === "Busy" ? styles.disabledButton : ""
+                    }`}
                   disabled={lawyer.availability_status === "Busy"}
                 >
                   Book an Appointment
@@ -253,6 +252,9 @@ export default function LawyerProfile() {
               </p>
               <p>
                 <strong>Email Notifications:</strong> {lawyer.email_notifications ? 'Enabled' : 'Disabled'}
+              </p>
+              <p>
+                <strong>Pro Bono Availability:</strong> {lawyer.pro_bono_availability ? 'Available' : 'Not Available'}
               </p>
             </div>
           </motion.div>
