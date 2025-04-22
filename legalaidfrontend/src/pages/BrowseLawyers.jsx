@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Scale, Search } from "lucide-react";
+import { Scale, Search, Leaf } from "lucide-react";
 import axios from "axios";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import legalServices from "../utils/legalServices"; // Import the shared legalServices array
+import legalServices from "../utils/legalServices";
 import styles from "./BrowseLawyers.module.css";
 
 const fadeIn = {
@@ -25,13 +25,13 @@ export default function BrowseLawyers() {
     location: "",
     minRating: "",
     availabilityStatus: "",
+    proBonoAvailability: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Extract the 'service' query parameter from the URL
   useEffect(() => {
     const serviceFromUrl = searchParams.get("service");
 
@@ -40,11 +40,10 @@ export default function BrowseLawyers() {
       setSelectedService(decodeURIComponent(serviceFromUrl));
       fetchLawyers(decodeURIComponent(serviceFromUrl), filters);
     } else {
-      fetchLawyers("", filters); // Fetch default lawyers if no service is specified
+      fetchLawyers("", filters);
     }
   }, [searchParams, filters]);
 
-  // Handle search input and show suggestions
   const handleSearchInput = (e) => {
     const query = e.target.value;
     setSearchQuery(query);
@@ -64,7 +63,6 @@ export default function BrowseLawyers() {
     setSuggestions(filteredSuggestions);
   };
 
-  // Handle suggestion selection
   const handleSuggestionClick = (service) => {
     setSearchQuery(service);
     setSelectedService(service);
@@ -73,7 +71,6 @@ export default function BrowseLawyers() {
     setSearchParams({ service });
   };
 
-  // Handle filter changes
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters((prev) => {
@@ -87,7 +84,6 @@ export default function BrowseLawyers() {
     });
   };
 
-  // Fetch lawyers based on the selected legal service and filters
   const fetchLawyers = async (service, filters) => {
     setLoading(true);
     setError("");
@@ -98,6 +94,7 @@ export default function BrowseLawyers() {
           location: filters.location,
           min_rating: filters.minRating,
           availability_status: filters.availabilityStatus,
+          pro_bono_availability: filters.proBonoAvailability,
         },
       });
       setLawyers(response.data.lawyers);
@@ -121,12 +118,10 @@ export default function BrowseLawyers() {
     setSearchParams({ service: serviceToSearch });
   };
 
-  // Updated function to allow all users to view profiles
   const handleViewProfile = (lawyerId) => {
     navigate(`/lawyer-profile/${lawyerId}`);
   };
 
-  // Handle image loading errors by falling back to the placeholder
   const handleImageError = (e) => {
     e.target.style.display = "none";
     e.target.nextSibling.style.display = "flex";
@@ -139,19 +134,17 @@ export default function BrowseLawyers() {
       animate="visible"
       variants={fadeIn}
     >
-      {/* Header */}
       <header className={styles.header}>
         <div className={styles.container}>
-        <a href="/">
-          <div className={styles.logo}>
-            <Scale className={styles.logoIcon} />
-            <span>NepaliLegalAidFinder</span>
-          </div>
+          <a href="/">
+            <div className={styles.logo}>
+              <Scale className={styles.logoIcon} />
+              <span>NepaliLegalAidFinder</span>
+            </div>
           </a>
         </div>
       </header>
 
-      {/* Search Section */}
       <section className={styles.searchSection}>
         <div className={styles.container}>
           <motion.div className={styles.searchContent} variants={slideUp}>
@@ -194,7 +187,6 @@ export default function BrowseLawyers() {
         </div>
       </section>
 
-      {/* Filters and Results Section */}
       <motion.section
         className={styles.resultsSection}
         initial="hidden"
@@ -211,7 +203,6 @@ export default function BrowseLawyers() {
             </motion.h2>
           </div>
 
-          {/* Filter Form */}
           <form className={styles.filterForm}>
             <div className={styles.filterGroup}>
               <label htmlFor="location">Location</label>
@@ -256,9 +247,22 @@ export default function BrowseLawyers() {
                 <option value="Busy">Busy</option>
               </select>
             </div>
+            <div className={styles.filterGroup}>
+              <label htmlFor="proBonoAvailability">Pro Bono Availability</label>
+              <select
+                id="proBonoAvailability"
+                name="proBonoAvailability"
+                value={filters.proBonoAvailability}
+                onChange={handleFilterChange}
+                className={styles.filterInput}
+              >
+                <option value="">Any</option>
+                <option value="true">Available</option>
+                <option value="false">Not Available</option>
+              </select>
+            </div>
           </form>
 
-          {/* Results */}
           {loading ? (
             <p>Loading...</p>
           ) : error ? (
@@ -309,6 +313,12 @@ export default function BrowseLawyers() {
                     ) : (
                       <div className={styles.placeholderPicture}>No Image</div>
                     )}
+                    {(lawyer.pro_bono_availability === true || lawyer.pro_bono_availability === 1) && (
+                      <span className={styles.proBonoTag}>
+                        <Leaf className={styles.leafIcon} />
+                        Pro Bono
+                      </span>
+                    )}
                   </div>
                   <div className={styles.lawyerInfo}>
                     <h3>{lawyer.name}</h3>
@@ -327,6 +337,10 @@ export default function BrowseLawyers() {
                     <p>
                       <strong>Availability:</strong>{" "}
                       {lawyer.availability_status || "Not specified"}
+                    </p>
+                    <p>
+                      <strong>Pro Bono:</strong>{" "}
+                      {lawyer.pro_bono_availability ? "Available" : "Not Available"}
                     </p>
                   </div>
                   <button
