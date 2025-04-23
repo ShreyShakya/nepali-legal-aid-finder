@@ -223,7 +223,8 @@ def get_all_lawyers(admin_id):
         try:
             with conn.cursor() as cursor:
                 sql = """
-                    SELECT id, name, email, specialization, location, availability_status, profile_picture
+                    SELECT id, name, email, specialization, location, availability_status, profile_picture, 
+                           pro_bono_availability
                     FROM lawyers
                 """
                 cursor.execute(sql)
@@ -408,6 +409,7 @@ def register_lawyer():
         working_hours_end = data.get('working_hours_end', '17:00')
         preferred_contact = data.get('preferred_contact', 'Email')
         is_otp_verified = data.get('is_otp_verified') == 'true'
+        pro_bono_availability = data.get('pro_bono_availability', False)
 
         if not all([name, email, password]):
             return jsonify({'error': 'Name, email, and password are required'}), 400
@@ -433,12 +435,12 @@ def register_lawyer():
                 sql = """
                     INSERT INTO lawyers (name, specialization, location, availability, bio, email, password, 
                         email_notifications, availability_status, working_hours_start, working_hours_end, 
-                        preferred_contact, profile_picture)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        preferred_contact, profile_picture, pro_bono_availability)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """
                 cursor.execute(sql, (name, specialization, location, availability, bio, email, hashed_password,
                                      email_notifications, availability_status, working_hours_start, working_hours_end,
-                                     preferred_contact, profile_picture))
+                                     preferred_contact, profile_picture, pro_bono_availability))
                 conn.commit()
         finally:
             conn.close()
@@ -521,7 +523,8 @@ def lawyer_profile():
             with conn.cursor() as cursor:
                 sql = """
                     SELECT id, name, email, specialization, location, availability, bio, email_notifications, 
-                           availability_status, working_hours_start, working_hours_end, preferred_contact, profile_picture
+                           availability_status, working_hours_start, working_hours_end, preferred_contact, 
+                           profile_picture, pro_bono_availability
                     FROM lawyers WHERE id = %s
                 """
                 cursor.execute(sql, (lawyer_id,))
@@ -570,6 +573,9 @@ def update_lawyer_profile():
                 file.save(file_path)
                 profile_picture = filename
 
+        # Convert pro_bono_availability string to boolean
+        pro_bono_availability = data.get('pro_bono_availability', 'false').lower() == 'true'
+
         conn = pymysql.connect(**db_config)
         try:
             with conn.cursor() as cursor:
@@ -583,7 +589,7 @@ def update_lawyer_profile():
                     SET specialization = %s, location = %s, availability = %s, bio = %s, 
                         email_notifications = %s, availability_status = %s, 
                         working_hours_start = %s, working_hours_end = %s, preferred_contact = %s,
-                        profile_picture = %s
+                        profile_picture = %s, pro_bono_availability = %s
                     WHERE id = %s
                 """
                 cursor.execute(sql, (
@@ -597,13 +603,19 @@ def update_lawyer_profile():
                     data.get('working_hours_end', '17:00'),
                     data.get('preferred_contact', 'Email'),
                     profile_picture,
+                    pro_bono_availability,
                     lawyer_id
                 ))
+                affected_rows = cursor.rowcount
+                print(f"Updated {affected_rows} rows for lawyer_id {lawyer_id}")
+                if affected_rows == 0:
+                    return jsonify({'error': 'No rows updated, check lawyer_id or data'}), 400
                 conn.commit()
 
                 cursor.execute("""
                     SELECT id, name, email, specialization, location, availability, bio, email_notifications, 
-                           availability_status, working_hours_start, working_hours_end, preferred_contact, profile_picture
+                           availability_status, working_hours_start, working_hours_end, preferred_contact, 
+                           profile_picture, pro_bono_availability
                     FROM lawyers WHERE id = %s
                 """, (lawyer_id,))
                 lawyer = cursor.fetchone()
@@ -900,6 +912,7 @@ def get_lawyers():
         location = request.args.get('location', '')
         availability_status = request.args.get('availability_status', '')
         min_rating = request.args.get('min_rating', '')
+        pro_bono_availability = request.args.get('pro_bono_availability', '')
 
         conn = pymysql.connect(**db_config)
         try:
@@ -907,7 +920,8 @@ def get_lawyers():
                 sql = """
                     SELECT id, name, specialization, location, availability, bio, 
                            email_notifications, availability_status, working_hours_start, 
-                           working_hours_end, preferred_contact, profile_picture, rating
+                           working_hours_end, preferred_contact, profile_picture, rating, 
+                           pro_bono_availability
                     FROM lawyers
                     WHERE 1=1
                 """
@@ -925,6 +939,9 @@ def get_lawyers():
                 if min_rating:
                     sql += " AND rating >= %s"
                     params.append(float(min_rating))
+                if pro_bono_availability:
+                    sql += " AND pro_bono_availability = %s"
+                    params.append(pro_bono_availability.lower() == 'true')
 
                 cursor.execute(sql, params)
                 lawyers = cursor.fetchall()
@@ -957,7 +974,8 @@ def get_lawyer(lawyer_id):
                 sql = """
                     SELECT id, name, specialization, location, availability, bio, 
                            email_notifications, availability_status, working_hours_start, 
-                           working_hours_end, preferred_contact, profile_picture, rating
+                           working_hours_end, preferred_contact, profile_picture, rating, 
+                           pro_bono_availability
                     FROM lawyers
                     WHERE id = %s
                 """
