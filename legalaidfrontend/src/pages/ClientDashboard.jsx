@@ -18,11 +18,14 @@ import {
   X,
   MoreVertical,
   ChevronRight,
-  MessageCircle,
+  MessageCircle, // Added for chat
 } from "lucide-react"
 import { Tooltip } from "react-tooltip"
 import styles from "./ClientDashboard.module.css"
-import io from "socket.io-client"
+import io from "socket.io-client" // Import Socket.IO client
+
+// Initialize Socket.IO client
+const socket = io("http://127.0.0.1:5000")
 
 export default function ClientDashboard() {
   const [client, setClient] = useState(null)
@@ -45,15 +48,12 @@ export default function ClientDashboard() {
     confirmNewPassword: "",
   })
   const [passwordError, setPasswordError] = useState("")
+  
   // Chat-related state
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [chatMessages, setChatMessages] = useState([])
   const [newMessage, setNewMessage] = useState("")
   const [selectedCaseForChat, setSelectedCaseForChat] = useState(null)
-  // Video call state
-  const [isCallModalOpen, setIsCallModalOpen] = useState(false)
-  const [incomingCall, setIncomingCall] = useState(null)
-  const [socket, setSocket] = useState(null)
 
   const navigate = useNavigate()
 
@@ -61,70 +61,6 @@ export default function ClientDashboard() {
     document.body.className = theme === "dark" ? styles.darkTheme : ""
     localStorage.setItem("theme", theme)
   }, [theme])
-
-  useEffect(() => {
-    const token = localStorage.getItem("clientToken")
-    const clientData = localStorage.getItem("client")
-
-    if (!token || !clientData) {
-      addNotification("Please log in to access the dashboard", "error")
-      navigate("/client-login")
-      return
-    }
-
-    // Initialize SocketIO connection
-    const newSocket = io("http://127.0.0.1:5000", {
-      query: { token },
-      transports: ["websocket"],
-    })
-    setSocket(newSocket)
-
-    const parsedClient = JSON.parse(clientData)
-    setClient(parsedClient)
-    setFormData(parsedClient)
-    setSettingsFormData({
-      email_notifications: parsedClient.email_notifications || false,
-      preferred_contact: parsedClient.preferred_contact || "Email",
-    })
-    fetchData(token)
-
-    // SocketIO event listeners
-    newSocket.on("connect", () => {
-      console.log("Connected to Socket.IO server")
-    })
-
-    newSocket.on("new_message", (message) => {
-      if (message.case_id === selectedCaseForChat?.id) {
-        setChatMessages((prev) => [...prev, message])
-      }
-    })
-
-    newSocket.on("status", (data) => {
-      console.log(data.message)
-    })
-
-    newSocket.on("call_incoming", (data) => {
-      setIncomingCall(data)
-      setIsCallModalOpen(true)
-    })
-
-    newSocket.on("call_error", (data) => {
-      addNotification(data.error, "error")
-    })
-
-    // Cleanup on unmount
-    return () => {
-      newSocket.off("connect")
-      newSocket.off("new_message")
-      newSocket.off("status")
-      newSocket.off("call_incoming")
-      newSocket.off("call_error")
-      if (selectedCaseForChat) {
-        newSocket.emit("leave", { case_id: selectedCaseForChat.id })
-      }
-      newSocket.disconnect()
-    }
-  }, [navigate, selectedCaseForChat])
 
   const toggleTheme = () => setTheme(theme === "light" ? "dark" : "light")
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
@@ -142,6 +78,26 @@ export default function ClientDashboard() {
     setNotifications((prev) => [...prev, { id, message, type }])
     setTimeout(() => setNotifications((prev) => prev.filter((n) => n.id !== id)), 3000)
   }
+
+  useEffect(() => {
+    const token = localStorage.getItem("clientToken")
+    const clientData = localStorage.getItem("client")
+
+    if (!token || !clientData) {
+      addNotification("Please log in to access the dashboard", "error")
+      navigate("/client-login")
+      return
+    }
+
+    const parsedClient = JSON.parse(clientData)
+    setClient(parsedClient)
+    setFormData(parsedClient)
+    setSettingsFormData({
+      email_notifications: parsedClient.email_notifications || false,
+      preferred_contact: parsedClient.preferred_contact || "Email",
+    })
+    fetchData(token)
+  }, [navigate])
 
   const fetchData = async (token) => {
     setLoading(true)
@@ -168,6 +124,27 @@ export default function ClientDashboard() {
       setLoading(false)
     }
   }
+
+  // Handle Socket.IO events
+  useEffect(() => {
+    socket.on("connect", () => {
+      console.log("Connected to Socket.IO server")
+    })
+
+    socket.on("new_message", (message) => {
+      setChatMessages((prev) => [...prev, message])
+    })
+
+    socket.on("status", (data) => {
+      console.log(data.message)
+    })
+
+    return () => {
+      socket.off("connect")
+      socket.off("new_message")
+      socket.off("status")
+    }
+  }, [])
 
   const handleCaseSelectForChat = async (caseItem) => {
     setSelectedCaseForChat(caseItem)
@@ -201,25 +178,6 @@ export default function ClientDashboard() {
     } catch (err) {
       addNotification(err.response?.data?.error || "Failed to send message", "error")
     }
-  }
-
-  const handleAcceptCall = () => {
-    socket.emit("call_accepted", {
-      case_id: incomingCall.case_id,
-      lawyer_id: incomingCall.lawyer_id,
-    })
-    setIsCallModalOpen(false)
-    setIncomingCall(null)
-    navigate(`/video-call?case_id=${incomingCall.case_id}&role=client`)
-  }
-
-  const handleDeclineCall = () => {
-    socket.emit("call_declined", {
-      case_id: incomingCall.case_id,
-      lawyer_id: incomingCall.lawyer_id,
-    })
-    setIsCallModalOpen(false)
-    setIncomingCall(null)
   }
 
   const handleLogout = () => {
@@ -383,7 +341,7 @@ export default function ClientDashboard() {
       <Tooltip id="logout-tooltip" />
       <Tooltip id="details-tooltip" />
       <Tooltip id="edit-tooltip" />
-      <Tooltip id="chat-tooltip" />
+      <Tooltip id="chat-tooltip" /> {/* Added for chat */}
 
       <div className={styles.layout}>
         {/* Sidebar */}
@@ -1160,45 +1118,6 @@ export default function ClientDashboard() {
         )}
       </AnimatePresence>
 
-      {/* Incoming Call Modal */}
-      <AnimatePresence>
-        {isCallModalOpen && incomingCall && (
-          <motion.div
-            className={styles.modalOverlay}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className={styles.modalContent}
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-            >
-              <div className={styles.modalHeader}>
-                <h3>Incoming Video Call</h3>
-                <button onClick={handleDeclineCall} className={styles.closeButton}>
-                  <X className={styles.closeIcon} />
-                </button>
-              </div>
-              <div className={styles.modalBody}>
-                <p>
-                  Incoming call from {incomingCall.lawyer_name} for case: {incomingCall.case_title} (#{incomingCall.case_id})
-                </p>
-              </div>
-              <div className={styles.modalFooter}>
-                <button onClick={handleAcceptCall} className={styles.primaryButton}>
-                  Accept
-                </button>
-                <button onClick={handleDeclineCall} className={styles.dangerButton}>
-                  Decline
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Chat Button */}
       <button
         onClick={toggleChat}
@@ -1248,9 +1167,7 @@ export default function ClientDashboard() {
               ) : (
                 <>
                   <div className={styles.chatConversation}>
-                    <div className={styles.chatConversationHeader}>
-                      <h4>Chat for Case: {selectedCaseForChat.title}</h4>
-                    </div>
+                    <h4>Chat for Case: {selectedCaseForChat.title}</h4>
                     <div className={styles.messagesContainer}>
                       {chatMessages.length > 0 ? (
                         chatMessages.map((message) => (

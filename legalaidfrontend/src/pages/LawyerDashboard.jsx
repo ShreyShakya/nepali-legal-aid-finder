@@ -1318,6 +1318,18 @@ export default function LawyerDashboard() {
                           className={styles.formInput}
                         />
                       </div>
+                      <div className={styles.formGroup}>
+                        <label>
+                          <input
+                            type="checkbox"
+                            name="pro_bono_availability"
+                            checked={formData.pro_bono_availability}
+                            onChange={handleProfileChange}
+                            className={styles.checkbox}
+                          />
+                          Available for Pro Bono Work
+                        </label>
+                      </div>
                     </div>
 
                     <div className={styles.formActions}>
@@ -1391,6 +1403,13 @@ export default function LawyerDashboard() {
                     <div className={styles.profileDetailsCard}>
                       <h3 className={styles.detailsTitle}>About</h3>
                       <p className={styles.bioText}>{lawyer.bio || "No bio information provided."}</p>
+                    </div>
+
+                    <div className={styles.profileDetailsCard}>
+                      <h3 className={styles.detailsTitle}>Pro Bono Availability</h3>
+                      <p className={styles.bioText}>
+                        {lawyer.pro_bono_availability ? "Available for pro bono work" : "Not available for pro bono work"}
+                      </p>
                     </div>
 
                     <div className={styles.profileDetailsCard}>
