@@ -4,7 +4,7 @@ import { useState } from "react"
 import { motion } from "framer-motion"
 import { Scale } from "lucide-react"
 import axios from "axios"
-import { useNavigate, Link } from "react-router-dom" // Added Link
+import { useNavigate, Link } from "react-router-dom"
 import styles from "./LawyerLogin.module.css"
 
 const fadeIn = {
@@ -59,7 +59,6 @@ export default function LawyerLogin() {
       animate="visible"
       variants={fadeIn}
     >
-
       <section className={styles.loginSection}>
         <div className={styles.loginContainer}>
           <motion.div className={styles.loginContent}>
@@ -102,6 +101,9 @@ export default function LawyerLogin() {
             )}
             <p className={styles.authLink}>
               Don't have an account yet? <Link to="/register-lawyer">Register here</Link>
+            </p>
+            <p className={styles.authLink}>
+              Forgot your password? <Link to="/forgot-password/lawyer">Reset here</Link>
             </p>
           </motion.div>
         </div>

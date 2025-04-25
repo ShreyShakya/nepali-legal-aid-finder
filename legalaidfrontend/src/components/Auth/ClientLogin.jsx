@@ -108,6 +108,9 @@ export default function ClientLogin() {
             <p className={styles.authLink}>
               Don’t have an account? <Link to="/client-registration">Register here</Link>
             </p>
+            <p className={styles.authLink}>
+              Forgot your password? <Link to="/forgot-password/client">Reset here</Link>
+            </p>
           </motion.div>
         </div>
       </section>
