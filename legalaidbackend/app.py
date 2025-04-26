@@ -2119,6 +2119,117 @@ def send_otp_email(email, otp):
 def generate_otp(length=6):
     return ''.join(random.choices(string.digits, k=length))
 
+@app.route('/api/send-password-reset-otp', methods=['POST'])
+def send_password_reset_otp():
+    try:
+        data = request.json
+        email = data.get('email')
+        role = data.get('role')
+        if not email or not role or role not in ['client', 'lawyer']:
+            return jsonify({'error': 'Email and valid role (client or lawyer) are required'}), 400
+
+        # Check if email exists in the appropriate table
+        conn = pymysql.connect(**db_config)
+        try:
+            with conn.cursor() as cursor:
+                table = 'clients' if role == 'client' else 'lawyers'
+                cursor.execute(f"SELECT id FROM {table} WHERE email = %s", (email,))
+                user = cursor.fetchone()
+                if not user:
+                    return jsonify({'error': f'{role.capitalize()} not found'}), 404
+        finally:
+            conn.close()
+
+        # Generate OTP
+        otp = generate_otp()
+        expires_at = datetime.utcnow() + timedelta(minutes=10)
+
+        # Store OTP in database
+        conn = pymysql.connect(**db_config)
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("DELETE FROM otps WHERE email = %s", (email,))
+                cursor.execute(
+                    "INSERT INTO otps (email, otp, expires_at) VALUES (%s, %s, %s)",
+                    (email, otp, expires_at)
+                )
+                conn.commit()
+        finally:
+            conn.close()
+
+        # Send OTP via email
+        if send_otp_email(email, otp):
+            return jsonify({'message': 'Password reset OTP sent successfully'}), 200
+        else:
+            return jsonify({'error': 'Failed to send OTP'}), 500
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/reset-password', methods=['POST'])
+def reset_password():
+    try:
+        data = request.json
+        email = data.get('email')
+        otp = data.get('otp')
+        new_password = data.get('new_password')
+        role = data.get('role')
+        if not all([email, otp, new_password, role]) or role not in ['client', 'lawyer']:
+            return jsonify({'error': 'Email, OTP, new password, and valid role (client or lawyer) are required'}), 400
+
+        if len(new_password) < 8:
+            return jsonify({'error': 'New password must be at least 8 characters long'}), 400
+
+        # Verify OTP
+        conn = pymysql.connect(**db_config)
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    "SELECT otp, expires_at FROM otps WHERE email = %s",
+                    (email,)
+                )
+                otp_record = cursor.fetchone()
+                if not otp_record:
+                    return jsonify({'error': 'Invalid or expired OTP'}), 400
+
+                stored_otp = otp_record['otp']
+                expires_at = otp_record['expires_at']
+                current_time = datetime.utcnow()
+
+                if current_time > expires_at:
+                    cursor.execute("DELETE FROM otps WHERE email = %s", (email,))
+                    conn.commit()
+                    return jsonify({'error': 'OTP has expired'}), 400
+
+                if stored_otp != otp:
+                    return jsonify({'error': 'Invalid OTP'}), 400
+
+                # Verify user exists
+                table = 'clients' if role == 'client' else 'lawyers'
+                cursor.execute(f"SELECT id FROM {table} WHERE email = %s", (email,))
+                user = cursor.fetchone()
+                if not user:
+                    return jsonify({'error': f'{role.capitalize()} not found'}), 404
+
+                # Update password
+                hashed_bytes = hash_password(new_password)
+                hashed_new_password = base64.b64encode(hashed_bytes).decode('utf-8')
+                cursor.execute(
+                    f"UPDATE {table} SET password = %s WHERE email = %s",
+                    (hashed_new_password, email)
+                )
+
+                # Delete OTP
+                cursor.execute("DELETE FROM otps WHERE email = %s", (email,))
+                conn.commit()
+        finally:
+            conn.close()
+
+        return jsonify({'message': 'Password reset successfully'}), 200
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
 # New routes for OTP
 @app.route('/api/send-otp', methods=['POST'])
 def send_otp():
