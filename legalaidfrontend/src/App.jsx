@@ -14,6 +14,8 @@ import DocumentTemplatesPage from './pages/DocumentTemplatesPage';
 import AdminLogin from './components/Admin/AdminLogin'; // New admin login component
 import Dashboard from './components/Admin/Dashboard'; // New admin dashboard component
 import AdminRegister from './components/Admin/AdminRegister';
+import VideoCall from './pages/VideoCall';
+import ForgotPassword from './components/Auth/ForgotPassword';
 
 function App() {
   return (
@@ -39,6 +41,8 @@ function App() {
         <Route path="/case-details/:caseId" element={<CaseDetails />} />
         <Route path="/client-case/:caseId" element={<ClientCaseDetails />} />
         <Route path="/document-templates" element={<DocumentTemplatesPage />} />
+        <Route path="/video-call" element={<VideoCall />} />
+        <Route path="forgot-password/:role" element={<ForgotPassword />} />
 
         {/* Admin Routes */}
         <Route path="/admin/register" element={<AdminRegister />} />
