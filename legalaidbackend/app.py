@@ -2103,7 +2103,7 @@ def delete_template(admin_id, filename):
  # Add to existing functions
 def send_otp_email(email, otp):
     try:
-        msg = MIMEText(f"Your OTP for LegalAid registration is: {otp}. It is valid for 10 minutes.")
+        msg = MIMEText(f"Your OTP for NepaliLegalAidFinder is: {otp}. It is valid for 10 minutes.")
         msg['Subject'] = 'LegalAid Registration OTP'
         msg['From'] = EMAIL_ADDRESS
         msg['To'] = email
