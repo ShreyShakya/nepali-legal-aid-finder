@@ -1405,7 +1405,7 @@ def add_timeline_event(case_id):
         try:
             with conn.cursor() as cursor:
                 # Verify the case belongs to the lawyer
-                cursor.execute("SELECT lawyer_id FROM cases WHERE id = %s", (case_id,))
+                cursor.execute("SELECT lawyer_id, client_id FROM cases WHERE id = %s", (case_id,))
                 case = cursor.fetchone()
                 if not case or case['lawyer_id'] != lawyer_id:
                     return jsonify({'error': 'Case not found or unauthorized'}), 403
@@ -1415,6 +1415,25 @@ def add_timeline_event(case_id):
                     "INSERT INTO case_timeline (case_id, progress_event, event_date) VALUES (%s, %s, %s)",
                     (case_id, progress_event, event_date)
                 )
+
+                # Fetch client email
+                cursor.execute("SELECT email, name FROM clients WHERE id = %s", (case['client_id'],))
+                client = cursor.fetchone()
+                if client:
+                    # Format event date
+                    event_date_dt = datetime.fromisoformat(event_date.replace('Z', '+00:00'))
+                    formatted_date = event_date_dt.astimezone(pytz.timezone('Asia/Kathmandu')).strftime('%B %d, %Y')
+                    email_body = (
+                        f"Dear {client['name']},\n\n"
+                        f"A new update has been added to your case:\n"
+                        f"Event: {progress_event}\n"
+                        f"Date: {formatted_date}\n\n"
+                        f"Please log in to the LegalAid platform to view details.\n"
+                        f"Best regards,\nLegalAid Team"
+                    )
+                    if not send_email(client['email'], 'New Case Update', email_body):
+                        print(f"Failed to send timeline update email to {client['email']}")
+
                 conn.commit()
 
                 # Fetch the newly added event
@@ -1451,7 +1470,7 @@ def upload_document(case_id):
             try:
                 with conn.cursor() as cursor:
                     # Verify the case belongs to the lawyer
-                    cursor.execute("SELECT lawyer_id FROM cases WHERE id = %s", (case_id,))
+                    cursor.execute("SELECT lawyer_id, client_id FROM cases WHERE id = %s", (case_id,))
                     case = cursor.fetchone()
                     if not case or case['lawyer_id'] != lawyer_id:
                         return jsonify({'error': 'Case not found or unauthorized'}), 403
@@ -1461,6 +1480,21 @@ def upload_document(case_id):
                         "INSERT INTO court_files (case_id, file_path) VALUES (%s, %s)",
                         (case_id, filename)
                     )
+
+                    # Fetch client email
+                    cursor.execute("SELECT email, name FROM clients WHERE id = %s", (case['client_id'],))
+                    client = cursor.fetchone()
+                    if client:
+                        email_body = (
+                            f"Dear {client['name']},\n\n"
+                            f"A new document has been uploaded to your case:\n"
+                            f"File: {filename}\n\n"
+                            f"Please log in to the LegalAid platform to view it.\n"
+                            f"Best regards,\nLegalAid Team"
+                        )
+                        if not send_email(client['email'], 'A New Document Has Been Uploaded to Your Case', email_body):
+                            print(f"Failed to send document upload email to {client['email']}")
+
                     conn.commit()
 
                     # Fetch the newly added document
@@ -1541,7 +1575,7 @@ def add_evidence(case_id):
         try:
             with conn.cursor() as cursor:
                 # Verify the case belongs to the lawyer
-                cursor.execute("SELECT lawyer_id FROM cases WHERE id = %s", (case_id,))
+                cursor.execute("SELECT lawyer_id, client_id FROM cases WHERE id = %s", (case_id,))
                 case = cursor.fetchone()
                 if not case or case['lawyer_id'] != lawyer_id:
                     return jsonify({'error': 'Case not found or unauthorized'}), 403
@@ -1551,6 +1585,22 @@ def add_evidence(case_id):
                     "INSERT INTO evidence_files (case_id, file_path, description, reviewed) VALUES (%s, %s, %s, %s)",
                     (case_id, file_path, description, False)
                 )
+
+                # Fetch client email
+                cursor.execute("SELECT email, name FROM clients WHERE id = %s", (case['client_id'],))
+                client = cursor.fetchone()
+                if client:
+                    email_body = (
+                        f"Dear {client['name']},\n\n"
+                        f"A new document has been uploaded to your case:\n"
+                        f"Description: {description}\n"
+                        f"{f'File: {filename}' if file_path else ''}\n\n"
+                        f"Please log in to the LegalAid platform to view it.\n"
+                        f"Best regards,\nLegalAid Team"
+                    )
+                    if not send_email(client['email'], 'A New Document Has Been Uploaded to Your Case', email_body):
+                        print(f"Failed to send evidence upload email to {client['email']}")
+
                 conn.commit()
 
                 # Fetch the newly added evidence
