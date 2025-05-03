@@ -16,7 +16,6 @@ import {
   ChevronRight,
   Briefcase,
   MessageCircle,
-  Video,
 } from "lucide-react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -156,10 +155,6 @@ export default function LawyerDashboard() {
       console.log(data.message);
     });
 
-    newSocket.on("call_error", (data) => {
-      addNotification(data.error, "error");
-    });
-
     // Cleanup on unmount
     return () => {
       newSocket.off("connect");
@@ -248,31 +243,6 @@ export default function LawyerDashboard() {
     } catch (err) {
       addNotification(err.response?.data?.error || "Failed to send message", "error");
     }
-  };
-
-  const handleInitiateVideoCall = () => {
-    if (!selectedCaseForChat || !selectedClient) {
-      addNotification("No case or client selected for video call", "error");
-      return;
-    }
-    const token = localStorage.getItem("token");
-    let lawyerId;
-    try {
-      const decoded = JSON.parse(atob(token.split('.')[1]));
-      lawyerId = decoded.lawyer_id;
-    } catch (err) {
-      addNotification("Invalid token", "error");
-      console.error(err);
-      return;
-    }
-
-    socket.emit("initiate_call", {
-      case_id: selectedCaseForChat.id,
-      lawyer_id: lawyerId,
-      client_id: selectedClient.id,
-    });
-
-    navigate(`/video-call?case_id=${selectedCaseForChat.id}&role=lawyer`);
   };
 
   const handleLogout = () => {
@@ -539,7 +509,6 @@ export default function LawyerDashboard() {
       <Tooltip id="details-tooltip" />
       <Tooltip id="create-case-tooltip" />
       <Tooltip id="chat-tooltip" />
-      <Tooltip id="video-call-tooltip" />
 
       <div className={styles.layout}>
         <aside className={`${styles.sidebar} ${isSidebarOpen ? styles.sidebarOpen : ""}`}>
@@ -1812,14 +1781,6 @@ export default function LawyerDashboard() {
                   <div className={styles.chatConversation}>
                     <div className={styles.chatConversationHeader}>
                       <h4>Chat for Case: {selectedCaseForChat.title}</h4>
-                      <button
-                        onClick={handleInitiateVideoCall}
-                        className={styles.videoCallButton}
-                        data-tooltip-id="video-call-tooltip"
-                        data-tooltip-content="Start video call"
-                      >
-                        <Video className={styles.videoCallIcon} />
-                      </button>
                     </div>
                     <div className={styles.messagesContainer}>
                       {chatMessages.length > 0 ? (
