@@ -15,6 +15,8 @@ import smtplib
 from email.mime.text import MIMEText
 import random
 import string
+from cryptography.hazmat.primitives import serialization
+import jwt as pyjwt
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "your-secret-key-here" 
@@ -22,6 +24,60 @@ CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "http://lo
 
 EMAIL_ADDRESS = '23anonymusguy@gmail.com'  # Replace with your Gmail
 EMAIL_PASSWORD = 'qird cmcw dqqh kdzt'  
+
+# Load private key
+with open(r"C:\Users\Shrey\legalaid\legalaidbackend\private_key.pem", "rb") as key_file:
+    PRIVATE_KEY = serialization.load_pem_private_key(
+        key_file.read(),
+        password=None
+    )
+
+# 8x8 JaaS credentials
+APP_ID = "vpaas-magic-cookie-70206cd47ac84290b883e32da817bc72"
+API_KEY = "vpaas-magic-cookie-70206cd47ac84290b883e32da817bc72/f5adc6"
+
+# Generate JWT for JaaS
+
+def generate_jaas_jwt(user_type, user_name, appointment_id):
+    now = datetime.now(pytz.UTC)
+    print("🔧 Server time (UTC):", now)
+    print("🔧 Token exp UTC:", now + timedelta(hours=1))
+    print("🔧 exp timestamp:", int((now + timedelta(hours=1)).timestamp()))
+    payload = {
+        "iss": "chat",
+        "aud": "jitsi",
+        "exp": int((now + timedelta(hours=1)).timestamp()),
+        "nbf": int((now - timedelta(seconds=30)).timestamp()),
+        "room": f"NepaliLegalAid-{appointment_id}",
+        "sub": APP_ID,
+        "context": {
+            "user": {
+                "name": user_name,
+                "moderator": user_type == "lawyer",
+                "hidden-from-recorder": False,
+                "email": f"{user_type}@nepali-legalaidfinder.com",
+                "id": f"{user_type}-{appointment_id}"
+            },
+            "features": {
+                "livestreaming": False,
+                "outbound-call": False,
+                "sip-outbound-call": False,
+                "transcription": False,
+                "recording": False
+            }
+        }
+    }
+    headers = {
+        "kid": API_KEY,
+        "typ": "JWT",
+        "alg": "RS256"
+    }
+    token = pyjwt.encode(payload, PRIVATE_KEY, algorithm="RS256", headers=headers)
+    print("🔧 Generated JWT:", token)
+    decoded = pyjwt.decode(token, options={"verify_signature": False})
+    print("🔧 Decoded JWT payload:", decoded)
+    return token
+
 # Initialize Flask-SocketIO
 socketio = SocketIO(app, cors_allowed_origins="*")
 
@@ -2398,6 +2454,47 @@ def on_leave_case(data):
         room = f"case_{case_id}"
         leave_room(room)
         emit('status', {'message': f'Left case room {case_id}'}, to=room)
+
+@socketio.on('initiate_call')
+def handle_initiate_call(data):
+    appointment_id = data.get('appointment_id')
+    client_id = data.get('client_id')
+    lawyer_name = data.get('lawyer_name', 'Lawyer')
+    if not appointment_id or not client_id:
+        emit('call_error', {'message': 'Invalid appointment or client ID'})
+        return
+    client_jwt = generate_jaas_jwt("client", "Client", appointment_id)
+    lawyer_jwt = generate_jaas_jwt("lawyer", lawyer_name, appointment_id)
+    room = f"client_{client_id}"
+    emit('incoming_call', {
+        'appointmentId': appointment_id,
+        'clientJwt': client_jwt,
+        'lawyerJwt': lawyer_jwt
+    }, room=room)
+
+@socketio.on('join_client_room')
+def handle_join_client_room(data):
+    client_id = data.get('client_id')
+    if client_id:
+        room = f"client_{client_id}"
+        join_room(room)
+        emit('status', {'message': f'Joined room {room}'})
+
+# Endpoint to get JWT for lawyer
+@app.route('/api/get-jaas-jwt', methods=['POST'])
+def get_jaas_jwt():
+    data = request.get_json()
+    appointment_id = data.get('appointment_id')
+    user_type = data.get('user_type')
+    user_name = data.get('user_name', user_type.capitalize())
+    if not appointment_id or not user_type:
+        return jsonify({'error': 'Missing appointment_id or user_type'}), 400
+    try:
+        jwt_token = generate_jaas_jwt(user_type, user_name, appointment_id)
+        print(f"Generated JWT at {datetime.utcnow()}: {jwt_token}")
+        return jsonify({'jwt': jwt_token})
+    except Exception as e:
+        return jsonify({'error': f'Failed to generate JWT: {str(e)}'}), 500
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)
