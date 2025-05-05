@@ -15,6 +15,7 @@ import AdminLogin from './components/Admin/AdminLogin'; // New admin login compo
 import Dashboard from './components/Admin/Dashboard'; // New admin dashboard component
 import AdminRegister from './components/Admin/AdminRegister';
 import ForgotPassword from './components/Auth/ForgotPassword';
+import VerifyKyc from './components/Auth/VerifyKyc';
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
         <Route path="/lawyer-login" element={<LawyerLogin />} />
         <Route path="/lawyer-profile" element={<LawyerProfile />} />
         <Route path="/lawyer-profile/:id" element={<LawyerProfile />} />
+        <Route path="/verify-kyc" element={<VerifyKyc />} />
 
         {/* Client Routes */}
         <Route path="/client-registration" element={<ClientRegistration />} />

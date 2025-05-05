@@ -2174,6 +2174,84 @@ def serve_template(filename):
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
     
+@app.route('/api/submit-review', methods=['POST', 'OPTIONS'])
+def submit_review():
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
+
+    try:
+        client_id = decoded['client_id']
+        data = request.json
+        lawyer_id = data.get('lawyer_id')
+        rating = data.get('rating')
+        comment = data.get('comment', '').strip()
+
+        if not all([lawyer_id, rating]):
+            return jsonify({'error': 'Lawyer ID and rating are required'}), 400
+
+        # Validate rating
+        try:
+            rating = int(rating)
+            if rating < 1 or rating > 5:
+                return jsonify({'error': 'Rating must be between 1 and 5'}), 400
+        except ValueError:
+            return jsonify({'error': 'Rating must be an integer'}), 400
+
+        # Validate comment length (optional, max 500 characters for example)
+        if len(comment) > 500:
+            return jsonify({'error': 'Review comment cannot exceed 500 characters'}), 400
+
+        conn = pymysql.connect(**db_config)
+        try:
+            with conn.cursor() as cursor:
+                # Check if the lawyer exists
+                cursor.execute("SELECT id FROM lawyers WHERE id = %s", (lawyer_id,))
+                lawyer = cursor.fetchone()
+                if not lawyer:
+                    return jsonify({'error': 'Lawyer not found'}), 404
+
+                # Check if the client has already rated this lawyer
+                cursor.execute(
+                    "SELECT id FROM reviews WHERE lawyer_id = %s AND client_id = %s",
+                    (lawyer_id, client_id)
+                )
+                existing_review = cursor.fetchone()
+                if existing_review:
+                    return jsonify({'error': 'You have already reviewed this lawyer'}), 409
+
+                # Insert the new review
+                cursor.execute(
+                    "INSERT INTO reviews (lawyer_id, client_id, rating, comment) VALUES (%s, %s, %s, %s)",
+                    (lawyer_id, client_id, rating, comment or None)
+                )
+
+                # Calculate the new average rating for the lawyer
+                cursor.execute(
+                    "SELECT AVG(rating) as avg_rating FROM reviews WHERE lawyer_id = %s",
+                    (lawyer_id,)
+                )
+                avg_rating = cursor.fetchone()['avg_rating']
+
+                # Update the lawyer's rating in the lawyers table
+                cursor.execute(
+                    "UPDATE lawyers SET rating = %s WHERE id = %s",
+                    (avg_rating, lawyer_id)
+                )
+
+                conn.commit()
+        finally:
+            conn.close()
+
+        return jsonify({'message': 'Review submitted successfully'}), 201
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+    
 @app.route('/api/admin/delete-template/<filename>', methods=['DELETE'])
 @admin_required
 def delete_template(admin_id, filename):
@@ -2204,6 +2282,48 @@ def delete_template(admin_id, filename):
         return jsonify({'message': 'Template deleted successfully'}), 200
     except Exception as e:
         print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+    
+@app.route('/api/lawyer/<int:lawyer_id>/reviews', methods=['GET', 'OPTIONS'])
+def get_lawyer_reviews(lawyer_id):
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    try:
+        conn = pymysql.connect(**db_config)
+        try:
+            with conn.cursor() as cursor:
+                # Check if the lawyer exists
+                cursor.execute("SELECT id FROM lawyers WHERE id = %s", (lawyer_id,))
+                lawyer = cursor.fetchone()
+                if not lawyer:
+                    return jsonify({'error': 'Lawyer not found'}), 404
+
+                # Fetch reviews for the lawyer
+                sql = """
+                    SELECT r.id, r.rating, r.comment, r.created_at, c.name AS client_name
+                    FROM reviews r
+                    JOIN clients c ON r.client_id = c.id
+                    WHERE r.lawyer_id = %s
+                    ORDER BY r.created_at DESC
+                """
+                cursor.execute(sql, (lawyer_id,))
+                reviews = cursor.fetchall()
+
+                # Convert datetime to ISO format for JSON serialization
+                reviews_response = []
+                for review in reviews:
+                    review_dict = review.copy()
+                    if isinstance(review['created_at'], datetime):
+                        review_dict['created_at'] = review['created_at'].isoformat()
+                    reviews_response.append(review_dict)
+        finally:
+            conn.close()
+
+        return jsonify({'reviews': reviews_response}), 200
+
+    except Exception as e:
+        print(f"Error fetching reviews: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
  # Add to existing functions

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Scale } from "lucide-react";
+import { Scale, Star } from "lucide-react";
 import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 import DatePicker from "react-datepicker";
@@ -20,12 +20,18 @@ const slideUp = {
 export default function LawyerProfile() {
   const { id } = useParams();
   const [lawyer, setLawyer] = useState(null);
+  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [appointmentDate, setAppointmentDate] = useState(new Date());
   const [bookedTimes, setBookedTimes] = useState([]);
   const [isTimeSlotAvailable, setIsTimeSlotAvailable] = useState(true);
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [reviewError, setReviewError] = useState("");
+  const [reviewSuccess, setReviewSuccess] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -33,8 +39,12 @@ export default function LawyerProfile() {
       setLoading(true);
       setError("");
       try {
-        const response = await axios.get(`http://127.0.0.1:5000/api/lawyer/${id}`);
-        const fetchedLawyer = response.data.lawyer;
+        const [lawyerResponse, reviewsResponse] = await Promise.all([
+          axios.get(`http://127.0.0.1:5000/api/lawyer/${id}`),
+          axios.get(`http://127.0.0.1:5000/api/lawyer/${id}/reviews`)
+        ]);
+
+        const fetchedLawyer = lawyerResponse.data.lawyer;
 
         if (fetchedLawyer.working_hours_start && fetchedLawyer.working_hours_end) {
           const [startHours, startMinutes] = fetchedLawyer.working_hours_start.split(':').map(Number);
@@ -46,6 +56,7 @@ export default function LawyerProfile() {
         }
 
         setLawyer(fetchedLawyer);
+        setReviews(reviewsResponse.data.reviews || []);
         fetchBookedTimes(id);
       } catch (err) {
         setError(err.response?.data?.error || "Failed to fetch lawyer details.");
@@ -147,6 +158,54 @@ export default function LawyerProfile() {
     }
   };
 
+  const handleSubmitReview = async () => {
+    const token = localStorage.getItem('clientToken');
+    if (!token) {
+      navigate('/client-login');
+      return;
+    }
+
+    if (rating < 1 || rating > 5) {
+      setReviewError("Please select a rating between 1 and 5 stars.");
+      return;
+    }
+
+    if (comment.length > 500) {
+      setReviewError("Review cannot exceed 500 characters.");
+      return;
+    }
+
+    try {
+      setReviewError("");
+      setReviewSuccess("");
+      await axios.post(
+        'http://127.0.0.1:5000/api/submit-review',
+        {
+          lawyer_id: id,
+          rating,
+          comment,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setReviewSuccess("Review submitted successfully!");
+      setRating(0);
+      setComment("");
+      // Refresh lawyer data and reviews
+      const [lawyerResponse, reviewsResponse] = await Promise.all([
+        axios.get(`http://127.0.0.1:5000/api/lawyer/${id}`),
+        axios.get(`http://127.0.0.1:5000/api/lawyer/${id}/reviews`)
+      ]);
+      setLawyer(lawyerResponse.data.lawyer);
+      setReviews(reviewsResponse.data.reviews || []);
+    } catch (err) {
+      setReviewError(err.response?.data?.error || "Failed to submit review.");
+    }
+  };
+
   const handleBack = () => {
     navigate('/browse-lawyers');
   };
@@ -154,6 +213,15 @@ export default function LawyerProfile() {
   const handleImageError = (e) => {
     e.target.style.display = 'none';
     e.target.nextSibling.style.display = 'flex';
+  };
+
+  const formatDate = (isoString) => {
+    const date = new Date(isoString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
   };
 
   if (loading) return <div>Loading...</div>;
@@ -230,8 +298,7 @@ export default function LawyerProfile() {
                 </p>
                 <button
                   onClick={handleBookAppointment}
-                  className={`${styles.bookButton} ${lawyer.availability_status === "Busy" ? styles.disabledButton : ""
-                    }`}
+                  className={`${styles.bookButton} ${lawyer.availability_status === "Busy" ? styles.disabledButton : ""}`}
                   disabled={lawyer.availability_status === "Busy"}
                 >
                   Book an Appointment
@@ -256,6 +323,77 @@ export default function LawyerProfile() {
               <p>
                 <strong>Pro Bono Availability:</strong> {lawyer.pro_bono_availability ? 'Available' : 'Not Available'}
               </p>
+            </div>
+
+            <div className={styles.reviewSection}>
+              <h2>Submit a Review</h2>
+              <div className={styles.ratingInput}>
+                <label>Rating:</label>
+                <div className={styles.stars}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                      key={star}
+                      className={`${styles.star} ${
+                        star <= (hoverRating || rating) ? styles.starFilled : styles.starEmpty
+                      }`}
+                      onClick={() => setRating(star)}
+                      onMouseEnter={() => setHoverRating(star)}
+                      onMouseLeave={() => setHoverRating(0)}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className={styles.commentInput}>
+                <label>Review:</label>
+                <textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="Write your review here (optional, max 500 characters)"
+                  className={styles.commentBox}
+                  maxLength={500}
+                />
+              </div>
+              <button
+                onClick={handleSubmitReview}
+                className={styles.submitButton}
+                disabled={rating === 0}
+              >
+                Submit Review
+              </button>
+              {reviewError && <p className={styles.errorMessage}>{reviewError}</p>}
+              {reviewSuccess && <p className={styles.successMessage}>{reviewSuccess}</p>}
+
+              <div className={styles.reviewsList}>
+                <h3>Client Reviews</h3>
+                {reviews.length === 0 ? (
+                  <p className={styles.noReviews}>No reviews yet.</p>
+                ) : (
+                  reviews.map((review, index) => (
+                    <div key={index} className={styles.reviewItem}>
+                      <div className={styles.reviewHeader}>
+                        <span className={styles.clientName}>{review.client_name}</span>
+                        <div className={styles.reviewStars}>
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              className={`${styles.star} ${
+                                star <= review.rating ? styles.starFilled : styles.starEmpty
+                              }`}
+                              size={16}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <p className={styles.reviewComment}>
+                        {review.comment || 'No comment provided.'}
+                      </p>
+                      <p className={styles.reviewDate}>
+                        {formatDate(review.created_at)}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </motion.div>
         </div>

@@ -332,3 +332,169 @@
     cursor: not-allowed;
     opacity: 0.6;
   }
+
+  /* Existing styles remain unchanged, adding styles for the reviews list */
+
+.reviewSection {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.ratingInput {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.ratingInput label {
+  font-weight: 500;
+  color: #1a202c;
+}
+
+.stars {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.star {
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.starEmpty {
+  color: #e2e8f0;
+}
+
+.starFilled {
+  color: #facc15;
+}
+
+.commentInput {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.commentInput label {
+  font-weight: 500;
+  color: #1a202c;
+}
+
+.commentBox {
+  width: 100%;
+  min-height: 100px;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  resize: vertical;
+  font-size: 0.9rem;
+  color: #1a202c;
+  background-color: #fff;
+}
+
+.commentBox:focus {
+  outline: none;
+  border-color: #3182ce;
+  box-shadow: 0 0 0 2px rgba(49, 130, 206, 0.2);
+}
+
+.submitButton {
+  background-color: #3182ce;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.submitButton:hover:not(:disabled) {
+  background-color: #2b6cb0;
+}
+
+.submitButton:disabled {
+  background-color: #cbd5e0;
+  cursor: not-allowed;
+}
+
+.successMessage {
+  color: #2ecc71;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  line-height: 1.4;
+}
+
+.errorMessage {
+  color: #e53e3e;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  line-height: 1.4;
+}
+
+.reviewsList {
+  margin-top: 2rem;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 1.5rem;
+}
+
+.reviewsList h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a202c;
+  margin-bottom: 1rem;
+}
+
+.noReviews {
+  font-size: 0.9rem;
+  color: #718096;
+  font-style: italic;
+}
+
+.reviewItem {
+  background-color: #fff;
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 1rem;
+}
+
+.reviewHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.clientName {
+  font-weight: 500;
+  color: #1a202c;
+  font-size: 0.95rem;
+}
+
+.reviewStars {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.reviewComment {
+  font-size: 0.9rem;
+  color: #4a5568;
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
+}
+
+.reviewDate {
+  font-size: 0.85rem;
+  color: #718096;
+  font-style: italic;
+}
+
+/* Ensure existing styles like .profileDetails, .profileSection, etc., remain unchanged */
