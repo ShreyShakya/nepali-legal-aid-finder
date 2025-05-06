@@ -70,6 +70,12 @@ export default function LawyerDashboard() {
   const [socket, setSocket] = useState(null);
   const [isCalling, setIsCalling] = useState(false);
   const [currentCall, setCurrentCall] = useState(null);
+  const [isKycFormOpen, setIsKycFormOpen] = useState(false);
+  const [kycFormData, setKycFormData] = useState({
+    license_number: "",
+    contact_number: "",
+  });
+  const [kycDocumentFile, setKycDocumentFile] = useState(null);
 
   const navigate = useNavigate();
 
@@ -146,6 +152,19 @@ export default function LawyerDashboard() {
     // SocketIO event listeners
 
     // SocketIO event listeners
+    newSocket.on("kyc_status_updated", async (data) => {
+      const token = localStorage.getItem("token");
+      try {
+        const profileResponse = await axios.get("http://127.0.0.1:5000/api/lawyer-profile", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setLawyer(profileResponse.data.lawyer);
+        addNotification(`KYC Status Updated: ${data.kyc_status}`, "success");
+      } catch (err) {
+        addNotification("Failed to refresh profile after KYC update", "error");
+      }
+    });
+
     newSocket.on("connect", () => {
       console.log("Connected to Socket.IO server");
     });
@@ -213,6 +232,55 @@ export default function LawyerDashboard() {
     const id = Date.now();
     setNotifications((prev) => [...prev, { id, message, type }]);
     setTimeout(() => setNotifications((prev) => prev.filter((n) => n.id !== id)), 3000);
+  };
+
+  const handleKycFormChange = (e) => {
+    const { name, value } = e.target;
+    setKycFormData({ ...kycFormData, [name]: value });
+  };
+
+  const handleKycDocumentChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setKycDocumentFile(file);
+    }
+  };
+
+  const handleKycSubmit = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem("token");
+    if (!kycFormData.license_number || !kycFormData.contact_number || !kycDocumentFile) {
+      addNotification("All KYC fields are required", "error");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const kycDataToSend = new FormData();
+      kycDataToSend.append("license_number", kycFormData.license_number);
+      kycDataToSend.append("contact_number", kycFormData.contact_number);
+      kycDataToSend.append("identification_document", kycDocumentFile);
+
+      const response = await axios.post("http://127.0.0.1:5000/api/lawyer-kyc", kycDataToSend, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      const profileResponse = await axios.get("http://127.0.0.1:5000/api/lawyer-profile", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setLawyer(profileResponse.data.lawyer);
+      setIsKycFormOpen(false);
+      setKycFormData({ license_number: "", contact_number: "" });
+      setKycDocumentFile(null);
+      addNotification(response.data.message || "KYC submitted successfully", "success");
+    } catch (err) {
+      addNotification(err.response?.data?.error || "Failed to submit KYC", "error");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleClientSelect = async (client) => {
@@ -645,6 +713,7 @@ export default function LawyerDashboard() {
       <Tooltip id="details-tooltip" />
       <Tooltip id="create-case-tooltip" />
       <Tooltip id="chat-tooltip" />
+      <Tooltip id="kyc-tooltip" />
 
       <div className={styles.layout}>
         <aside className={`${styles.sidebar} ${isSidebarOpen ? styles.sidebarOpen : ""}`}>
@@ -669,7 +738,14 @@ export default function LawyerDashboard() {
                 alt={lawyer.name}
               />
             </div>
-            <div className={styles.userName}>{lawyer.name || "Lawyer Name"}</div>
+            <div className={styles.userName}>
+              {lawyer.name || "Lawyer Name"}
+              <span
+                className={`${styles.kycBadge} ${lawyer.kyc_verified ? styles.kycVerified : styles.kycUnverified}`}
+              >
+                {lawyer.kyc_verified ? "Verified" : "Unverified"}
+              </span>
+            </div>
             <div className={styles.userStatus}>
               <span
                 className={`${styles.statusIndicator} ${lawyer.availability_status === "Available" ? styles.statusAvailable : styles.statusBusy}`}
@@ -782,6 +858,16 @@ export default function LawyerDashboard() {
                   <div className={styles.welcomeContent}>
                     <h2>Welcome back, {lawyer.name}</h2>
                     <p>Manage your legal practice efficiently with NepaliLegalAidFinder.</p>
+                    {!lawyer.kyc_verified && (
+                      <button
+                        onClick={() => setIsKycFormOpen(true)}
+                        className={styles.secondaryButton}
+                        data-tooltip-id="kyc-tooltip"
+                        data-tooltip-content="Submit KYC for verification"
+                      >
+                        Submit KYC Verification
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -1466,7 +1552,14 @@ export default function LawyerDashboard() {
                         />
                       </div>
                       <div className={styles.profileInfo}>
-                        <h2 className={styles.profileName}>{lawyer.name || "Lawyer Name"}</h2>
+                        <h2 className={styles.profileName}>
+                          {lawyer.name || "Lawyer Name"}
+                          <span
+                            className={`${styles.kycBadge} ${lawyer.kyc_verified ? styles.kycVerified : styles.kycUnverified}`}
+                          >
+                            {lawyer.kyc_verified ? "Verified" : "Unverified"}
+                          </span>
+                        </h2>
                         <p className={styles.profileRole}>{lawyer.specialization || "Specialization N/A"}</p>
                         <div className={styles.profileStatus}>
                           <span
@@ -1482,8 +1575,28 @@ export default function LawyerDashboard() {
                         >
                           Edit Profile
                         </button>
+                        {!lawyer.kyc_verified && (
+                          <button
+                            onClick={() => setIsKycFormOpen(true)}
+                            className={styles.secondaryButton}
+                            data-tooltip-id="kyc-tooltip"
+                            data-tooltip-content="Submit KYC for verification"
+                          >
+                            Submit KYC Verification
+                          </button>
+                        )}
                       </div>
                     </div>
+
+                    <div className={styles.profileDetailsCard}>
+                      <h3 className={styles.detailsTitle}>KYC Status</h3>
+                      <p className={styles.bioText}>
+                        {lawyer.kyc_status
+                          ? `KYC Status: ${lawyer.kyc_status.charAt(0).toUpperCase() + lawyer.kyc_status.slice(1)}`
+                          : "KYC not submitted"}
+                      </p>
+                    </div>
+
 
                     <div className={styles.profileDetailsCard}>
                       <h3 className={styles.detailsTitle}>Contact Information</h3>
@@ -1864,6 +1977,82 @@ export default function LawyerDashboard() {
       </button>
 
       <AnimatePresence>
+        {isKycFormOpen && (
+          <motion.div
+            className={styles.modalOverlay}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className={styles.modalContent}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+            >
+              <div className={styles.modalHeader}>
+                <h3>KYC Verification</h3>
+                <button onClick={() => setIsKycFormOpen(false)} className={styles.closeButton}>
+                  <X className={styles.closeIcon} />
+                </button>
+              </div>
+              <form onSubmit={handleKycSubmit} className={styles.kycForm}>
+                <div className={styles.formGroup}>
+                  <label htmlFor="license_number">Lawyer License Number</label>
+                  <input
+                    type="text"
+                    id="license_number"
+                    name="license_number"
+                    value={kycFormData.license_number}
+                    onChange={handleKycFormChange}
+                    className={styles.formInput}
+                    required
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label htmlFor="contact_number">Contact Number</label>
+                  <input
+                    type="tel"
+                    id="contact_number"
+                    name="contact_number"
+                    value={kycFormData.contact_number}
+                    onChange={handleKycFormChange}
+                    className={styles.formInput}
+                    required
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label htmlFor="identification_document">Identification Document</label>
+                  <input
+                    type="file"
+                    id="identification_document"
+                    name="identification_document"
+                    accept="image/*,application/pdf"
+                    onChange={handleKycDocumentChange}
+                    className={styles.formInput}
+                    required
+                  />
+                </div>
+                <div className={styles.formActions}>
+                  <button type="submit" className={styles.primaryButton} disabled={isLoading}>
+                    Submit KYC
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsKycFormOpen(false)}
+                    className={styles.secondaryButton}
+                    disabled={isLoading}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      <AnimatePresence>
         {isChatOpen && (
           <motion.div
             className={styles.chatModal}
@@ -1983,6 +2172,8 @@ export default function LawyerDashboard() {
           </motion.div>
         )}
       </AnimatePresence>
+
+
 
       <div className={styles.notificationContainer}>
         <AnimatePresence>

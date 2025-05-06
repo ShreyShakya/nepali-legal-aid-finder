@@ -2116,3 +2116,51 @@
   justify-content: center;
   align-items: center;
 }
+
+.kycBadge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.kycVerified {
+  background-color: #e6f4ea;
+  color: #2e7d32;
+}
+
+.kycUnverified {
+  background-color: #ffebee;
+  color: #d32f2f;
+}
+
+.kycForm {
+  padding: 20px;
+}
+
+.kycForm .formGroup {
+  margin-bottom: 16px;
+}
+
+.kycForm .formGroup label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.kycForm .formGroup input[type="file"] {
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--input-bg);
+  color: var(--text-color);
+}
+
+.kycForm .formActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
