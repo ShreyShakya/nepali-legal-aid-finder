@@ -87,6 +87,9 @@ EVIDENCE_FOLDER = 'evidence'
 COURT_FILES_FOLDER = 'court_files'
 DOCUMENT_TEMPLATES_FOLDER = 'document_templates'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+KYC_FOLDER = 'kyc_documents'
+app.config['KYC_FOLDER'] = KYC_FOLDER
+os.makedirs(KYC_FOLDER, exist_ok=True)
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf', 'doc', 'docx'}  # Updated for templates
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(EVIDENCE_FOLDER, exist_ok=True)
@@ -444,6 +447,116 @@ def delete_appointment(admin_id, appointment_id):
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
+    
+@app.route('/api/admin/kyc-verifications', methods=['GET'])
+@admin_required
+def get_kyc_verifications(admin_id):
+    try:
+        status_filter = request.args.get('status', '')
+        conn = pymysql.connect(**db_config)
+        try:
+            with conn.cursor() as cursor:
+                sql = """
+                    SELECT k.id, k.lawyer_id, k.license_number, k.contact_number, k.identification_document, 
+                           k.kyc_status, k.submitted_at, l.name AS lawyer_name, l.email AS lawyer_email
+                    FROM kyc_verifications k
+                    JOIN lawyers l ON k.lawyer_id = l.id
+                    WHERE 1=1
+                """
+                params = []
+                if status_filter:
+                    sql += " AND k.kyc_status = %s"
+                    params.append(status_filter)
+                sql += " ORDER BY k.submitted_at DESC"
+                cursor.execute(sql, params)
+                kyc_records = cursor.fetchall()
+        finally:
+            conn.close()
+
+        for record in kyc_records:
+            if record['identification_document']:
+                record['identification_document'] = f"/kyc_documents/{record['identification_document']}"
+        return jsonify({'kyc_verifications': kyc_records}), 200
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/admin/kyc-verifications/<int:kyc_id>/update-status', methods=['PUT'])
+@admin_required
+def update_kyc_status(admin_id, kyc_id):
+    try:
+        data = request.json
+        new_status = data.get('status')
+        if not new_status or new_status not in ['verified', 'rejected']:
+            return jsonify({'error': 'Invalid status. Must be "verified" or "rejected"'}), 400
+
+        conn = pymysql.connect(**db_config)
+        try:
+            with conn.cursor() as cursor:
+                # Fetch KYC record
+                cursor.execute("SELECT lawyer_id, kyc_status FROM kyc_verifications WHERE id = %s", (kyc_id,))
+                kyc_record = cursor.fetchone()
+                if not kyc_record:
+                    return jsonify({'error': 'KYC record not found'}), 404
+
+                lawyer_id = kyc_record['lawyer_id']
+
+                # Update KYC status
+                cursor.execute(
+                    "UPDATE kyc_verifications SET kyc_status = %s WHERE id = %s",
+                    (new_status, kyc_id)
+                )
+
+                # Update lawyer's kyc_status and kyc_verified
+                kyc_verified = new_status == 'verified'
+                cursor.execute(
+                    "UPDATE lawyers SET kyc_status = %s, kyc_verified = %s WHERE id = %s",
+                    (new_status, kyc_verified, lawyer_id)
+                )
+
+                # Fetch lawyer's email and name
+                cursor.execute("SELECT email, name FROM lawyers WHERE id = %s", (lawyer_id,))
+                lawyer = cursor.fetchone()
+
+                conn.commit()
+
+                # Send email notification
+                if lawyer:
+                    email_body = (
+                        f"Dear {lawyer['name']},\n\n"
+                        f"Your KYC verification has been {new_status}.\n"
+                        f"{'You are now fully verified and can access all platform features.' if new_status == 'verified' else 'Please contact support for further details.'}\n\n"
+                        f"Best regards,\nLegalAid Team"
+                    )
+                    if not send_email(lawyer['email'], f'KYC Verification {new_status.capitalize()}', email_body):
+                        print(f"Failed to send KYC status email to {lawyer['email']}")
+
+                # Emit SocketIO event
+                socketio.emit('kyc_status_updated', {'kyc_status': new_status}, room=f"lawyer_{lawyer_id}")
+
+        finally:
+            conn.close()
+        return jsonify({'message': f'KYC status updated to {new_status}'}), 200
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+    
+@app.route('/api/kyc_documents/<filename>')
+@admin_required
+def kyc_file(admin_id, filename):
+    try:
+        conn = pymysql.connect(**db_config)
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT identification_document FROM kyc_verifications WHERE identification_document = %s", (filename,))
+                if not cursor.fetchone():
+                    return jsonify({'error': 'File not found'}), 404
+        finally:
+            conn.close()
+        return send_from_directory(app.config['KYC_FOLDER'], filename)
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 @app.route('/api/register-lawyer', methods=['POST'])
 def register_lawyer():
@@ -491,12 +604,12 @@ def register_lawyer():
                 sql = """
                     INSERT INTO lawyers (name, specialization, location, availability, bio, email, password, 
                         email_notifications, availability_status, working_hours_start, working_hours_end, 
-                        preferred_contact, profile_picture, pro_bono_availability)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        preferred_contact, profile_picture, pro_bono_availability, kyc_status, kyc_verified)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """
                 cursor.execute(sql, (name, specialization, location, availability, bio, email, hashed_password,
                                      email_notifications, availability_status, working_hours_start, working_hours_end,
-                                     preferred_contact, profile_picture, pro_bono_availability))
+                                     preferred_contact, profile_picture, pro_bono_availability, 'pending', False))
                 conn.commit()
         finally:
             conn.close()
@@ -580,7 +693,7 @@ def lawyer_profile():
                 sql = """
                     SELECT id, name, email, specialization, location, availability, bio, email_notifications, 
                            availability_status, working_hours_start, working_hours_end, preferred_contact, 
-                           profile_picture, pro_bono_availability
+                           profile_picture, pro_bono_availability, kyc_status, kyc_verified
                     FROM lawyers WHERE id = %s
                 """
                 cursor.execute(sql, (lawyer_id,))
@@ -979,7 +1092,7 @@ def get_lawyers():
                            working_hours_end, preferred_contact, profile_picture, rating, 
                            pro_bono_availability
                     FROM lawyers
-                    WHERE 1=1
+                    WHERE kyc_verified = TRUE
                 """
                 params = []
 
@@ -2557,6 +2670,65 @@ def send_email(email, subject, body):
     except Exception as e:
         print(f"Error sending email: {str(e)}")
         return False
+    
+@app.route('/api/lawyer-kyc', methods=['POST', 'OPTIONS'])
+def submit_kyc():
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    decoded, error_response, status = validate_token()
+    if error_response:
+        return error_response, status
+
+    try:
+        lawyer_id = decoded['lawyer_id']
+        license_number = request.form.get('license_number')
+        contact_number = request.form.get('contact_number')
+        identification_document = request.files.get('identification_document')
+
+        if not all([license_number, contact_number, identification_document]):
+            return jsonify({'error': 'License number, contact number, and identification document are required'}), 400
+
+        if not allowed_file(identification_document.filename):
+            return jsonify({'error': 'Invalid file type. Allowed: png, jpg, jpeg, pdf'}), 400
+
+        # Generate unique filename
+        original_filename = secure_filename(identification_document.filename)
+        extension = os.path.splitext(original_filename)[1]
+        unique_filename = f"kyc_{uuid.uuid4().hex}{extension}"
+        file_path = os.path.join(app.config['KYC_FOLDER'], unique_filename)
+        identification_document.save(file_path)
+
+        conn = pymysql.connect(**db_config)
+        try:
+            with conn.cursor() as cursor:
+                # Check if KYC already exists
+                cursor.execute("SELECT id FROM kyc_verifications WHERE lawyer_id = %s", (lawyer_id,))
+                if cursor.fetchone():
+                    return jsonify({'error': 'KYC already submitted'}), 409
+
+                # Insert KYC data
+                sql = """
+                    INSERT INTO kyc_verifications (lawyer_id, license_number, contact_number, identification_document, kyc_status)
+                    VALUES (%s, %s, %s, %s, %s)
+                """
+                cursor.execute(sql, (lawyer_id, license_number, contact_number, unique_filename, 'submitted'))
+                conn.commit()
+
+                # Update lawyer's kyc_status
+                cursor.execute(
+                    "UPDATE lawyers SET kyc_status = %s WHERE id = %s",
+                    ('submitted', lawyer_id)
+                )
+                conn.commit()
+        finally:
+            conn.close()
+
+        return jsonify({'message': 'KYC submitted successfully', 'kyc_status': 'submitted'}), 201
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 # WebSocket handlers for real-time case messaging
 @socketio.on('join_case')
