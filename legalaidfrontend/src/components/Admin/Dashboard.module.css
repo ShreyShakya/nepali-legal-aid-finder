@@ -150,3 +150,68 @@
 .deleteButton:hover {
   background-color: #c82333;
 }
+
+.kycSection {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.kycSection h2 {
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.kycList {
+  margin-top: 20px;
+}
+
+.kycItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.kycItem:last-child {
+  border-bottom: none;
+}
+
+.kycDetails p {
+  margin: 5px 0;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.kycDetails p strong {
+  color: #555;
+}
+
+.approveButton {
+  padding: 8px 16px;
+  background-color: #28a745;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.approveButton:hover {
+  background-color: #218838;
+}
+
+.rejectButton {
+  padding: 8px 16px;
+  background-color: #dc3545;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.rejectButton:hover {
+  background-color: #c82333;
+}

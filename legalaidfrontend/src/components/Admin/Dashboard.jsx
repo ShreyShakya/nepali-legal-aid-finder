@@ -5,7 +5,7 @@ import LawyersList from './LawyersList';
 import ClientsList from './ClientsList';
 import CasesList from './CasesList';
 import AppointmentsList from './AppointmentsList';
-import { getDocumentTemplates, uploadDocumentTemplate, deleteDocumentTemplate, getLawyers } from './api';
+import { getDocumentTemplates, uploadDocumentTemplate, deleteDocumentTemplate, getLawyers, getKycVerifications, updateKycStatus, getKycDocument } from './api';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -14,8 +14,11 @@ const Dashboard = () => {
   const [uploadMessage, setUploadMessage] = useState('');
   const [uploadError, setUploadError] = useState('');
   const [templates, setTemplates] = useState([]);
+  const [kycVerifications, setKycVerifications] = useState([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [loadingKyc, setLoadingKyc] = useState(false);
   const [deleting, setDeleting] = useState({});
+  const [updatingKyc, setUpdatingKyc] = useState({});
 
   // Validate token on mount
   useEffect(() => {
@@ -27,7 +30,7 @@ const Dashboard = () => {
       }
 
       try {
-        await getLawyers(); // Validate token by making an authenticated request
+        await getLawyers();
       } catch (error) {
         if (error.response?.status === 401 || error.response?.status === 403) {
           localStorage.removeItem('adminToken');
@@ -42,7 +45,7 @@ const Dashboard = () => {
 
   // Clear messages when switching tabs
   useEffect(() => {
-    if (activeTab !== 'documents') {
+    if (activeTab !== 'documents' && activeTab !== 'kyc') {
       setUploadMessage('');
       setUploadError('');
     }
@@ -64,6 +67,25 @@ const Dashboard = () => {
         }
       };
       fetchTemplates();
+    }
+  }, [activeTab]);
+
+  // Fetch KYC verifications when switching to KYC tab
+  useEffect(() => {
+    if (activeTab === 'kyc') {
+      const fetchKycVerifications = async () => {
+        setLoadingKyc(true);
+        try {
+          const response = await getKycVerifications();
+          setKycVerifications(response.data.kyc_verifications);
+        } catch (error) {
+          console.error('Error fetching KYC verifications:', error);
+          setUploadError('Failed to load KYC verifications');
+        } finally {
+          setLoadingKyc(false);
+        }
+      };
+      fetchKycVerifications();
     }
   }, [activeTab]);
 
@@ -135,6 +157,59 @@ const Dashboard = () => {
     }
   };
 
+  const handleKycStatusUpdate = async (kycId, status) => {
+    setUpdatingKyc((prev) => ({ ...prev, [kycId]: true }));
+    const previousKycVerifications = [...kycVerifications];
+    setKycVerifications((prev) =>
+      prev.map((kyc) =>
+        kyc.id === kycId ? { ...kyc, kyc_status: status } : kyc
+      )
+    );
+    setUploadMessage(`KYC status updated to ${status}!`);
+    setUploadError('');
+
+    try {
+      await updateKycStatus(kycId, { status });
+      const response = await getKycVerifications();
+      setKycVerifications(response.data.kyc_verifications);
+    } catch (error) {
+      setKycVerifications(previousKycVerifications);
+      setUploadMessage('');
+      setUploadError(error.response?.data?.error || `Failed to update KYC status to ${status}`);
+    } finally {
+      setUpdatingKyc((prev) => ({ ...prev, [kycId]: false }));
+    }
+  };
+
+  const handleViewDocument = async (filename) => {
+    try {
+      const response = await getKycDocument(filename);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      setUploadError('');
+    } catch (error) {
+      console.error('Error fetching document:', error);
+      const errorMsg =
+        error.response?.status === 401 || error.response?.status === 403
+          ? 'Unauthorized. Please log in again.'
+          : error.response?.status === 404
+          ? 'Document not found.'
+          : 'Failed to fetch document. Please try again.';
+      setUploadError(errorMsg);
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('admin');
+        navigate('/admin/login');
+      }
+    }
+  };
+
   return (
     <div className={styles.container}>
       <header className={styles.header}>
@@ -173,6 +248,12 @@ const Dashboard = () => {
           onClick={() => setActiveTab('documents')}
         >
           Documents
+        </button>
+        <button
+          className={activeTab === 'kyc' ? styles.active : ''}
+          onClick={() => setActiveTab('kyc')}
+        >
+          KYC Verifications
         </button>
       </nav>
       <main className={styles.main}>
@@ -225,6 +306,62 @@ const Dashboard = () => {
                           {deleting[filename] ? 'Deleting...' : 'Delete'}
                         </button>
                       </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+        {activeTab === 'kyc' && (
+          <div className={styles.kycSection}>
+            <h2>KYC Verifications</h2>
+            {uploadMessage && <p className={styles.successMessage}>{uploadMessage}</p>}
+            {uploadError && <p className={styles.errorMessage}>{uploadError}</p>}
+            {loadingKyc ? (
+              <p>Loading KYC verifications...</p>
+            ) : kycVerifications.length === 0 ? (
+              <p>No KYC verifications submitted yet.</p>
+            ) : (
+              <div className={styles.kycList}>
+                {kycVerifications.map((kyc) => {
+                  const filename = kyc.identification_document.split('/').pop();
+                  return (
+                    <div key={kyc.id} className={styles.kycItem}>
+                      <div className={styles.kycDetails}>
+                        <p><strong>Lawyer:</strong> {kyc.lawyer_name} ({kyc.lawyer_email})</p>
+                        <p><strong>License Number:</strong> {kyc.license_number}</p>
+                        <p><strong>Contact Number:</strong> {kyc.contact_number}</p>
+                        <p><strong>Status:</strong> {kyc.kyc_status.charAt(0).toUpperCase() + kyc.kyc_status.slice(1)}</p>
+                        <p>
+                          <strong>Document:</strong>{' '}
+                          <button
+                            onClick={() => handleViewDocument(filename)}
+                            className={styles.downloadButton}
+                          >
+                            View Document
+                          </button>
+                        </p>
+                        <p><strong>Submitted:</strong> {new Date(kyc.submitted_at).toLocaleString()}</p>
+                      </div>
+                      {kyc.kyc_status === 'submitted' && (
+                        <div className={styles.buttonGroup}>
+                          <button
+                            onClick={() => handleKycStatusUpdate(kyc.id, 'verified')}
+                            className={styles.approveButton}
+                            disabled={updatingKyc[kyc.id]}
+                          >
+                            {updatingKyc[kyc.id] ? 'Processing...' : 'Approve'}
+                          </button>
+                          <button
+                            onClick={() => handleKycStatusUpdate(kyc.id, 'rejected')}
+                            className={styles.rejectButton}
+                            disabled={updatingKyc[kyc.id]}
+                          >
+                            {updatingKyc[kyc.id] ? 'Processing...' : 'Reject'}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
