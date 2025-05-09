@@ -17,13 +17,14 @@ import random
 import string
 from cryptography.hazmat.primitives import serialization
 import jwt as pyjwt
+from apscheduler.schedulers.background import BackgroundScheduler
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "your-secret-key-here" 
 CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "http://localhost:3000"]}})  # Allow admin frontend
 
-EMAIL_ADDRESS = '23anonymusguy@gmail.com'  # Replace with your Gmail
-EMAIL_PASSWORD = 'qird cmcw dqqh kdzt'  
+EMAIL_ADDRESS = 'nlaf.legal@gmail.com'  # Replace with your Gmail
+EMAIL_PASSWORD = 'wcee rabs lqme focz'  
 
 # Load private key
 with open(r"C:\Users\Shrey\legalaid\legalaidbackend\private_key.pem", "rb") as key_file:
@@ -1188,9 +1189,12 @@ def book_appointment():
         if not all([lawyer_id, appointment_date_str]):
             return jsonify({'error': 'Lawyer ID and appointment date are required'}), 400
 
-        # Parse the appointment date 
+        # Parse the appointment date (assuming input is ISO format, e.g., '2025-05-21T14:30:00Z')
         try:
             appointment_date = datetime.fromisoformat(appointment_date_str.replace('Z', '+00:00'))
+            # Convert to Nepal time (Asia/Kathmandu)
+            nepal_tz = pytz.timezone('Asia/Kathmandu')
+            appointment_date_nepal = appointment_date.astimezone(nepal_tz)
         except ValueError:
             return jsonify({'error': 'Invalid appointment date format'}), 400
 
@@ -1207,7 +1211,7 @@ def book_appointment():
                     conn.rollback()
                     return jsonify({'error': 'Lawyer not found'}), 404
 
-                # Check for existing appointments within a 30 minute window
+                # Check for existing appointments within a 30-minute window
                 cursor.execute("""
                     SELECT appointment_date 
                     FROM appointments 
@@ -1219,22 +1223,37 @@ def book_appointment():
 
                 for appt in existing_appointments:
                     existing_date = appt['appointment_date']
-                    # If existing_date is offset naive make it offset-aware (assume UTC)
+                    # Ensure existing_date is timezone-aware
                     if existing_date.tzinfo is None:
                         existing_date = pytz.UTC.localize(existing_date)
-                    # Calculate the time difference in minutes
-                    time_diff = abs((appointment_date - existing_date).total_seconds()) / 60
+                    # Convert to Nepal time for comparison
+                    existing_date_nepal = existing_date.astimezone(nepal_tz)
+                    time_diff = abs((appointment_date_nepal - existing_date_nepal).total_seconds()) / 60
                     if time_diff < 30:  # 30-minute window
                         conn.rollback()
                         return jsonify({'error': 'This time slot is already booked. Please choose another time.'}), 409
 
-                # If no overlap, proceed with booking
+                # Store the appointment in Nepal time (as a string or datetime)
                 sql = """
                     INSERT INTO appointments (client_id, lawyer_id, appointment_date)
                     VALUES (%s, %s, %s)
                 """
-                cursor.execute(sql, (client_id, lawyer_id, appointment_date_str))
+                cursor.execute(sql, (client_id, lawyer_id, appointment_date_nepal))
                 conn.commit()
+
+                # Fetch the newly created appointment
+                cursor.execute("""
+                    SELECT a.id, a.appointment_date, a.status, a.created_at, 
+                           l.name AS lawyer_name, c.name AS client_name
+                    FROM appointments a
+                    JOIN lawyers l ON a.lawyer_id = l.id
+                    JOIN clients c ON a.client_id = c.id
+                    WHERE a.id = LAST_INSERT_ID()
+                """)
+                new_appointment = cursor.fetchone()
+                # Convert appointment_date to Nepal time string for response
+                if new_appointment:
+                    new_appointment['appointment_date'] = new_appointment['appointment_date'].astimezone(nepal_tz).isoformat()
 
         except Exception as e:
             conn.rollback()
@@ -1242,7 +1261,7 @@ def book_appointment():
         finally:
             conn.close()
 
-        return jsonify({'message': 'Appointment booked successfully'}), 201
+        return jsonify({'message': 'Appointment booked successfully', 'appointment': new_appointment}), 201
 
     except Exception as e:
         print(f"Error: {str(e)}")
@@ -1259,6 +1278,7 @@ def get_client_appointments():
 
     try:
         client_id = decoded['client_id']
+        nepal_tz = pytz.timezone('Asia/Kathmandu')
         conn = pymysql.connect(**db_config)
         try:
             with conn.cursor() as cursor:
@@ -1272,6 +1292,13 @@ def get_client_appointments():
                 """
                 cursor.execute(sql, (client_id,))
                 appointments = cursor.fetchall()
+                # Convert appointment_date to Nepal time
+                for appt in appointments:
+                    if appt['appointment_date'].tzinfo is None:
+                        appt['appointment_date'] = pytz.UTC.localize(appt['appointment_date'])
+                    appt['appointment_date'] = appt['appointment_date'].astimezone(nepal_tz).isoformat()
+                    if isinstance(appt['created_at'], datetime):
+                        appt['created_at'] = appt['created_at'].astimezone(nepal_tz).isoformat()
         finally:
             conn.close()
         return jsonify({'appointments': appointments}), 200
@@ -1284,15 +1311,14 @@ def get_client_appointments():
 def get_lawyer_appointments(lawyer_id):
     if request.method == "OPTIONS":
         return jsonify({}), 200
-
     decoded, error_response, status = validate_token()
     if error_response:
         return error_response, status
-
     try:
+        nepal_tz = pytz.timezone('Asia/Kathmandu')
         conn = pymysql.connect(**db_config)
         try:
-            with conn.cursor() as cursor:
+            with conn.cursor(pymysql.cursors.DictCursor) as cursor:
                 sql = """
                     SELECT a.id, a.client_id, a.lawyer_id, a.appointment_date, a.status, a.created_at, 
                            c.name AS client_name
@@ -1303,10 +1329,18 @@ def get_lawyer_appointments(lawyer_id):
                 """
                 cursor.execute(sql, (lawyer_id,))
                 appointments = cursor.fetchall()
+                for appt in appointments:
+                    # Localize appointment_date as Nepal time (not UTC)
+                    if appt['appointment_date'].tzinfo is None:
+                        appt['appointment_date'] = nepal_tz.localize(appt['appointment_date'])
+                    appt['appointment_date'] = appt['appointment_date'].isoformat()
+                    # Handle created_at (TIMESTAMP, stored in UTC)
+                    if isinstance(appt['created_at'], datetime) and appt['created_at'].tzinfo is None:
+                        appt['created_at'] = pytz.UTC.localize(appt['created_at']).astimezone(nepal_tz)
+                        appt['created_at'] = appt['created_at'].isoformat()
         finally:
             conn.close()
         return jsonify({'appointments': appointments}), 200
-
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
@@ -1315,25 +1349,20 @@ def get_lawyer_appointments(lawyer_id):
 def update_appointment_status(appointment_id):
     if request.method == "OPTIONS":
         return jsonify({}), 200
-
     decoded, error_response, status = validate_token()
     if error_response:
         return error_response, status
-
     try:
         lawyer_id = decoded['lawyer_id']
         data = request.json
         if not data or 'status' not in data:
             return jsonify({'error': 'Status is required'}), 400
-
         new_status = data['status']
         if new_status not in ['confirmed', 'cancelled']:
             return jsonify({'error': 'Invalid status value'}), 400
-
         conn = pymysql.connect(**db_config)
         try:
             with conn.cursor() as cursor:
-                # Fetch appointment details and client email
                 sql = """
                     SELECT a.id, a.appointment_date, c.email, c.name
                     FROM appointments a
@@ -1344,25 +1373,23 @@ def update_appointment_status(appointment_id):
                 appointment = cursor.fetchone()
                 if not appointment:
                     return jsonify({'error': 'Appointment not found or unauthorized'}), 403
-
-                # Update appointment status
-                sql = "UPDATE appointments SET status = %s WHERE id = %s"
-                cursor.execute(sql, (new_status, appointment_id))
+                # Update status and reset reminder_sent if cancelled
+                sql = """
+                    UPDATE appointments 
+                    SET status = %s, reminder_sent = %s 
+                    WHERE id = %s
+                """
+                cursor.execute(sql, (new_status, new_status == 'cancelled', appointment_id))
                 conn.commit()
-
-                # Send email if status is 'confirmed'
                 if new_status == 'confirmed':
                     appointment_date = appointment['appointment_date']
                     client_email = appointment['email']
                     client_name = appointment['name']
-                    
-                    # Format the appointment date
-                    if isinstance(appointment_date, datetime):
-                        appointment_date = pytz.UTC.localize(appointment_date) if appointment_date.tzinfo is None else appointment_date
-                        formatted_date = appointment_date.astimezone(pytz.timezone('Asia/Kathmandu')).strftime('%B %d, %Y at %I:%M %p %Z')
-                    else:
-                        formatted_date = appointment_date
-
+                    nepal_tz = pytz.timezone('Asia/Kathmandu')
+                    # Localize as Nepal time
+                    if appointment_date.tzinfo is None:
+                        appointment_date = nepal_tz.localize(appointment_date)
+                    formatted_date = appointment_date.strftime('%B %d, %Y at %I:%M %p %Z')
                     email_body = (
                         f"Dear {client_name},\n\n"
                         f"Your appointment has been confirmed.\n"
@@ -1373,11 +1400,9 @@ def update_appointment_status(appointment_id):
                     )
                     if not send_email(client_email, 'LegalAid Appointment Confirmation', email_body):
                         print(f"Failed to send confirmation email to {client_email}")
-
         finally:
             conn.close()
         return jsonify({'message': f'Appointment {new_status} successfully'}), 200
-
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
@@ -2438,6 +2463,78 @@ def get_lawyer_reviews(lawyer_id):
     except Exception as e:
         print(f"Error fetching reviews: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
+    
+def send_appointment_reminders():
+    try:
+        nepal_tz = pytz.timezone('Asia/Kathmandu')
+        current_time = datetime.now(nepal_tz)
+        reminder_time = current_time + timedelta(minutes=30)
+        conn = pymysql.connect(**db_config)
+        try:
+            with conn.cursor() as cursor:
+                sql = """
+                    SELECT a.id, a.appointment_date, a.status, c.email AS client_email, c.name AS client_name,
+                           l.email AS lawyer_email, l.name AS lawyer_name
+                    FROM appointments a
+                    JOIN clients c ON a.client_id = c.id
+                    JOIN lawyers l ON a.lawyer_id = l.id
+                    WHERE a.status = 'confirmed'
+                    AND a.appointment_date >= %s
+                    AND a.appointment_date <= %s
+                    AND a.reminder_sent = FALSE
+                """
+                cursor.execute(sql, (current_time, reminder_time))
+                upcoming_appointments = cursor.fetchall()
+                for appt in upcoming_appointments:
+                    appointment_date = appt['appointment_date']
+                    # Localize as Nepal time
+                    if appointment_date.tzinfo is None:
+                        appointment_date = nepal_tz.localize(appointment_date)
+                    formatted_date = appointment_date.strftime('%B %d, %Y at %I:%M %p %Z')
+                    # Send client email
+                    client_email_body = (
+                        f"Dear {appt['client_name']},\n\n"
+                        f"This is a reminder for your upcoming appointment:\n"
+                        f"With: {appt['lawyer_name']}\n"
+                        f"Date and Time: {formatted_date}\n\n"
+                        f"Please be prepared for your meeting.\n"
+                        f"Best regards,\nLegalAid Team"
+                    )
+                    client_email_sent = send_email(appt['client_email'], 'Appointment Reminder', client_email_body)
+                    if not client_email_sent:
+                        print(f"Failed to send reminder email to client {appt['client_email']}")
+                    # Send lawyer email
+                    lawyer_email_body = (
+                        f"Dear {appt['lawyer_name']},\n\n"
+                        f"This is a reminder for your upcoming appointment:\n"
+                        f"With: {appt['client_name']}\n"
+                        f"Date and Time: {formatted_date}\n\n"
+                        f"Please be prepared for your meeting.\n"
+                        f"Best regards,\nLegalAid Team"
+                    )
+                    lawyer_email_sent = send_email(appt['lawyer_email'], 'Appointment Reminder', lawyer_email_body)
+                    if not lawyer_email_sent:
+                        print(f"Failed to send reminder email to lawyer {appt['lawyer_email']}")
+                    # Mark reminder as sent if at least one email was successful
+                    if client_email_sent or lawyer_email_sent:
+                        cursor.execute(
+                            "UPDATE appointments SET reminder_sent = TRUE WHERE id = %s",
+                            (appt['id'],)
+                        )
+                        conn.commit()
+        finally:
+            conn.close()
+    except Exception as e:
+        print(f"Error sending reminders: {str(e)}")
+
+# Initialize and start the scheduler
+scheduler = BackgroundScheduler(timezone='Asia/Kathmandu')
+scheduler.add_job(send_appointment_reminders, 'interval', minutes=1)  # Run every minute
+scheduler.start()
+
+# Ensure scheduler shuts down gracefully when the app exits
+import atexit
+atexit.register(lambda: scheduler.shutdown())
 
  # Add to existing functions
 def send_otp_email(email, otp):
