@@ -18,24 +18,33 @@ import string
 from cryptography.hazmat.primitives import serialization
 import jwt as pyjwt
 from apscheduler.schedulers.background import BackgroundScheduler
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = "your-secret-key-here" 
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "http://localhost:3000"]}})  # Allow admin frontend
 
-EMAIL_ADDRESS = 'nlaf.legal@gmail.com'  # Replace with your Gmail
-EMAIL_PASSWORD = 'wcee rabs lqme focz'  
+EMAIL_ADDRESS = os.getenv('EMAIL_ADDRESS')
+EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD')  
 
 # Load private key
-with open(r"C:\Users\Shrey\legalaid\legalaidbackend\private_key.pem", "rb") as key_file:
-    PRIVATE_KEY = serialization.load_pem_private_key(
-        key_file.read(),
-        password=None
-    )
+PRIVATE_KEY_PATH = os.getenv('PRIVATE_KEY_PATH')
+try:
+    with open(PRIVATE_KEY_PATH, 'rb') as key_file:
+        PRIVATE_KEY = serialization.load_pem_private_key(
+            key_file.read(),
+            password=None
+        )
+except FileNotFoundError:
+    raise Exception(f"Private key file not found at {PRIVATE_KEY_PATH}")
+except Exception as e:
+    raise Exception(f"Error loading private key: {str(e)}")
 
 # 8x8 JaaS credentials
-APP_ID = "vpaas-magic-cookie-70206cd47ac84290b883e32da817bc72"
-API_KEY = "vpaas-magic-cookie-70206cd47ac84290b883e32da817bc72/f5adc6"
+APP_ID = os.getenv('APP_ID')
+API_KEY = os.getenv('API_KEY')
 
 # Generate JWT for JaaS
 
@@ -87,9 +96,9 @@ UPLOAD_FOLDER = 'uploads'
 EVIDENCE_FOLDER = 'evidence'
 COURT_FILES_FOLDER = 'court_files'
 DOCUMENT_TEMPLATES_FOLDER = 'document_templates'
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['UPLOAD_FOLDER'] = os.getenv('UPLOAD_FOLDER', 'uploads')
 KYC_FOLDER = 'kyc_documents'
-app.config['KYC_FOLDER'] = KYC_FOLDER
+app.config['KYC_FOLDER'] = os.getenv('KYC_FOLDER', 'kyc_documents')
 os.makedirs(KYC_FOLDER, exist_ok=True)
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf', 'doc', 'docx'}  # Updated for templates
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -98,14 +107,14 @@ os.makedirs(COURT_FILES_FOLDER, exist_ok=True)
 os.makedirs(DOCUMENT_TEMPLATES_FOLDER, exist_ok=True)
 
 db_config = {
-    'host': 'localhost',
-    'user': 'root',
-    'password': '',  
-    'database': 'legalaid_db',
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'user': os.getenv('DB_USER', 'root'),
+    'password': os.getenv('DB_PASSWORD', ''),
+    'database': os.getenv('DB_NAME', 'legalaid_db'),
     'cursorclass': pymysql.cursors.DictCursor
 }
 
-SECRET_KEY = "your-secret-key-here"  # Replace with a secure key in production
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
