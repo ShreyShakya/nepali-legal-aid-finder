@@ -1035,6 +1035,9 @@
   font-weight: 600;
   margin-bottom: 0.25rem;
   color: #1e293b;
+  display: flex; /* Use flex to stack elements vertically */
+  flex-direction: column; /* Stack username and badge vertically */
+  align-items: flex-start; /* Left-align the badge */
 }
 
 .darkTheme .profileName {
@@ -2118,12 +2121,14 @@
 }
 
 .kycBadge {
-  display: inline-block;
-  margin-left: 8px;
+  display: block; /* Use inline-block to keep it compact */
+  text-align: center;
+  margin: 0.25rem 0 0 0; /* Small top margin to position below username, no left margin */
   padding: 4px 8px;
   border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
+  line-height: 1; /* Ensure consistent height */
 }
 
 .kycVerified {
@@ -2163,4 +2168,14 @@
   display: flex;
   gap: 12px;
   margin-top: 20px;
+}
+
+.darkTheme .kycVerified {
+  background-color: rgba(46, 125, 50, 0.2); /* Adjust for dark theme */
+  color: #4ade80;
+}
+
+.darkTheme .kycUnverified {
+  background-color: rgba(211, 47, 47, 0.2); /* Adjust for dark theme */
+  color: #f87171;
 }

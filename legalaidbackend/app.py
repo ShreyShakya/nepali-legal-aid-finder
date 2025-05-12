@@ -19,6 +19,7 @@ from cryptography.hazmat.primitives import serialization
 import jwt as pyjwt
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
+import re
 
 load_dotenv()
 
@@ -136,6 +137,25 @@ def verify_password(stored_password, provided_password):
     stored_key = stored_password[16:]
     provided_key = hash_password(provided_password, salt)
     return stored_key == provided_key[16:]
+
+def is_valid_password(password):
+    """
+    Check if the password meets security requirements:
+    - At least 8 characters long
+    - At least one letter (A-Z or a-z)
+    - At least one number (0-9)
+    - At least one special character (e.g., !@#$%^&*)
+    Returns True if valid, False otherwise.
+    """
+    if len(password) < 8:
+        return False
+    if not re.search(r'[A-Za-z]', password):  # At least one letter
+        return False
+    if not re.search(r'[0-9]', password):  # At least one number
+        return False
+    if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):  # At least one special character
+        return False
+    return True
 
 # Helper function to validate JWT token
 def validate_token():
@@ -596,6 +616,10 @@ def register_lawyer():
         if not is_otp_verified:
             return jsonify({'error': 'OTP verification required'}), 400
 
+        # Validate password
+        if not is_valid_password(password):
+            return jsonify({'error': 'Password must be at least 8 characters long and contain at least one letter, one number, and one special character (e.g., !@#$%^&*)'}), 400
+
         hashed_bytes = hash_password(password)
         hashed_password = base64.b64encode(hashed_bytes).decode('utf-8')
 
@@ -833,8 +857,9 @@ def change_password():
         current_password = data['current_password']
         new_password = data['new_password']
 
-        if len(new_password) < 8:
-            return jsonify({'error': 'New password must be at least 8 characters long'}), 400
+        # Validate new password
+        if not is_valid_password(new_password):
+            return jsonify({'error': 'New password must be at least 8 characters long and contain at least one letter, one number, and one special character (e.g., !@#$%^&*)'}), 400
 
         conn = pymysql.connect(**db_config)
         try:
@@ -996,6 +1021,10 @@ def register_client():
 
         if not is_otp_verified:
             return jsonify({'error': 'OTP verification required'}), 400
+
+        # Validate password
+        if not is_valid_password(password):
+            return jsonify({'error': 'Password must be at least 8 characters long and contain at least one letter, one number, and one special character (e.g., !@#$%^&*)'}), 400
 
         hashed_bytes = hash_password(password)
         hashed_password = base64.b64encode(hashed_bytes).decode('utf-8')
@@ -2232,8 +2261,9 @@ def change_client_password():
         current_password = data['current_password']
         new_password = data['new_password']
 
-        if len(new_password) < 8:
-            return jsonify({'error': 'New password must be at least 8 characters long'}), 400
+        # Validate new password
+        if not is_valid_password(new_password):
+            return jsonify({'error': 'New password must be at least 8 characters long and contain at least one letter, one number, and one special character (e.g., !@#$%^&*)'}), 400
 
         conn = pymysql.connect(**db_config)
         try:
@@ -2622,8 +2652,9 @@ def reset_password():
         if not all([email, otp, new_password, role]) or role not in ['client', 'lawyer']:
             return jsonify({'error': 'Email, OTP, new password, and valid role (client or lawyer) are required'}), 400
 
-        if len(new_password) < 8:
-            return jsonify({'error': 'New password must be at least 8 characters long'}), 400
+        # Validate new password
+        if not is_valid_password(new_password):
+            return jsonify({'error': 'New password must be at least 8 characters long and contain at least one letter, one number, and one special character (e.g., !@#$%^&*)'}), 400
 
         # Verify OTP
         conn = pymysql.connect(**db_config)

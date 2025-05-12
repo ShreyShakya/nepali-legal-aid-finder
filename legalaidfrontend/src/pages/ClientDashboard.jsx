@@ -32,6 +32,7 @@ export default function ClientDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
+  const [dialog, setDialog] = useState({ isOpen: false, message: "", onConfirm: null });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [notifications, setNotifications] = useState([]);
@@ -215,6 +216,22 @@ export default function ClientDashboard() {
     navigate("/client-login");
   };
 
+  const validatePassword = (password) => {
+    const minLength = password.length >= 8;
+    const hasLetter = /[A-Za-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    return {
+      isValid: minLength && hasLetter && hasNumber && hasSpecial,
+      errors: [
+        !minLength && "Password must be at least 8 characters long",
+        !hasLetter && "Password must contain at least one letter",
+        !hasNumber && "Password must contain at least one number",
+        !hasSpecial && "Password must contain at least one special character (e.g., !@#$%^&*)",
+      ].filter(Boolean),
+    };
+  };
+
   const handleAppointmentDetails = (appointment) => {
     setSelectedAppointment(appointment);
   };
@@ -386,8 +403,10 @@ export default function ClientDashboard() {
       return;
     }
 
-    if (passwordData.newPassword.length < 8) {
-      setPasswordError("New password must be at least 8 characters long");
+    // Validate new password
+    const { isValid, errors } = validatePassword(passwordData.newPassword);
+    if (!isValid) {
+      setPasswordError(errors.join("; "));
       return;
     }
 
@@ -412,9 +431,15 @@ export default function ClientDashboard() {
       setPasswordError("");
       addNotification(response.data.message || "Password updated successfully", "success");
 
-      localStorage.removeItem("clientToken");
-      localStorage.removeItem("client");
-      navigate("/client-login");
+      setDialog({
+        isOpen: true,
+        message: "Password changed successfully. You will be logged out. Please log in again with your new password.",
+        onConfirm: () => {
+          localStorage.removeItem("clientToken");
+          localStorage.removeItem("client");
+          navigate("/client-login");
+        },
+      });
     } catch (err) {
       setPasswordError(err.response?.data?.error || "Failed to update password");
       addNotification(err.response?.data?.error || "Failed to update password", "error");
@@ -1316,6 +1341,42 @@ export default function ClientDashboard() {
                 </>
               )}
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {dialog.isOpen && (
+          <motion.div
+            className={styles.modalOverlay}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className={styles.modalContent}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+            >
+              <div className={styles.modalHeader}>
+                <h3>Confirmation</h3>
+              </div>
+              <div className={styles.modalBody}>
+                <p>{dialog.message}</p>
+              </div>
+              <div className={styles.modalFooter}>
+                <button onClick={dialog.onConfirm} className={styles.primaryButton}>
+                  Yes
+                </button>
+                <button
+                  onClick={() => setDialog({ isOpen: false, message: "", onConfirm: null })}
+                  className={styles.secondaryButton}
+                >
+                  No
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
