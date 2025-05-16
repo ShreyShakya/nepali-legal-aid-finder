@@ -862,8 +862,6 @@ export default function LawyerDashboard() {
                       <button
                         onClick={() => setIsKycFormOpen(true)}
                         className={styles.secondaryButton}
-                        data-tooltip-id="kyc-tooltip"
-                        data-tooltip-content="Submit KYC for verification"
                       >
                         Submit KYC Verification
                       </button>
