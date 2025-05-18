@@ -149,9 +149,6 @@ export default function LawyerDashboard() {
     };
     fetchData();
 
-    // SocketIO event listeners
-
-    // SocketIO event listeners
     newSocket.on("kyc_status_updated", async (data) => {
       const token = localStorage.getItem("token");
       try {
@@ -159,7 +156,15 @@ export default function LawyerDashboard() {
           headers: { Authorization: `Bearer ${token}` },
         });
         setLawyer(profileResponse.data.lawyer);
-        addNotification(`KYC Status Updated: ${data.kyc_status}`, "success");
+        if (data.kyc_status === "rejected") {
+          // Reset KYC form for resubmission
+          setKycFormData({ license_number: "", contact_number: "" });
+          setKycDocumentFile(null);
+          setIsKycFormOpen(true); // Reopen form to prompt resubmission
+          addNotification("KYC rejected. Please resubmit with corrected details.", "error");
+        } else {
+          addNotification(`KYC Status Updated: ${data.kyc_status}`, "success");
+        }
       } catch (err) {
         addNotification("Failed to refresh profile after KYC update", "error");
       }
@@ -248,26 +253,23 @@ export default function LawyerDashboard() {
 
   const handleKycSubmit = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem("token");
-    if (!kycFormData.license_number || !kycFormData.contact_number || !kycDocumentFile) {
-      addNotification("All KYC fields are required", "error");
-      return;
+    setIsLoading(true);
+
+    const formData = new FormData();
+    formData.append("license_number", kycFormData.license_number);
+    formData.append("contact_number", kycFormData.contact_number);
+    if (kycDocumentFile) {
+      formData.append("identification_document", kycDocumentFile);
     }
 
-    setIsLoading(true);
     try {
-      const kycDataToSend = new FormData();
-      kycDataToSend.append("license_number", kycFormData.license_number);
-      kycDataToSend.append("contact_number", kycFormData.contact_number);
-      kycDataToSend.append("identification_document", kycDocumentFile);
-
-      const response = await axios.post("http://127.0.0.1:5000/api/lawyer-kyc", kycDataToSend, {
+      const token = localStorage.getItem("token");
+      await axios.post("http://127.0.0.1:5000/api/lawyer-kyc", formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
         },
       });
-
       const profileResponse = await axios.get("http://127.0.0.1:5000/api/lawyer-profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -275,9 +277,10 @@ export default function LawyerDashboard() {
       setIsKycFormOpen(false);
       setKycFormData({ license_number: "", contact_number: "" });
       setKycDocumentFile(null);
-      addNotification(response.data.message || "KYC submitted successfully", "success");
+      addNotification("KYC submitted successfully", "success");
     } catch (err) {
-      addNotification(err.response?.data?.error || "Failed to submit KYC", "error");
+      console.error("KYC submission error:", err);
+      addNotification("Failed to submit KYC: " + (err.response?.data?.error || "Unknown error"), "error");
     } finally {
       setIsLoading(false);
     }
@@ -2025,7 +2028,7 @@ export default function LawyerDashboard() {
                     type="file"
                     id="identification_document"
                     name="identification_document"
-                    accept="image/*,application/pdf"
+                    accept=".png,.jpg,.jpeg,.pdf"
                     onChange={handleKycDocumentChange}
                     className={styles.formInput}
                     required
@@ -2033,7 +2036,7 @@ export default function LawyerDashboard() {
                 </div>
                 <div className={styles.formActions}>
                   <button type="submit" className={styles.primaryButton} disabled={isLoading}>
-                    Submit KYC
+                    {lawyer.kyc_status === "rejected" ? "Resubmit KYC" : "Submit KYC"}
                   </button>
                   <button
                     type="button"
@@ -2049,7 +2052,7 @@ export default function LawyerDashboard() {
           </motion.div>
         )}
       </AnimatePresence>
-      
+
       <AnimatePresence>
         {isChatOpen && (
           <motion.div

@@ -50,6 +50,10 @@ const Dashboard = () => {
   const [theme, setTheme] = useState(localStorage.getItem("theme") || "light")
   const [notifications, setNotifications] = useState([])
   const [selectedTemplate, setSelectedTemplate] = useState(null)
+  // New state for rejection modal
+  const [rejectModalOpen, setRejectModalOpen] = useState(false)
+  const [rejectKycId, setRejectKycId] = useState(null)
+  const [rejectionReason, setRejectionReason] = useState("")
 
   // Apply theme
   useEffect(() => {
@@ -212,7 +216,7 @@ const Dashboard = () => {
     }
   }
 
-  const handleKycStatusUpdate = async (kycId, status) => {
+  const handleKycStatusUpdate = async (kycId, status, rejectionReason = "") => {
     setUpdatingKyc((prev) => ({ ...prev, [kycId]: true }))
     const previousKycVerifications = [...kycVerifications]
     setKycVerifications((prev) => prev.map((kyc) => (kyc.id === kycId ? { ...kyc, kyc_status: status } : kyc)))
@@ -220,7 +224,7 @@ const Dashboard = () => {
     setUploadError("")
 
     try {
-      await updateKycStatus(kycId, { status })
+      await updateKycStatus(kycId, { status, rejection_reason: rejectionReason })
       const response = await getKycVerifications()
       setKycVerifications(response.data.kyc_verifications)
       addNotification(`KYC status updated to ${status}`, "success")
@@ -267,6 +271,25 @@ const Dashboard = () => {
 
   const handleTemplateDetails = (template) => {
     setSelectedTemplate(template)
+  }
+
+  // New function to open rejection modal
+  const openRejectModal = (kycId) => {
+    setRejectKycId(kycId)
+    setRejectionReason("")
+    setRejectModalOpen(true)
+  }
+
+  // New function to handle rejection confirmation
+  const confirmReject = () => {
+    if (!rejectionReason.trim()) {
+      addNotification("Please provide a rejection reason", "error")
+      return
+    }
+    handleKycStatusUpdate(rejectKycId, "rejected", rejectionReason)
+    setRejectModalOpen(false)
+    setRejectKycId(null)
+    setRejectionReason("")
   }
 
   return (
@@ -586,7 +609,7 @@ const Dashboard = () => {
                               {kyc.kyc_status === "submitted" && (
                                 <div className={styles.kycStatusActions}>
                                   <button
-                                    onClick={() => handleKycStatusUpdate(kyc.id, "rejected")}
+                                    onClick={() => openRejectModal(kyc.id)}
                                     className={styles.rejectButton}
                                     disabled={updatingKyc[kyc.id]}
                                   >
@@ -650,6 +673,44 @@ const Dashboard = () => {
         </div>
       )}
 
+      {/* Rejection Reason Modal */}
+      {rejectModalOpen && (
+        <div className={styles.modalOverlay} onClick={() => setRejectModalOpen(false)}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>Reject KYC</h3>
+              <button onClick={() => setRejectModalOpen(false)} className={styles.closeButton}>
+                <X className={styles.closeIcon} />
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              <div className={styles.formGroup}>
+                <label htmlFor="rejectionReason" className={styles.fileLabel}>
+                  Reason for Rejection (required)
+                </label>
+                <textarea
+                  id="rejectionReason"
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  className={styles.fileInput}
+                  rows={4}
+                  placeholder="Enter the reason for rejecting this KYC (e.g., Invalid document, Missing details)"
+                  required
+                />
+              </div>
+            </div>
+            <div className={styles.modalFooter}>
+              <button onClick={confirmReject} className={styles.primaryButton}>
+                Confirm Rejection
+              </button>
+              <button onClick={() => setRejectModalOpen(false)} className={styles.secondaryButton}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Notifications */}
       <div className={styles.notificationContainer}>
         {notifications.map((notification) => (
@@ -674,7 +735,7 @@ const Dashboard = () => {
         <div className={styles.loader}></div>
       </div>
     </div>
-  );
+  )
 }
 
-export default Dashboard;
+export default Dashboard

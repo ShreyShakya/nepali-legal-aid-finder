@@ -517,8 +517,13 @@ def update_kyc_status(admin_id, kyc_id):
     try:
         data = request.json
         new_status = data.get('status')
+        rejection_reason = data.get('rejection_reason', '') if new_status == 'rejected' else ''
+
         if not new_status or new_status not in ['verified', 'rejected']:
             return jsonify({'error': 'Invalid status. Must be "verified" or "rejected"'}), 400
+
+        if new_status == 'rejected' and not rejection_reason:
+            return jsonify({'error': 'Rejection reason is required for rejected status'}), 400
 
         conn = pymysql.connect(**db_config)
         try:
@@ -555,8 +560,18 @@ def update_kyc_status(admin_id, kyc_id):
                     email_body = (
                         f"Dear {lawyer['name']},\n\n"
                         f"Your KYC verification has been {new_status}.\n"
-                        f"{'You are now fully verified and can access all platform features.' if new_status == 'verified' else 'Please contact support for further details.'}\n\n"
-                        f"Best regards,\nLegalAid Team"
+                    )
+                    if new_status == 'verified':
+                        email_body += (
+                            "You are now fully verified and can access all platform features.\n"
+                        )
+                    else:
+                        email_body += (
+                            f"Reason for rejection: {rejection_reason}\n"
+                            "Please resubmit your KYC with corrected details via the Lawyer Dashboard.\n"
+                        )
+                    email_body += (
+                        "\nBest regards,\nLegalAid Team"
                     )
                     if not send_email(lawyer['email'], f'KYC Verification {new_status.capitalize()}', email_body):
                         print(f"Failed to send KYC status email to {lawyer['email']}")
@@ -2834,23 +2849,46 @@ def submit_kyc():
         extension = os.path.splitext(original_filename)[1]
         unique_filename = f"kyc_{uuid.uuid4().hex}{extension}"
         file_path = os.path.join(app.config['KYC_FOLDER'], unique_filename)
-        identification_document.save(file_path)
 
         conn = pymysql.connect(**db_config)
         try:
             with conn.cursor() as cursor:
                 # Check if KYC already exists
-                cursor.execute("SELECT id FROM kyc_verifications WHERE lawyer_id = %s", (lawyer_id,))
-                if cursor.fetchone():
-                    return jsonify({'error': 'KYC already submitted'}), 409
+                cursor.execute("SELECT id, kyc_status, identification_document FROM kyc_verifications WHERE lawyer_id = %s", (lawyer_id,))
+                existing_kyc = cursor.fetchone()
 
-                # Insert KYC data
-                sql = """
-                    INSERT INTO kyc_verifications (lawyer_id, license_number, contact_number, identification_document, kyc_status)
-                    VALUES (%s, %s, %s, %s, %s)
-                """
-                cursor.execute(sql, (lawyer_id, license_number, contact_number, unique_filename, 'submitted'))
-                conn.commit()
+                if existing_kyc:
+                    if existing_kyc['kyc_status'] in ['submitted', 'verified']:
+                        return jsonify({'error': 'KYC already submitted or verified'}), 409
+                    elif existing_kyc['kyc_status'] == 'rejected':
+                        # Delete old identification document
+                        old_file_path = os.path.join(app.config['KYC_FOLDER'], existing_kyc['identification_document'])
+                        if os.path.exists(old_file_path):
+                            os.remove(old_file_path)
+                        # Update existing KYC record
+                        cursor.execute(
+                            """
+                            UPDATE kyc_verifications 
+                            SET license_number = %s, contact_number = %s, identification_document = %s, 
+                                kyc_status = %s, submitted_at = %s
+                            WHERE id = %s
+                            """,
+                            (license_number, contact_number, unique_filename, 'submitted', datetime.utcnow(), existing_kyc['id'])
+                        )
+                    else:
+                        return jsonify({'error': 'Invalid KYC status'}), 400
+                else:
+                    # Insert new KYC data
+                    cursor.execute(
+                        """
+                        INSERT INTO kyc_verifications (lawyer_id, license_number, contact_number, identification_document, kyc_status, submitted_at)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                        """,
+                        (lawyer_id, license_number, contact_number, unique_filename, 'submitted', datetime.utcnow())
+                    )
+
+                # Save new identification document
+                identification_document.save(file_path)
 
                 # Update lawyer's kyc_status
                 cursor.execute(
@@ -2861,12 +2899,15 @@ def submit_kyc():
         finally:
             conn.close()
 
+        # Emit SocketIO event to notify admin
+        socketio.emit('new_kyc_submission', {'lawyer_id': lawyer_id, 'kyc_status': 'submitted'})
+
         return jsonify({'message': 'KYC submitted successfully', 'kyc_status': 'submitted'}), 201
 
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
-
+    
 # WebSocket handlers for real-time case messaging
 @socketio.on('join_case')
 def on_join_case(data):
