@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, Response
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import pymysql
@@ -16,6 +16,7 @@ from email.mime.text import MIMEText
 import random
 import string
 from cryptography.hazmat.primitives import serialization
+from cryptography.fernet import Fernet
 import jwt as pyjwt
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
@@ -88,6 +89,25 @@ def generate_jaas_jwt(user_type, user_name, appointment_id):
     decoded = pyjwt.decode(token, options={"verify_signature": False})
     print("🔧 Decoded JWT payload:", decoded)
     return token
+
+# Initialize Fernet cipher
+FERNET_KEY = os.getenv('FERNET_KEY')
+if not FERNET_KEY:
+    raise Exception("FERNET_KEY not found in environment variables")
+cipher = Fernet(FERNET_KEY.encode())
+
+def encrypt_file(file):
+    """Encrypt file content using Fernet."""
+    file_content = file.read()
+    encrypted_content = cipher.encrypt(file_content)
+    return encrypted_content
+
+def decrypt_file(file_path):
+    """Decrypt file content from disk using Fernet."""
+    with open(file_path, 'rb') as f:
+        encrypted_content = f.read()
+    decrypted_content = cipher.decrypt(encrypted_content)
+    return decrypted_content
 
 # Initialize Flask-SocketIO
 socketio = SocketIO(app, cors_allowed_origins="*")
@@ -598,7 +618,31 @@ def kyc_file(admin_id, filename):
                     return jsonify({'error': 'File not found'}), 404
         finally:
             conn.close()
-        return send_from_directory(app.config['KYC_FOLDER'], filename)
+
+        file_path = os.path.join(app.config['KYC_FOLDER'], filename)
+        if not os.path.exists(file_path):
+            return jsonify({'error': 'File not found on server'}), 404
+
+        # Decrypt the file
+        decrypted_content = decrypt_file(file_path)
+
+        # Determine the MIME type based on file extension
+        extension = os.path.splitext(filename)[1].lower()
+        mime_types = {
+            '.pdf': 'application/pdf',
+            '.png': 'image/png',
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg'
+        }
+        content_type = mime_types.get(extension, 'application/octet-stream')
+
+        # Return the decrypted file as a response
+        return Response(
+            decrypted_content,
+            mimetype=content_type,
+            headers={'Content-Disposition': f'inline; filename={filename}'}
+        )
+
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
@@ -911,11 +955,85 @@ def uploaded_file(filename):
 
 @app.route('/evidence/<filename>')
 def evidence_file(filename):
-    return send_from_directory(EVIDENCE_FOLDER, filename)
+    try:
+        conn = pymysql.connect(**db_config)
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT file_path FROM evidence_files WHERE file_path = %s", (filename,))
+                if not cursor.fetchone():
+                    return jsonify({'error': 'File not found'}), 404
+        finally:
+            conn.close()
+
+        file_path = os.path.join(EVIDENCE_FOLDER, filename)
+        if not os.path.exists(file_path):
+            return jsonify({'error': 'File not found on server'}), 404
+
+        # Decrypt the file
+        decrypted_content = decrypt_file(file_path)
+
+        # Determine the MIME type based on file extension
+        extension = os.path.splitext(filename)[1].lower()
+        mime_types = {
+            '.pdf': 'application/pdf',
+            '.png': 'image/png',
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg'
+        }
+        content_type = mime_types.get(extension, 'application/octet-stream')
+
+        # Return the decrypted file as a response
+        return Response(
+            decrypted_content,
+            mimetype=content_type,
+            headers={'Content-Disposition': f'inline; filename={filename}'}
+        )
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 @app.route('/court-files/<filename>')
 def court_file(filename):
-    return send_from_directory(COURT_FILES_FOLDER, filename)
+    try:
+        conn = pymysql.connect(**db_config)
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT file_path FROM court_files WHERE file_path = %s", (filename,))
+                if not cursor.fetchone():
+                    return jsonify({'error': 'File not found'}), 404
+        finally:
+            conn.close()
+
+        file_path = os.path.join(COURT_FILES_FOLDER, filename)
+        if not os.path.exists(file_path):
+            return jsonify({'error': 'File not found on server'}), 404
+
+        # Decrypt the file
+        decrypted_content = decrypt_file(file_path)
+
+        # Determine the MIME type based on file extension
+        extension = os.path.splitext(filename)[1].lower()
+        mime_types = {
+            '.pdf': 'application/pdf',
+            '.png': 'image/png',
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.doc': 'application/msword',
+            '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        }
+        content_type = mime_types.get(extension, 'application/octet-stream')
+
+        # Return the decrypted file as a response
+        return Response(
+            decrypted_content,
+            mimetype=content_type,
+            headers={'Content-Disposition': f'inline; filename={filename}'}
+        )
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 @app.route('/api/lawyer-cases', methods=['GET', 'OPTIONS'])
 def lawyer_cases():
@@ -1711,7 +1829,13 @@ def upload_document(case_id):
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file_path = os.path.join(COURT_FILES_FOLDER, filename)
-            file.save(file_path)
+
+            # Encrypt the file
+            encrypted_content = encrypt_file(file)
+
+            # Save encrypted file
+            with open(file_path, 'wb') as f:
+                f.write(encrypted_content)
 
             conn = pymysql.connect(**db_config)
             try:
@@ -1815,7 +1939,13 @@ def add_evidence(case_id):
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file_path = os.path.join(EVIDENCE_FOLDER, filename)
-            file.save(file_path)
+
+            # Encrypt the file
+            encrypted_content = encrypt_file(file)
+
+            # Save encrypted file
+            with open(file_path, 'wb') as f:
+                f.write(encrypted_content)
             file_path = filename
 
         conn = pymysql.connect(**db_config)
@@ -2850,6 +2980,13 @@ def submit_kyc():
         unique_filename = f"kyc_{uuid.uuid4().hex}{extension}"
         file_path = os.path.join(app.config['KYC_FOLDER'], unique_filename)
 
+        # Encrypt the file
+        encrypted_content = encrypt_file(identification_document)
+
+        # Save encrypted file
+        with open(file_path, 'wb') as f:
+            f.write(encrypted_content)
+
         conn = pymysql.connect(**db_config)
         try:
             with conn.cursor() as cursor:
@@ -2886,9 +3023,6 @@ def submit_kyc():
                         """,
                         (lawyer_id, license_number, contact_number, unique_filename, 'submitted', datetime.utcnow())
                     )
-
-                # Save new identification document
-                identification_document.save(file_path)
 
                 # Update lawyer's kyc_status
                 cursor.execute(
